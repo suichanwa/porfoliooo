@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import Avatar from '../components/Avatar';
+import ProfileCard from '../components/Profile/ProfileCard';
 
 export default function Home() {
   const text = "Welcome to My Portfolio";
@@ -24,6 +25,15 @@ export default function Home() {
           ))}
         </div>
         <Avatar />
+
+        <motion.div
+          className="profile-section"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 2.5, duration: 1 }}
+        >
+          <ProfileCard />
+        </motion.div>
       </section>
     </div>
   );

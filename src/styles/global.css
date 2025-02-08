@@ -175,3 +175,24 @@
   display: inline-block;
   transform-origin: center;
 }
+
+.profile-section {
+  position: fixed;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 1rem;
+  z-index: 100;
+  color: var(--text-dark-bg); /* assuming you're using white text on dark background */
+}
+
+.profile-section h1 {
+  margin: 0.5rem 0;
+  font-size: 2em;
+}
+
+.profile-section p {
+  margin: 0.5rem 0;
+  font-size: 1.2em;
+}
