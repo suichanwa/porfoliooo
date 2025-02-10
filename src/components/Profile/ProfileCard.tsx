@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import { Share, MoreVert, Facebook, Twitter, LinkedIn } from '@mui/icons-material';
 import pfp from '../../assets/images/pfp.jpg';
+import { Link } from 'react-router-dom'; // Import the Link component
 
 export default function ProfileCard() {
   return (
@@ -75,6 +76,10 @@ export default function ProfileCard() {
         <IconButton aria-label="linkedin" sx={{ color: 'var(--primary-accent)' }}>
           <LinkedIn />
         </IconButton>
+         {/* Add a link to your blog */}
+         <Link to="/blog" style={{ color: 'var(--primary-accent)', textDecoration: 'none' }}>
+            View Blog
+          </Link>
       </CardActions>
     </Card>
   );
