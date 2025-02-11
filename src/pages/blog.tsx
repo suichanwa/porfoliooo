@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 import BlogCard from '../components/Blog/BlogCard';
+import BlogPostView from '../components/Blog/BlogPostView';
 import type { BlogPost } from '../models/BlogPost';
 
 const samplePosts: BlogPost[] = [
@@ -9,35 +12,51 @@ const samplePosts: BlogPost[] = [
     id: '1',
     title: 'Getting Started with Three.js',
     excerpt: 'Learn how to create stunning 3D graphics for the web using Three.js',
-    content: '... full content here ...',
+    content: 'Full article content here...',
     date: 'Feb 6, 2024',
     imageUrl: '/blog/threejs-tutorial.jpg',
     tags: ['Three.js', 'WebGL', 'JavaScript'],
     readTime: '5 min read'
   },
-  {
-    id: '2',
-    title: 'Mastering React Hooks',
-    excerpt: 'A deep dive into the most useful React hooks for building dynamic UIs',
-    content: '... full content here ...',
-    date: 'Jan 28, 2024',
-    imageUrl: '/blog/react-hooks.jpg',
-    tags: ['React', 'Hooks', 'Frontend'],
-    readTime: '7 min read'
-  },
-  {
-    id: '3',
-    title: 'Styling with Material UI',
-    excerpt: 'Explore the power and flexibility of Material UI for styling your React apps',
-    content: '... full content here ...',
-    date: 'Jan 15, 2024',
-    imageUrl: '/blog/material-ui.png',
-    tags: ['Material UI', 'React', 'Styling'],
-    readTime: '6 min read'
-  },
+  // ... other posts
 ];
 
 export default function Blog() {
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+
+  const handlePostClick = (post: BlogPost) => {
+    setSelectedPost(post);
+  };
+
+  const handleBack = () => {
+    setSelectedPost(null);
+  };
+
+  if (selectedPost) {
+    return (
+      <Box sx={{ position: 'relative' }}>
+        <motion.button
+          onClick={handleBack}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          sx={{
+            position: 'fixed',
+            top: '2rem',
+            left: '2rem',
+            background: 'none',
+            border: 'none',
+            color: 'var(--primary-accent)',
+            cursor: 'pointer',
+            fontSize: '1.1rem'
+          }}
+        >
+          ← Back to posts
+        </motion.button>
+        <BlogPostView post={selectedPost} />
+      </Box>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -58,7 +77,9 @@ export default function Blog() {
       <Grid container spacing={3}>
         {samplePosts.map(post => (
           <Grid item xs={12} sm={6} md={4} key={post.id}>
-            <BlogCard post={post} />
+            <div onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
+              <BlogCard post={post} />
+            </div>
           </Grid>
         ))}
       </Grid>
