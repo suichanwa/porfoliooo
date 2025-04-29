@@ -1,0 +1,24 @@
+﻿---
+title?: string;
+import '../styles/global.css';
+import '../styles/colors.css';
+import Navigation from '../components/Navigation.tsx';
+---
+<html lang="en" class="h-full bg-primary-bg text-text-dark-bg">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title ?? "My Portfolio"}</title>
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <Navigation client:load />
+
+    <main class="container mx-auto px-4 py-8 flex-1">
+      <slot />
+    </main>
+
+    <footer class="py-4 text-center text-secondary-accent">
+      © {new Date().getFullYear()} Your Name
+    </footer>
+  </body>
+</html>

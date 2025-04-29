@@ -1,23 +1,8 @@
-:root {
-  /* Backgrounds */
-  --primary-bg: #1a0f28;       /* Very dark purple/almost black */
-  --secondary-bg: #f5f5f5;     /* Off white */
-
-  /* Accents */
-  --primary-accent: #33ccff;   /* Bright cyan */
-  --secondary-accent: #e0c2f7; /* Soft lavender */
-
-  /* Text Colors */
-  --text-dark-bg: #ffffff;     /* White text on dark background */
-  --text-light-bg: #1a0f28;    /* Dark purple text on light background */
-}
-
-/* Example usage */
-body {
-  background-color: var(--primary-bg);
-  color: var(--text-dark-bg);
-}
-
-a {
-  color: var(--primary-accent);
+﻿:root {
+  --primary-bg: #1a0f28;
+  --secondary-bg: #f5f5f5;
+  --primary-accent: #33ccff;
+  --secondary-accent: #e0c2f7;
+  --text-dark-bg: #ffffff;
+  --text-light-bg: #1a0f28;
 }

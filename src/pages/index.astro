@@ -1,0 +1,9 @@
+﻿---
+layout: "../layouts/BaseLayout.astro"
+import Avatar from "../components/Avatar.tsx";
+import ProfileCard from "../components/Profile/ProfileCard.tsx";
+---
+<section class="text-center space-y-6">
+  <Avatar client:load />
+  <ProfileCard client:load />
+</section>
