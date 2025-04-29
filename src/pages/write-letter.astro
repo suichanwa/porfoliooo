@@ -1,0 +1,228 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import TypeWriter from "../components/TypeWriter.tsx";
+import { addLetter } from "../utils/firebaseConfig";
+---
+
+<BaseLayout title="Write Me a Letter | My Portfolio">
+  <section class="py-12 md:py-16 max-w-2xl mx-auto">
+    <div data-scroll class="opacity-0">
+      <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
+        <TypeWriter 
+          client:load 
+          text="Send Me a Note" 
+          speed={100} 
+          delay={300}
+        />
+      </h1>
+      <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
+      
+      <p class="text-center mb-4">I'd love to hear your thoughts! Leave me a little note about anything that's on your mind.</p>
+      <p class="text-center mb-8 italic text-secondary-accent">Your message will be delivered directly to me, like a digital letter in a bottle ✨</p>
+    </div>
+    
+    <div data-scroll data-scroll-delay="0.1" class="opacity-0">
+      <form id="letterForm" class="bg-base-200 p-6 md:p-8 rounded-xl shadow-lg border border-secondary-accent/20">
+        <div class="form-control mb-5">
+          <label class="label" for="name">
+            <span class="label-text flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="text-primary-accent">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+              </svg>
+              Who's writing? (optional)
+            </span>
+          </label>
+          <input type="text" id="name" class="input input-bordered w-full bg-base-100" placeholder="Your name or stay anonymous..." />
+        </div>
+        
+        <div class="form-control mb-6">
+          <label class="label" for="message">
+            <span class="label-text flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="text-primary-accent">
+                <path d="M2 2a2 2 0 0 0-2 2v8.01a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-2 7a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zM12 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+              </svg>
+              Your Message
+            </span>
+            <span class="label-text-alt text-secondary-accent">❤️</span>
+          </label>
+          <textarea 
+            id="message" 
+            rows="8" 
+            class="textarea textarea-bordered w-full bg-base-100" 
+            placeholder="Dear friend, I wanted to tell you..." 
+            required
+          ></textarea>
+        </div>
+        
+        <button 
+          type="submit" 
+          class="btn btn-primary w-full group relative overflow-hidden"
+          id="submitButton"
+        >
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-primary-accent group-hover:skew-x-12"></span>
+          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform skew-x-12 bg-secondary-accent group-hover:-skew-x-12"></span>
+          <span id="submitText" class="relative flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Send Your Note
+          </span>
+          <span id="loadingSpinner" class="loading loading-spinner loading-md hidden"></span>
+        </button>
+        
+        <p class="text-xs mt-4 text-center opacity-70">
+          Your note will be delivered straight to me, and nobody else will see it 💌
+        </p>
+      </form>
+    </div>
+    
+    <div id="successMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-6 bg-success/10 border border-success/30 rounded-xl text-center hidden">
+      <div class="flex justify-center mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success">
+          <path d="M22 2L11 13"></path>
+          <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-success mb-2">Your Note Has Been Sent!</h3>
+      <p>Thank you for your sweet message! I'll read it soon and treasure your thoughts.</p>
+      <button id="writeAnother" class="btn btn-outline btn-success mt-4">Write Another Note</button>
+    </div>
+
+    <div id="errorMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-6 bg-error/10 border border-error/30 rounded-xl text-center hidden">
+      <h3 class="text-xl font-bold text-error mb-2">Oh no! Something went wrong</h3>
+      <p>There was a tiny hiccup sending your note. Please try again in a moment.</p>
+      <button id="tryAgain" class="btn btn-outline btn-error mt-4">Try Again</button>
+    </div>
+  </section>
+
+  <script>
+    // Import Firebase utilities
+    import { addLetter } from '../utils/firebaseConfig';
+
+    // Handle form submission
+    document.getElementById('letterForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Get form elements
+      const form = e.target as HTMLFormElement;
+      const nameInput = document.getElementById('name') as HTMLInputElement;
+      const messageInput = document.getElementById('message') as HTMLTextAreaElement;
+      const submitButton = document.getElementById('submitButton') as HTMLButtonElement;
+      const submitText = document.getElementById('submitText') as HTMLSpanElement;
+      const loadingSpinner = document.getElementById('loadingSpinner') as HTMLSpanElement;
+      const successMessage = document.getElementById('successMessage') as HTMLDivElement;
+      const errorMessage = document.getElementById('errorMessage') as HTMLDivElement;
+      
+      // Get form data
+      const name = nameInput.value.trim();
+      const message = messageInput.value.trim();
+      
+      if (!message) {
+        messageInput.focus();
+        return;
+      }
+      
+      try {
+        // Show loading state
+        submitButton.disabled = true;
+        submitText.textContent = "Sending...";
+        loadingSpinner.classList.remove("hidden");
+        
+        // Send to Firebase - no email parameter
+        await addLetter({ name, message });
+        
+        // Hide form, show success message
+        form.classList.add('hidden');
+        successMessage.classList.remove('hidden');
+        
+        // Clear form
+        form.reset();
+      } catch (error) {
+        console.error('Error sending letter:', error);
+        
+        // Show error message
+        errorMessage.classList.remove('hidden');
+      } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitText.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          Send Your Note
+        `;
+        loadingSpinner.classList.add("hidden");
+      }
+    });
+    
+    // Handle "Write Another Letter" button
+    document.getElementById('writeAnother')?.addEventListener('click', () => {
+      document.getElementById('letterForm')?.classList.remove('hidden');
+      document.getElementById('successMessage')?.classList.add('hidden');
+    });
+    
+    // Handle "Try Again" button
+    document.getElementById('tryAgain')?.addEventListener('click', () => {
+      document.getElementById('errorMessage')?.classList.add('hidden');
+    });
+
+    // Reuse the same scroll animation logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const scrollElements = document.querySelectorAll('[data-scroll]');
+      
+      const elementInView = (el, scrollOffset = 0) => {
+        const elementTop = el.getBoundingClientRect().top;
+        return (
+          elementTop <= 
+          (window.innerHeight || document.documentElement.clientHeight) * 0.8
+        );
+      };
+      
+      const displayScrollElement = (element) => {
+        const delay = element.dataset.scrollDelay || 0;
+        setTimeout(() => {
+          element.classList.add('motion-safe:animate-fadeIn');
+          element.style.opacity = 1;
+          element.style.transform = 'translateY(0)';
+        }, delay * 1000);
+      };
+      
+      const hideScrollElement = (element) => {
+        element.style.opacity = 0;
+        element.style.transform = 'translateY(20px)';
+      };
+      
+      const handleScrollAnimation = () => {
+        scrollElements.forEach((el) => {
+          if (elementInView(el, 100)) {
+            displayScrollElement(el);
+          } else {
+            hideScrollElement(el);
+          }
+        });
+      };
+      
+      // Add smooth transition for scroll elements
+      scrollElements.forEach(el => {
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      });
+      
+      window.addEventListener('scroll', () => {
+        handleScrollAnimation();
+      });
+      
+      // Initial check
+      handleScrollAnimation();
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  [data-scroll] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+</style>

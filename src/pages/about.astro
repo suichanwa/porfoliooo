@@ -1,7 +1,138 @@
 ﻿---
-layout: "../layouts/BaseLayout.astro"
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SkillBadge from "../components/SkillBadge.tsx";
+import TypeWriter from "../components/TypeWriter.tsx";
+
+// Define your skills
+const skills = [
+  { name: "TS", iconUrl: "/images/icons/typescript.svg", level: 85 },
+  { name: "React", iconUrl: "/images/icons/react.svg", level: 88 },
+];
+
+// Define your interests
+const interests = [
+  "doing nothing",
+  "losing money",
+];
 ---
-<h1 class="text-4xl font-bold text-center">About Me</h1>
-<p class="mt-4 max-w-2xl mx-auto">
-  Write a brief introduction about yourself here.
-</p>
+
+<BaseLayout title="About Me | My Portfolio">
+  <section class="py-12 md:py-24 max-w-4xl mx-auto">
+    <!-- Header with animation -->
+    <div data-scroll class="opacity-0">
+      <h1 class="text-4xl md:text-5xl font-bold text-center mb-6 min-h-[3.5rem]">
+        <TypeWriter 
+          client:load 
+          text="About Me" 
+          speed={100} 
+          delay={300}
+        />
+      </h1>
+      <div class="w-24 h-1 bg-primary-accent mx-auto mb-12"></div>
+    </div>
+
+    <!-- Bio section -->
+    <div data-scroll data-scroll-delay="0.1" class="opacity-0 mb-16 bg-base-200 p-6 md:p-8 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-bold mb-4">Hey there!</h2>
+      <div class="prose prose-lg max-w-none">
+        <p>Ughhh, something something, I should write an intro here but honestly I just really like GregTech New Horizons.</p>
+        
+        <p class="mt-4">When I'm not deep in code or fighting with CSS, you'll probably find me automating complex processing chains in GTNH or exploring other tech mods. There's something oddly satisfying about building elaborate factories in a virtual world that mirrors my passion for elegant solutions in web development.</p>
+        
+        <p class="mt-4">I've been developing web applications for several years now</p>
+        <p class="mt-4 text-primary italic">i've been geniunely not expect that this shit claude3.7 gonna be so good at knowng shits about me, however text above havne't been wrote by me but i competly agree to al lof it</p>
+      </div>
+    </div>
+
+    <div data-scroll data-scroll-delay="0.2" class="opacity-0 mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Things I'm Into</h2>
+      <div class="flex flex-wrap justify-center gap-3 md:gap-4">
+        {interests.map((interest, i) => (
+          <span class={`
+            badge badge-lg border-0 font-medium shadow-sm 
+            ${i % 3 === 0 ? 'bg-primary/20 text-primary-accent' : ''}
+            ${i % 3 === 1 ? 'bg-secondary-accent/20 text-secondary-accent' : ''}
+            ${i % 3 === 2 ? 'bg-accent/20 text-accent-content' : ''}
+            hover:scale-105 transition-transform duration-200
+          `}>
+            {interest}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Skills section -->
+    <div data-scroll data-scroll-delay="0.3" class="opacity-0">
+      <h2 class="text-2xl font-bold mb-6 text-center">Skills & Tools</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {skills.map((skill) => (
+          <div class="bg-base-300 rounded-lg p-4 text-center">
+            <div class="text-lg font-medium mb-2">{skill.name}</div>
+            <div class="w-full bg-base-100 rounded-full h-2.5">
+              <div class="bg-primary h-2.5 rounded-full" style={`width: ${skill.level}%`}></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Reuse the same scroll animation logic from index.astro
+    document.addEventListener('DOMContentLoaded', () => {
+      const scrollElements = document.querySelectorAll('[data-scroll]');
+      
+      const elementInView = (el, scrollOffset = 0) => {
+        const elementTop = el.getBoundingClientRect().top;
+        return (
+          elementTop <= 
+          (window.innerHeight || document.documentElement.clientHeight) * 0.8
+        );
+      };
+      
+      const displayScrollElement = (element) => {
+        const delay = element.dataset.scrollDelay || 0;
+        setTimeout(() => {
+          element.classList.add('motion-safe:animate-fadeIn');
+          element.style.opacity = 1;
+          element.style.transform = 'translateY(0)';
+        }, delay * 1000);
+      };
+      
+      const hideScrollElement = (element) => {
+        element.style.opacity = 0;
+        element.style.transform = 'translateY(20px)';
+      };
+      
+      const handleScrollAnimation = () => {
+        scrollElements.forEach((el) => {
+          if (elementInView(el, 100)) {
+            displayScrollElement(el);
+          } else {
+            hideScrollElement(el);
+          }
+        });
+      };
+      
+      // Add smooth transition for scroll elements
+      scrollElements.forEach(el => {
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      });
+      
+      window.addEventListener('scroll', () => {
+        handleScrollAnimation();
+      });
+      
+      // Initial check
+      handleScrollAnimation();
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  [data-scroll] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+</style>

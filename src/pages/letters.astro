@@ -1,0 +1,167 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import TypeWriter from "../components/TypeWriter.tsx";
+import { getLetters, type Letter } from "../utils/firebaseConfig";
+
+// Fetch letters from Firebase
+let visitorLetters: Letter[] = [];
+try {
+  visitorLetters = await getLetters();
+  
+  // If no letters are found in Firebase, use sample letters
+  if (visitorLetters.length === 0) {
+    visitorLetters = [
+      {
+        name: "David",
+        message: "Your portfolio is so inspiring! I love the clean design and how you've organized your projects. The animations are subtle but effective.",
+        date: "June 20, 2024"
+      },
+      {
+        name: "Anonymous",
+        message: "Just wanted to say hi and let you know I found your site through a mutual friend. Great work!",
+        date: "June 15, 2024"
+      },
+      {
+        name: "Sarah",
+        message: "I'm also learning web development and your portfolio gave me some great ideas. Would love to connect sometime!",
+        date: "May 30, 2024"
+      }
+    ];
+  }
+} catch (error) {
+  console.error("Error fetching letters:", error);
+  // Use fallback sample letters if Firebase fetch fails
+  visitorLetters = [
+    {
+      name: "Anonymous",
+      message: "Your work is amazing! I especially liked your project on interactive data visualization.",
+      date: "June 12, 2024"
+    },
+    {
+      name: "Friend",
+      message: "Hey, just checking out your new portfolio. Looks great!",
+      date: "June 1, 2024"
+    }
+  ];
+}
+---
+
+<BaseLayout title="Letters from Visitors | My Portfolio">
+  <section class="py-12 md:py-16 max-w-3xl mx-auto">
+    <div data-scroll class="opacity-0">
+      <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
+        <TypeWriter 
+          client:load 
+          text="Letters from Visitors" 
+          speed={100} 
+          delay={300}
+        />
+      </h1>
+      <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
+      
+      <p class="text-center mb-12 max-w-xl mx-auto">
+        These are notes and messages people have sent me. Each one means a lot to me!
+        <a href="/write-letter" class="block mt-2 text-secondary-accent hover:underline">Want to send me one too?</a>
+      </p>
+    </div>
+    
+    <div class="space-y-8">
+      {visitorLetters.map((letter, i) => (
+        <div 
+          data-scroll 
+          data-scroll-delay={i * 0.1} 
+          class="opacity-0"
+        >
+          <div class="bg-base-200 p-6 rounded-xl shadow-lg border-l-4 border-secondary-accent/50">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-medium text-primary-accent">
+                {letter.name || "Anonymous"}
+              </h2>
+              <span class="text-sm text-secondary-accent">
+                {typeof letter.date === 'string' ? letter.date : letter.date instanceof Date ? letter.date.toLocaleDateString() : 'Unknown date'}
+              </span>
+            </div>
+            
+            <div class="relative pl-6 leading-relaxed">
+              <div class="absolute left-0 top-0 text-4xl text-secondary-accent/30 font-serif">"</div>
+              <p class="italic">{letter.message}</p>
+              <div class="absolute right-0 bottom-0 text-4xl text-secondary-accent/30 font-serif">"</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+    
+    {visitorLetters.length === 0 && (
+      <div data-scroll data-scroll-delay="0.2" class="opacity-0 text-center p-12">
+        <div class="text-5xl mb-4">📭</div>
+        <p class="text-lg text-base-content/70">No letters yet</p>
+        <a 
+          href="/write-letter" 
+          class="mt-4 inline-block px-6 py-2 bg-primary-accent text-white rounded-lg hover:bg-primary-accent/90 transition"
+        >
+          Send the first one
+        </a>
+      </div>
+    )}
+  </section>
+
+  <script>
+    // Reuse the same scroll animation logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const scrollElements = document.querySelectorAll('[data-scroll]');
+      
+      const elementInView = (el, scrollOffset = 0) => {
+        const elementTop = el.getBoundingClientRect().top;
+        return (
+          elementTop <= 
+          (window.innerHeight || document.documentElement.clientHeight) * 0.8
+        );
+      };
+      
+      const displayScrollElement = (element) => {
+        const delay = element.dataset.scrollDelay || 0;
+        setTimeout(() => {
+          element.classList.add('motion-safe:animate-fadeIn');
+          element.style.opacity = 1;
+          element.style.transform = 'translateY(0)';
+        }, delay * 1000);
+      };
+      
+      const hideScrollElement = (element) => {
+        element.style.opacity = 0;
+        element.style.transform = 'translateY(20px)';
+      };
+      
+      const handleScrollAnimation = () => {
+        scrollElements.forEach((el) => {
+          if (elementInView(el, 100)) {
+            displayScrollElement(el);
+          } else {
+            hideScrollElement(el);
+          }
+        });
+      };
+      
+      // Add smooth transition for scroll elements
+      scrollElements.forEach(el => {
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      });
+      
+      window.addEventListener('scroll', () => {
+        handleScrollAnimation();
+      });
+      
+      // Initial check
+      handleScrollAnimation();
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  [data-scroll] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+</style>

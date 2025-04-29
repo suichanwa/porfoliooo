@@ -1,9 +1,235 @@
 ﻿---
-layout: "../layouts/BaseLayout.astro"
+import BaseLayout from "../layouts/BaseLayout.astro";
 import Avatar from "../components/Avatar.tsx";
 import ProfileCard from "../components/Profile/ProfileCard.tsx";
+import ProjectCard from "../components/ProjectCard.tsx";
+import SkillBadge from "../components/SkillBadge.tsx";
+import TypeWriter from "../components/TypeWriter.tsx";
+
+// Sample projects data
+const featuredProjects = [
+  {
+    id: "1",
+    title: "Portfolio Website",
+    description: "A modern portfolio site built with Astro and React",
+    technologies: ["Astro", "React", "TypeScript", "Tailwind CSS"],
+    githubUrl: "https://github.com/yourusername/portfolio",
+    liveUrl: "https://yoursite.com"
+  },
+  {
+    id: "2",
+    title: "3D Interactive Resume",
+    description: "An interactive resume with Three.js animations",
+    technologies: ["Three.js", "React", "GSAP"],
+    githubUrl: "https://github.com/yourusername/3d-resume",
+  }
+];
+
+// Sample skills data
+const skills = [
+  { name: "JavaScript", iconUrl: "/images/icons/javascript.svg", level: 90 },
+  { name: "TypeScript", iconUrl: "/images/icons/typescript.svg", level: 85 },
+  { name: "React", iconUrl: "/images/icons/react.svg", level: 88 },
+  { name: "Astro", iconUrl: "/images/icons/astro.svg", level: 80 },
+  { name: "Tailwind CSS", iconUrl: "/images/icons/tailwind.svg", level: 92 },
+  { name: "Three.js", iconUrl: "/images/icons/threejs.svg", level: 75 },
+];
+
+// Sample blog posts for preview
+const recentPosts = [
+  {
+    id: "1",
+    title: "Building a Portfolio with Astro",
+    excerpt: "Learn how to create a fast, modern portfolio site",
+    date: "June 15, 2024",
+    tags: ["astro", "web-dev", "portfolio"],
+    readTime: "5 min read"
+  },
+  {
+    id: "2",
+    title: "Why I Love Tailwind CSS",
+    excerpt: "My journey with utility-first CSS",
+    date: "May 28, 2024",
+    tags: ["css", "tailwind", "design"],
+    readTime: "4 min read"
+  }
+];
+
+// Button animation variants
+const buttonVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i) => ({ 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      delay: 1.5 + (i * 0.2),
+      duration: 0.5
+    }
+  })
+};
 ---
-<section class="text-center space-y-6">
-  <Avatar client:load />
-  <ProfileCard client:load />
-</section>
+
+<BaseLayout title="Home | My Portfolio">
+  <!-- Hero Section -->
+  <section class="py-24 bg-primary-bg min-h-[80vh] flex items-center">
+    <div class="container max-w-6xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center justify-between">
+        <div class="md:w-1/2 text-center md:text-left mb-12 md:mb-0">
+          <h1 class="text-4xl md:text-5xl font-bold mb-4 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
+            <TypeWriter 
+              client:load 
+              text="Hello, I'm Your Name" 
+              speed={80} 
+              delay={500}
+              className="block"
+            />
+            <TypeWriter 
+              client:load 
+              text="Frontend Developer & UI/UX Enthusiast" 
+              speed={60}
+              delay={2500}
+              className="block text-xl mt-4 text-secondary-accent"
+            />
+          </h1>
+          
+          <div class="flex flex-wrap gap-3 justify-center md:justify-start mt-12">
+            <div data-index={0} class="hidden">
+              <a 
+                href="/diary" 
+                class="px-6 py-3 bg-primary-accent text-primary-bg font-medium rounded-lg hover:bg-primary-accent/90 transition"
+              >
+                My Diary
+              </a>
+            </div>
+            
+            <div data-index={1} class="hidden">
+              <a 
+                href="/write-letter" 
+                class="px-6 py-3 border border-secondary-accent text-secondary-accent font-medium rounded-lg hover:bg-secondary-accent/10 transition"
+              >
+                Write me a letter
+              </a>
+            </div>
+          </div>
+          
+          <script>
+            // Animation for buttons
+            setTimeout(() => {
+              document.querySelectorAll('[data-index]').forEach((el, i) => {
+                el.classList.remove('hidden');
+                el.animate(
+                  [
+                    { opacity: 0, transform: 'translateY(20px)' },
+                    { opacity: 1, transform: 'translateY(0)' },
+                  ],
+                  {
+                    duration: 500,
+                    delay: 3500 + (i * 200),
+                    fill: 'forwards',
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                  }
+                );
+              });
+            }, 100);
+          </script>
+        </div>
+        
+        <div class="md:w-1/3 flex flex-col items-center">
+          <div class="mb-4 p-1 rounded-full border-2 border-primary-accent">
+            <Avatar client:load />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects Section -->
+  <section id="projects" class="py-16 bg-secondary-bg">
+    <div class="container max-w-6xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-text-light-bg text-center mb-12">
+        Featured Projects
+      </h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        {featuredProjects.map((project, i) => (
+          <div 
+            data-scroll 
+            data-scroll-delay={i * 0.1} 
+            class="opacity-0 translate-y-8"
+          >
+            <ProjectCard project={project} client:load />
+          </div>
+        ))}
+      </div>
+      <div data-scroll class="text-center mt-10 opacity-0">
+        <a 
+          href="/projects" 
+          class="px-6 py-3 border border-primary-accent text-primary-accent font-medium rounded-lg hover:bg-primary-accent/10 transition"
+        >
+          View All Projects
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Other sections (skills, blog, contact) remain the same -->
+  <!-- ... -->
+  
+  <script>
+    // Simple scroll animations for elements with data-scroll attribute
+    document.addEventListener('DOMContentLoaded', () => {
+      const scrollElements = document.querySelectorAll('[data-scroll]');
+      
+      const elementInView = (el, scrollOffset = 0) => {
+        const elementTop = el.getBoundingClientRect().top;
+        return (
+          elementTop <= 
+          (window.innerHeight || document.documentElement.clientHeight) * 0.8
+        );
+      };
+      
+      const displayScrollElement = (element) => {
+        const delay = element.dataset.scrollDelay || 0;
+        setTimeout(() => {
+          element.classList.add('motion-safe:animate-fadeIn');
+          element.style.opacity = 1;
+          element.style.transform = 'translateY(0)';
+        }, delay * 1000);
+      };
+      
+      const hideScrollElement = (element) => {
+        element.style.opacity = 0;
+        element.style.transform = 'translateY(20px)';
+      };
+      
+      const handleScrollAnimation = () => {
+        scrollElements.forEach((el) => {
+          if (elementInView(el, 100)) {
+            displayScrollElement(el);
+          } else {
+            hideScrollElement(el);
+          }
+        });
+      };
+      
+      // Add smooth transition for scroll elements
+      scrollElements.forEach(el => {
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      });
+      
+      window.addEventListener('scroll', () => {
+        handleScrollAnimation();
+      });
+      
+      // Initial check
+      handleScrollAnimation();
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  [data-scroll] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+</style>
