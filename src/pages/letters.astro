@@ -5,44 +5,17 @@ import { getLetters, type Letter } from "../utils/firebaseConfig";
 
 // Fetch letters from Firebase
 let visitorLetters: Letter[] = [];
+let isLoading = true;
+let errorMessage = "";
+
 try {
+  // Fetch letters from Firebase
   visitorLetters = await getLetters();
-  
-  // If no letters are found in Firebase, use sample letters
-  if (visitorLetters.length === 0) {
-    visitorLetters = [
-      {
-        name: "David",
-        message: "Your portfolio is so inspiring! I love the clean design and how you've organized your projects. The animations are subtle but effective.",
-        date: "June 20, 2024"
-      },
-      {
-        name: "Anonymous",
-        message: "Just wanted to say hi and let you know I found your site through a mutual friend. Great work!",
-        date: "June 15, 2024"
-      },
-      {
-        name: "Sarah",
-        message: "I'm also learning web development and your portfolio gave me some great ideas. Would love to connect sometime!",
-        date: "May 30, 2024"
-      }
-    ];
-  }
+  isLoading = false;
 } catch (error) {
   console.error("Error fetching letters:", error);
-  // Use fallback sample letters if Firebase fetch fails
-  visitorLetters = [
-    {
-      name: "Anonymous",
-      message: "Your work is amazing! I especially liked your project on interactive data visualization.",
-      date: "June 12, 2024"
-    },
-    {
-      name: "Friend",
-      message: "Hey, just checking out your new portfolio. Looks great!",
-      date: "June 1, 2024"
-    }
-  ];
+  errorMessage = "There was an error fetching messages. Please try again later.";
+  isLoading = false;
 }
 ---
 
@@ -65,43 +38,70 @@ try {
       </p>
     </div>
     
-    <div class="space-y-8">
-      {visitorLetters.map((letter, i) => (
-        <div 
-          data-scroll 
-          data-scroll-delay={i * 0.1} 
-          class="opacity-0"
+    {/* Loading state */}
+    {isLoading && (
+      <div data-scroll class="opacity-0 flex justify-center py-12">
+        <div class="loading loading-dots loading-lg text-primary-accent"></div>
+      </div>
+    )}
+    
+    {/* Error state */}
+    {errorMessage && (
+      <div data-scroll class="opacity-0 text-center p-8 bg-error/10 rounded-xl">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <p class="text-lg font-medium text-error">{errorMessage}</p>
+        <button 
+          class="mt-4 btn btn-error btn-outline"
+          onclick="window.location.reload();"
         >
-          <div class="bg-base-200 p-6 rounded-xl shadow-lg border-l-4 border-secondary-accent/50">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-medium text-primary-accent">
-                {letter.name || "Anonymous"}
-              </h2>
-              <span class="text-sm text-secondary-accent">
-                {typeof letter.date === 'string' ? letter.date : letter.date instanceof Date ? letter.date.toLocaleDateString() : 'Unknown date'}
-              </span>
-            </div>
-            
-            <div class="relative pl-6 leading-relaxed">
-              <div class="absolute left-0 top-0 text-4xl text-secondary-accent/30 font-serif">"</div>
-              <p class="italic">{letter.message}</p>
-              <div class="absolute right-0 bottom-0 text-4xl text-secondary-accent/30 font-serif">"</div>
+          Try Again
+        </button>
+      </div>
+    )}
+    
+    {/* Letters from Firebase */}
+    {!isLoading && !errorMessage && (
+      <div class="space-y-8">
+        {visitorLetters.map((letter, i) => (
+          <div 
+            data-scroll 
+            data-scroll-delay={i * 0.1} 
+            class="opacity-0"
+          >
+            <div class="bg-base-200 p-6 rounded-xl shadow-lg border-l-4 border-secondary-accent/50">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-medium text-primary-accent">
+                  {letter.name || "Anonymous"}
+                </h2>
+                <span class="text-sm text-secondary-accent">
+                  {typeof letter.date === 'string' ? letter.date : letter.date instanceof Date ? letter.date.toLocaleDateString() : 
+                  letter.date && typeof letter.date === 'object' && 'toDate' in letter.date ? letter.date.toDate().toLocaleDateString() : 'Unknown date'}
+                </span>
+              </div>
+              
+              <div class="relative pl-6 leading-relaxed">
+                <div class="absolute left-0 top-0 text-4xl text-secondary-accent/30 font-serif">"</div>
+                <p class="italic">{letter.message}</p>
+                <div class="absolute right-0 bottom-0 text-4xl text-secondary-accent/30 font-serif">"</div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
-    
-    {visitorLetters.length === 0 && (
-      <div data-scroll data-scroll-delay="0.2" class="opacity-0 text-center p-12">
-        <div class="text-5xl mb-4">📭</div>
-        <p class="text-lg text-base-content/70">No letters yet</p>
-        <a 
-          href="/write-letter" 
-          class="mt-4 inline-block px-6 py-2 bg-primary-accent text-white rounded-lg hover:bg-primary-accent/90 transition"
-        >
-          Send the first one
-        </a>
+        ))}
+        
+        {visitorLetters.length === 0 && (
+          <div data-scroll data-scroll-delay="0.2" class="opacity-0 text-center p-12">
+            <div class="text-5xl mb-4">📭</div>
+            <p class="text-lg text-base-content/70">No letters yet</p>
+            <a 
+              href="/write-letter" 
+              class="mt-4 inline-block px-6 py-2 bg-primary-accent text-white rounded-lg hover:bg-primary-accent/90 transition"
+            >
+              Send the first one
+            </a>
+          </div>
+        )}
       </div>
     )}
   </section>

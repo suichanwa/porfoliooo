@@ -57,7 +57,7 @@ export default function Navigation() {
               alt="Avatar" 
               className="w-8 h-8 rounded-full border border-primary-accent"
             />
-            <span className="font-medium text-base-content hidden sm:block">Your Name</span>
+            <span className="font-medium text-base-content hidden sm:block">Code Money</span>
           </a>
         </motion.div>
         

@@ -1,54 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
-import { getDiaryEntries, type DiaryEntry } from "../utils/firebaseConfig";
-
-// Fetch diary entries from Firebase
-let diaryEntries: DiaryEntry[] = [];
-try {
-  diaryEntries = await getDiaryEntries();
-  
-  // If no entries are found in Firebase, use sample entries
-  if (diaryEntries.length === 0) {
-    diaryEntries = [
-      {
-        title: "Learning New Tech",
-        content: "Today I spent hours trying to figure out why my React component wasn't re-rendering. Turns out I was mutating state directly instead of creating a new object. Classic mistake!",
-        date: "June 15, 2024"
-      },
-      {
-        title: "GregTech Progress",
-        content: "Finally got my automated ore processing line working in GTNH! It took three days to design and build, but now I have a steady supply of refined metals. Next up: setting up power generation that doesn't explode randomly.",
-        date: "June 10, 2024"
-      },
-      {
-        title: "Late Night Thoughts",
-        content: "It's 3 AM and I'm still debugging this annoying CSS issue. Why do flexbox and grid have to be so complicated sometimes? But when they work, they're amazing.",
-        date: "May 28, 2024"
-      }
-    ];
-  }
-} catch (error) {
-  console.error("Error fetching diary entries:", error);
-  // Use fallback sample entries if Firebase fetch fails
-  diaryEntries = [
-    {
-      title: "Learning New Tech",
-      content: "Today I spent hours trying to figure out why my React component wasn't re-rendering. Turns out I was mutating state directly instead of creating a new object. Classic mistake!",
-      date: "June 15, 2024"
-    },
-    {
-      title: "GregTech Progress",
-      content: "Finally got my automated ore processing line working in GTNH!",
-      date: "June 10, 2024"
-    }
-  ];
-}
 ---
 
 <BaseLayout title="My Diary | My Portfolio">
-  <section class="py-12 md:py-16 max-w-3xl mx-auto">
-    <div data-scroll class="opacity-0">
+  <section class="py-24 min-h-[60vh] max-w-3xl mx-auto flex flex-col items-center justify-center">
+    <div data-scroll class="opacity-0 text-center">
       <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
         <TypeWriter 
           client:load 
@@ -58,73 +15,31 @@ try {
         />
       </h1>
       <div class="w-24 h-1 bg-primary-accent mx-auto mb-12"></div>
-    </div>
-    
-    <div class="space-y-8">
-      {diaryEntries.map((entry, i) => (
-        <div 
-          data-scroll 
-          data-scroll-delay={i * 0.1} 
-          class="opacity-0 bg-base-200 p-6 rounded-xl shadow-lg"
-        >
-          <div class="flex justify-between items-center mb-3">
-            <h2 class="text-xl font-bold text-primary-accent">{entry.title}</h2>
-            <span class="text-sm text-secondary-accent">{typeof entry.date === 'string' ? entry.date : entry.date instanceof Date ? entry.date.toLocaleDateString() : 'Unknown date'}</span>
-          </div>
-          <p class="leading-relaxed">{entry.content}</p>
-        </div>
-      ))}
+      
+      <div class="mt-12 p-8 bg-base-200 rounded-xl shadow-lg">
+        <TypeWriter 
+          client:load 
+          text="still in development fuck off" 
+          speed={70}
+          delay={1500}
+          className="text-xl md:text-2xl font-medium text-secondary-accent"
+        />
+      </div>
     </div>
   </section>
 
   <script>
-    // Reuse the same scroll animation logic
+    // Simple animation for the content
     document.addEventListener('DOMContentLoaded', () => {
       const scrollElements = document.querySelectorAll('[data-scroll]');
       
-      const elementInView = (el, scrollOffset = 0) => {
-        const elementTop = el.getBoundingClientRect().top;
-        return (
-          elementTop <= 
-          (window.innerHeight || document.documentElement.clientHeight) * 0.8
-        );
-      };
-      
-      const displayScrollElement = (element) => {
-        const delay = element.dataset.scrollDelay || 0;
-        setTimeout(() => {
-          element.classList.add('motion-safe:animate-fadeIn');
-          element.style.opacity = 1;
-          element.style.transform = 'translateY(0)';
-        }, delay * 1000);
-      };
-      
-      const hideScrollElement = (element) => {
-        element.style.opacity = 0;
-        element.style.transform = 'translateY(20px)';
-      };
-      
-      const handleScrollAnimation = () => {
-        scrollElements.forEach((el) => {
-          if (elementInView(el, 100)) {
-            displayScrollElement(el);
-          } else {
-            hideScrollElement(el);
-          }
+      setTimeout(() => {
+        scrollElements.forEach(el => {
+          el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+          el.style.opacity = 1;
+          el.style.transform = 'translateY(0)';
         });
-      };
-      
-      // Add smooth transition for scroll elements
-      scrollElements.forEach(el => {
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      });
-      
-      window.addEventListener('scroll', () => {
-        handleScrollAnimation();
-      });
-      
-      // Initial check
-      handleScrollAnimation();
+      }, 100);
     });
   </script>
 </BaseLayout>
@@ -133,6 +48,5 @@ try {
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
   }
 </style>
