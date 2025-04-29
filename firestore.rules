@@ -7,9 +7,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
-    // Allow anyone to add a letter (but not read others' letters)
+    // Allow anyone to add a letter and read letters
     match /letters/{letterId} {
       allow create: if true;
+      allow read: if true;  // Add this line to allow reading letters
     }
     
     // Allow anyone to read diary entries, but only you can create/edit them
