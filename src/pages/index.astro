@@ -6,24 +6,57 @@ import ProjectCard from "../components/ProjectCard.tsx";
 import SkillBadge from "../components/SkillBadge.tsx";
 import TypeWriter from "../components/TypeWriter.tsx";
 
-// Sample projects data
-const featuredProjects = [
-  {
-    id: "1",
-    title: "Portfolio Website",
-    description: "A modern portfolio site built with Astro and React",
-    technologies: ["Astro", "React", "TypeScript", "Tailwind CSS"],
-    githubUrl: "https://github.com/yourusername/portfolio",
-    liveUrl: "https://yoursite.com"
-  },
-  {
-    id: "2",
-    title: "3D Interactive Resume",
-    description: "An interactive resume with Three.js animations",
-    technologies: ["Three.js", "React", "GSAP"],
-    githubUrl: "https://github.com/yourusername/3d-resume",
+// Fetch real GitHub projects
+let featuredProjects = [];
+try {
+  const username = 'suichanwa';
+  const response = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`);
+  
+  if (response.ok) {
+    const repositories = await response.json();
+    
+    // Filter for best projects based on stars or recent updates
+    featuredProjects = repositories
+      .filter(repo => !repo.fork) // Excluding forks
+      .sort((a, b) => b.stargazers_count - a.stargazers_count) // Sort by stars
+      .slice(0, 4) // Get top 4
+      .map(repo => ({
+        id: repo.id.toString(),
+        title: repo.name,
+        description: repo.description || "A cool project worth checking out!",
+        technologies: [repo.language].filter(Boolean), // Add the main language
+        githubUrl: repo.html_url,
+        liveUrl: repo.homepage || "",
+        // Use stargazers count to highlight popular repos
+        starCount: repo.stargazers_count
+      }));
+  } else {
+    console.error("Failed to fetch repositories:", response.status);
   }
-];
+} catch (error) {
+  console.error("Error fetching GitHub repositories:", error);
+}
+
+// Fallback if GitHub API fails
+if (featuredProjects.length === 0) {
+  featuredProjects = [
+    {
+      id: "1",
+      title: "Portfolio Website",
+      description: "A modern portfolio site built with Astro and React",
+      technologies: ["Astro", "React", "TypeScript", "Tailwind CSS"],
+      githubUrl: "https://github.com/suichanwa/portfolio",
+      liveUrl: "https://porfoliooo.web.app"
+    },
+    {
+      id: "2",
+      title: "3D Interactive Resume",
+      description: "An interactive resume with Three.js animations",
+      technologies: ["Three.js", "React", "GSAP"],
+      githubUrl: "https://github.com/suichanwa/3d-resume",
+    }
+  ];
+}
 
 // Sample skills data
 const skills = [
@@ -147,7 +180,7 @@ const buttonVariants = {
   <section id="projects" class="py-16 bg-secondary-bg">
     <div class="container max-w-6xl mx-auto px-4">
       <h2 class="text-3xl font-bold text-text-light-bg text-center mb-12">
-        Featured Projects
+        Featured GitHub Projects
       </h2>
       <div class="grid md:grid-cols-2 gap-8">
         {featuredProjects.map((project, i) => (
@@ -162,10 +195,12 @@ const buttonVariants = {
       </div>
       <div data-scroll class="text-center mt-10 opacity-0">
         <a 
-          href="/projects" 
+          href="https://github.com/suichanwa"
+          target="_blank"
+          rel="noopener noreferrer"
           class="px-6 py-3 border border-primary-accent text-primary-accent font-medium rounded-lg hover:bg-primary-accent/10 transition"
         >
-          View All Projects
+          View All Projects on GitHub
         </a>
       </div>
     </div>
