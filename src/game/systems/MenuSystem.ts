@@ -86,6 +86,18 @@ export class MenuSystem {
     return this.selectedIndex;
   }
 
+  // Add the missing method to set the selected index
+  public setSelectedIndex(index: number): void {
+    if (index >= 0 && index < this.menuItems[this.currentMenu].length) {
+      this.selectedIndex = index;
+      
+      // Trigger the selection change callback if defined
+      if (this.onSelectionChange) {
+        this.onSelectionChange(this.selectedIndex);
+      }
+    }
+  }
+
   public getMenuItems(): MenuItem[] {
     return this.menuItems[this.currentMenu];
   }

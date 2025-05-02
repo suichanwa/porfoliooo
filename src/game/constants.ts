@@ -32,8 +32,8 @@ export enum ItemType {
   REVIVE = 'revive'
 }
 
-// Define enemy type as a string literal union
-export type EnemyType = 'SLIME' | 'BAT' | 'SKELETON';
+// Define enemy type as a string literal union - now including the new themed enemies
+export type EnemyType = 'SLIME' | 'BAT' | 'SKELETON' | 'STONE_GUARDIAN' | 'SHADOW_WISP' | 'RUNE_CONSTRUCT';
 
 // Game colors
 export const COLORS = {
@@ -93,6 +93,29 @@ export const BATTLE_CONFIG = {
     DEFENSE: 5
   },
   ENEMY: {
+    // New themed enemies for Mystic Ruins
+    STONE_GUARDIAN: {
+      NAME: 'Stone Guardian',
+      MAX_HP: 90,
+      ATTACK_POWER: { MIN: 6, MAX: 10 },
+      DEFENSE: 3,
+      EXP: 12
+    },
+    SHADOW_WISP: {
+      NAME: 'Shadow Wisp',
+      MAX_HP: 65,
+      ATTACK_POWER: { MIN: 8, MAX: 14 },
+      DEFENSE: 1,
+      EXP: 18
+    },
+    RUNE_CONSTRUCT: {
+      NAME: 'Rune Construct',
+      MAX_HP: 130,
+      ATTACK_POWER: { MIN: 9, MAX: 16 },
+      DEFENSE: 5,
+      EXP: 30
+    },
+    // Keep original enemies for backward compatibility
     SLIME: {
       NAME: 'Slime',
       MAX_HP: 80,
