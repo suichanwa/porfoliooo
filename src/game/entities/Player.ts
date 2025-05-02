@@ -1,4 +1,4 @@
-import { BATTLE_CONFIG, MENU_CONFIG, MagicType, ItemType } from '../constants';
+import { BATTLE_CONFIG, MENU_CONFIG, MagicType, ItemType } from '../constants.ts';
 
 export class Player {
   private hp: number;

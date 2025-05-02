@@ -1,4 +1,22 @@
 import React, { useRef, useEffect } from 'react';
+import { BACKGROUNDS } from '../../../game/constants.tss';
+
+const getCurrentBackgroundIndex = (isMenu: boolean): number => {
+  const key = isMenu ? 'menuBackgroundIndex' : 'gameBackgroundIndex';
+  const saved = localStorage.getItem(key);
+  return saved ? parseInt(saved) : 0;
+};
+
+const cycleBackgroundIndex = (isMenu: boolean): number => {
+  const key = isMenu ? 'menuBackgroundIndex' : 'gameBackgroundIndex';
+  const backgrounds = isMenu ? BACKGROUNDS.MENU : BACKGROUNDS.GAME;
+  
+  const currentIndex = getCurrentBackgroundIndex(isMenu);
+  const newIndex = (currentIndex + 1) % backgrounds.length;
+  
+  localStorage.setItem(key, newIndex.toString());
+  return newIndex;
+};
 
 interface TemplateRuinsProps {
   width?: number;
@@ -23,21 +41,95 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      if (isMenuBackground) {
-        // Draw a more dramatic background for the main menu
-        drawMenuBackground(ctx, width, height);
-      } else {
-        // Draw the regular game background
-        drawGameBackground(ctx, width, height);
-      }
+      // Select the appropriate backgrounds array and get the current index
+      const backgrounds = isMenuBackground ? BACKGROUNDS.MENU : BACKGROUNDS.GAME;
+      const backgroundIndex = cycleBackgroundIndex(isMenuBackground);
+      const backgroundPath = backgrounds[backgroundIndex];
       
-      // Convert to image data
-      const imageData = canvasRef.current.toDataURL('image/png');
-      onRender(imageData);
+      // Load and draw the background image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw the image covering the entire canvas
+        drawImageFitted(ctx, img, width, height);
+        
+        // If it's a menu background, add some additional mystical effects
+        if (isMenuBackground) {
+          addMenuEffects(ctx, width, height);
+        }
+        
+        // Convert to image data
+        const imageData = canvasRef.current?.toDataURL('image/png');
+        if (imageData && onRender) {
+          onRender(imageData);
+        }
+      };
+      
+      img.onerror = () => {
+        // Fallback to drawing a generated background
+        console.warn(`Failed to load background image: ${backgroundPath}, using generated fallback`);
+        if (isMenuBackground) {
+          drawMenuBackgroundFallback(ctx, width, height);
+        } else {
+          drawGameBackgroundFallback(ctx, width, height);
+        }
+        
+        // Convert to image data
+        const imageData = canvasRef.current?.toDataURL('image/png');
+        if (imageData && onRender) {
+          onRender(imageData);
+        }
+      };
+      
+      // Set the source to the selected background image
+      img.src = backgroundPath;
     }
   }, [width, height, isMenuBackground, onRender]);
   
-  const drawMenuBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  // Helper function to fit the image proportionally in the canvas
+  const drawImageFitted = (
+    ctx: CanvasRenderingContext2D, 
+    img: HTMLImageElement,
+    width: number, 
+    height: number
+  ) => {
+    let scale = Math.max(width / img.width, height / img.height);
+    let x = (width - img.width * scale) * 0.5;
+    let y = (height - img.height * scale) * 0.5;
+    
+    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+  };
+  
+  // Add mystical effects for menu backgrounds
+  const addMenuEffects = (
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ) => {
+    // Add a slight blue overlay for a more mystical look
+    ctx.fillStyle = 'rgba(20, 40, 80, 0.2)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Add a vignette effect (darker at the edges)
+    const gradient = ctx.createRadialGradient(
+      width * 0.5, height * 0.5, height * 0.25,
+      width * 0.5, height * 0.5, height
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Add some stars
+    drawStars(ctx, width, height);
+    
+    // Add mystical fog at the bottom
+    drawMysticalFog(ctx, width, height);
+  };
+  
+  // Fallback to generated backgrounds if images fail to load
+  const drawMenuBackgroundFallback = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // Create dramatic sky gradient for menu
     const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.7);
     skyGradient.addColorStop(0, '#0a0a2a');
@@ -47,20 +139,13 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, width, height);
     
-    // Add stars
     drawStars(ctx, width, height);
-    
-    // Draw distant mountain silhouettes
     drawMountains(ctx, width, height, true);
-    
-    // Draw foreground ruins
     drawRuins(ctx, width, height, true);
-    
-    // Add mystical fog
     drawMysticalFog(ctx, width, height);
   };
   
-  const drawGameBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const drawGameBackgroundFallback = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // Create sky gradient
     const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
     skyGradient.addColorStop(0, '#2a2a4a');
@@ -69,13 +154,11 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, width, height);
     
-    // Draw mountains
     drawMountains(ctx, width, height, false);
-    
-    // Draw ruins
     drawRuins(ctx, width, height, false);
   };
   
+  // The rest of the original drawing functions remain as fallbacks
   const drawStars = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const starCount = 200;
     ctx.fillStyle = '#ffffff';
@@ -158,19 +241,15 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
     
     // Draw columns and structures
     if (isMenu) {
-      // For menu, draw dramatic ruins silhouettes
       drawDramaticRuins(ctx, width, height);
     } else {
-      // For gameplay, draw simpler ruins
       drawSimpleRuins(ctx, width, height);
     }
   };
   
   const drawDramaticRuins = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    // Define silhouettes for dramatic ruins
     const baseY = height * 0.7;
     
-    // Center temple structure
     ctx.fillStyle = '#10102a';
     
     // Main temple base
@@ -229,7 +308,6 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
   const drawSimpleRuins = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const baseY = height * 0.7;
     
-    // Draw some simple column structures
     ctx.fillStyle = '#2a2a3a';
     
     for (let i = 0; i < 5; i++) {

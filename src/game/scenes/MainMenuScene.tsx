@@ -1,6 +1,6 @@
 import { Button } from "../assets/ui/Button";
 import { generateTextureFromReactComponent } from "../utils/textureGenerator";
-import { TemplateRuins } from "../assets/backgrounds/TemplateRuins";
+import { TemplateRuins } from "../../assets/images/backgrounds/TemplateRuins";
 
 // Instead of direct extension, we'll create a factory function that accepts the Phaser instance
 export function createMainMenuScene(Phaser: any) {
@@ -9,8 +9,13 @@ export function createMainMenuScene(Phaser: any) {
     private menuButtons: Phaser.GameObjects.Image[] = [];
     private selectedButtonIndex: number = 0;
     private buttonCount: number = 3;
-    private menuMusic!: Phaser.Sound.BaseSound;
     private animating: boolean = false;
+    
+    // Add properties for cycling button
+    private cycleOptions: string[] = ['Normal', 'Hard', 'Insane'];
+    private currentCycleIndex: number = 0;
+    private cycleText!: Phaser.GameObjects.Text;
+    private cycleButton!: Phaser.GameObjects.Container;
     
     constructor() {
       super({ key: 'MainMenuScene' });
@@ -31,6 +36,33 @@ export function createMainMenuScene(Phaser: any) {
         { id: 'settings', text: 'Settings', variant: 'secondary' },
         { id: 'credits', text: 'Credits', variant: 'secondary' }
       ];
+      
+      // Generate cycle button texture
+      await generateTextureFromReactComponent(
+        Button,
+        { 
+          width: 220, 
+          height: 50, 
+          text: "Difficulty", 
+          variant: "danger", 
+          state: 'normal' 
+        },
+        `button_cycle_normal`,
+        this
+      );
+      
+      await generateTextureFromReactComponent(
+        Button,
+        { 
+          width: 220, 
+          height: 50, 
+          text: "Difficulty", 
+          variant: "danger", 
+          state: 'hover' 
+        },
+        `button_cycle_hover`,
+        this
+      );
       
       for (const item of menuItems) {
         // Normal state
@@ -70,9 +102,6 @@ export function createMainMenuScene(Phaser: any) {
       
       // Load additional assets
       this.load.image('logo', 'https://i.imgur.com/Z1U1YTy.png'); // Replace with your actual logo
-      this.load.audio('menuMusic', 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_28d9e8eb2e.mp3?filename=magic-in-the-air-43862.mp3');
-      this.load.audio('buttonHover', 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c7443c.mp3?filename=interface-124464.mp3');
-      this.load.audio('buttonClick', 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_c8c8a73b4a.mp3?filename=interface-124465.mp3');
     }
     
     create() {
@@ -116,6 +145,9 @@ export function createMainMenuScene(Phaser: any) {
       // Add menu buttons
       this.addMenuButtons();
       
+      // Add the cycling button
+      this.addCycleButton();
+      
       // Add decorative runes around the border
       this.addDecorativeBorder();
       
@@ -137,10 +169,6 @@ export function createMainMenuScene(Phaser: any) {
       
       // Setup input
       this.setupInput();
-      
-      // Play menu music
-      this.menuMusic = this.sound.add('menuMusic', { loop: true, volume: 0.5 });
-      this.menuMusic.play();
       
       // Initial button highlight
       this.selectButton(0);
@@ -164,17 +192,94 @@ export function createMainMenuScene(Phaser: any) {
         // Add hover effect
         buttonImage.on('pointerover', () => {
           this.selectButton(index);
-          this.sound.play('buttonHover', { volume: 0.2 });
         });
         
         // Add click effect
         buttonImage.on('pointerup', () => {
-          this.sound.play('buttonClick', { volume: 0.3 });
           button.callback();
         });
         
         this.menuButtons.push(buttonImage);
       });
+    }
+    
+    // Add the cycling difficulty button
+    addCycleButton() {
+      // Create a container for the button and text
+      this.cycleButton = this.add.container(400, 540);
+      this.cycleButton.setDepth(10);
+      
+      // Add the button background
+      const buttonBg = this.add.image(0, 0, 'button_cycle_normal');
+      
+      // Add the label text
+      const labelText = this.add.text(-80, 0, "Difficulty:", {
+        fontFamily: 'serif',
+        fontSize: '18px',
+        color: '#ffffff',
+      }).setOrigin(0, 0.5);
+      
+      // Add the cycling text that will change
+      this.cycleText = this.add.text(10, 0, this.cycleOptions[this.currentCycleIndex], {
+        fontFamily: 'serif',
+        fontSize: '18px',
+        color: '#ffcc00',
+        fontStyle: 'bold'
+      }).setOrigin(0, 0.5);
+      
+      // Make button interactive
+      buttonBg.setInteractive();
+      buttonBg.on('pointerover', () => {
+        buttonBg.setTexture('button_cycle_hover');
+      });
+      
+      buttonBg.on('pointerout', () => {
+        buttonBg.setTexture('button_cycle_normal');
+      });
+      
+      buttonBg.on('pointerdown', () => {
+        this.cycleDifficulty();
+      });
+      
+      // Add all elements to the container
+      this.cycleButton.add([buttonBg, labelText, this.cycleText]);
+      
+      // Add a pulsing effect to draw attention
+      this.tweens.add({
+        targets: this.cycleText,
+        scale: { from: 1, to: 1.1 },
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+    
+    cycleDifficulty() {
+      // Increment the index and wrap around if needed
+      this.currentCycleIndex = (this.currentCycleIndex + 1) % this.cycleOptions.length;
+      
+      // Update the text
+      this.cycleText.setText(this.cycleOptions[this.currentCycleIndex]);
+      
+      // Flash effect on change
+      this.tweens.add({
+        targets: this.cycleText,
+        alpha: { from: 0.5, to: 1 },
+        duration: 200,
+        ease: 'Sine.easeOut'
+      });
+      
+      // Save the selected difficulty (you could store this in a game config)
+      this.saveDifficulty(this.cycleOptions[this.currentCycleIndex]);
+    }
+    
+    saveDifficulty(difficulty: string) {
+      // You can implement saving to localStorage or a game config object
+      console.log(`Difficulty set to: ${difficulty}`);
+      
+      // Example of saving to localStorage
+      localStorage.setItem('mysticRuins_difficulty', difficulty);
     }
     
     selectButton(index: number) {
@@ -206,12 +311,10 @@ export function createMainMenuScene(Phaser: any) {
       // Keyboard navigation
       this.input.keyboard.on('keydown-UP', () => {
         this.selectButton(this.selectedButtonIndex - 1);
-        this.sound.play('buttonHover', { volume: 0.2 });
       });
       
       this.input.keyboard.on('keydown-DOWN', () => {
         this.selectButton(this.selectedButtonIndex + 1);
-        this.sound.play('buttonHover', { volume: 0.2 });
       });
       
       // Selection with Enter or Space
@@ -231,8 +334,6 @@ export function createMainMenuScene(Phaser: any) {
     confirmSelection() {
       if (this.animating) return;
       
-      this.sound.play('buttonClick', { volume: 0.3 });
-      
       switch (this.selectedButtonIndex) {
         case 0: // Start Game
           this.startGame();
@@ -250,18 +351,14 @@ export function createMainMenuScene(Phaser: any) {
       if (this.animating) return;
       this.animating = true;
       
-      // Fade out menu music
-      this.tweens.add({
-        targets: this.menuMusic,
-        volume: 0,
-        duration: 1000
-      });
+      // Pass the selected difficulty to the battle scene if needed
+      const difficulty = this.cycleOptions[this.currentCycleIndex];
       
       // Fade to black and start the game
       this.cameras.main.fadeOut(1000, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.menuMusic.stop();
-        this.scene.start('MysticRuinsBattleScene');
+        // Pass data to the next scene
+        this.scene.start('MysticRuinsBattleScene', { difficulty });
       });
     }
     
@@ -284,23 +381,66 @@ export function createMainMenuScene(Phaser: any) {
     }
     
     createParticles() {
-      // Add mystical particles floating upward
+      // Make sure the particle texture exists
+      if (!this.textures.exists('particle')) {
+        const particleGraphic = this.make.graphics({ x: 0, y: 0 });
+        particleGraphic.fillStyle(0xffffff);
+        particleGraphic.fillCircle(8, 8, 2);
+        particleGraphic.generateTexture('particle', 16, 16);
+      }
+      
+      // Create a particle emitter manager
       const particles = this.add.particles('particle');
       particles.setDepth(5);
       
-      // Emit particles from bottom of screen
-      particles.createEmitter({
-        frame: 'particle',
-        x: { min: 0, max: 800 },
-        y: 600,
-        lifespan: { min: 8000, max: 12000 },
-        speedY: { min: -20, max: -50 },
-        scale: { start: 0.1, end: 0 },
-        alpha: { start: 0, end: 0.3, ease: 'Sine.easeInOut' },
-        tint: [0x96f2ff, 0xf0d8ff, 0xc4f0ff],
-        frequency: 200,
-        blendMode: 'ADD'
-      });
+      // Create simple particle effects instead of using emitter
+      try {
+        // Create a simple animation as fallback when particles aren't working
+        for (let i = 0; i < 30; i++) {
+          const x = Math.random() * 800;
+          const y = 600 + Math.random() * 50;
+          const particle = this.add.image(x, y, 'particle');
+          particle.setScale(0.1);
+          particle.setAlpha(0.3);
+          particle.setTint(0x96f2ff);
+          
+          this.tweens.add({
+            targets: particle,
+            y: y - 400 - Math.random() * 200,
+            alpha: 0,
+            scale: 0,
+            duration: 8000 + Math.random() * 4000,
+            ease: 'Linear',
+            onComplete: () => particle.destroy()
+          });
+        }
+      } catch (error) {
+        console.warn("Could not create particles:", error);
+        
+        // Add new particles periodically
+        this.time.addEvent({
+          delay: 200,
+          loop: true,
+          callback: () => {
+            const x = Math.random() * 800;
+            const y = 600;
+            const particle = this.add.image(x, y, 'particle');
+            particle.setScale(0.1);
+            particle.setAlpha(0.3);
+            particle.setTint(0x96f2ff);
+            
+            this.tweens.add({
+              targets: particle,
+              y: y - 400 - Math.random() * 200,
+              alpha: 0,
+              scale: 0,
+              duration: 8000 + Math.random() * 4000,
+              ease: 'Linear',
+              onComplete: () => particle.destroy()
+            });
+          }
+        });
+      }
     }
     
     addDecorativeBorder() {

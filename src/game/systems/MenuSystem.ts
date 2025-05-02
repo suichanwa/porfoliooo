@@ -1,4 +1,4 @@
-import { BattleAction, MagicType, ItemType, MENU_CONFIG } from '../constants';
+import { BattleAction, MagicType, ItemType, MENU_CONFIG } from '../constants.ts';
 
 export type MenuType = 'main' | 'magic' | 'item' | 'settings';
 

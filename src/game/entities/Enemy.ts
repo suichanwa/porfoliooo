@@ -1,4 +1,4 @@
-import { BATTLE_CONFIG, EnemyType } from '../constants';
+import { BATTLE_CONFIG, EnemyType } from '../constants.ts';
 
 export class Enemy {
   private hp: number;

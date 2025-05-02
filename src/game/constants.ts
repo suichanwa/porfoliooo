@@ -1,7 +1,19 @@
 export const GAME_WIDTH = 800;
 export const GAME_HEIGHT = 600;
 
-// Game states
+export const BACKGROUNDS = {
+  MENU: [
+    './game/assets/backgrounds/menu-bg-1.jpg',
+    './game/assets/backgrounds/menu-bg-2.jpg',
+    './game/assets/backgrounds/menu-bg-3.jpg',
+  ],
+  GAME: [
+    './game/images/backgrounds/game-bg-1.jpg',
+    './game/images/backgrounds/game-bg-2.jpg',
+    './game/images/backgrounds/game-bg-3.jpg',
+  ]
+};
+
 export enum GameState {
   IDLE = 'idle',
   PLAYER_TURN = 'playerTurn',

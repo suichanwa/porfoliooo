@@ -1,4 +1,4 @@
-import { GameState, MagicType, ItemType, EnemyType } from '../constants';
+import { GameState, MagicType, ItemType, EnemyType } from '../constants.ts';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 
