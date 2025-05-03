@@ -7,13 +7,13 @@ export function createMainMenuScene(Phaser: any) {
   return class MainMenuScene extends Phaser.Scene {
     private gameTitle!: Phaser.GameObjects.Text;
     private menuButtons: Phaser.GameObjects.Image[] = [];
-    private selectedButtonIndex: number = 0;
-    private buttonCount: number = 3;
-    private animating: boolean = false;
+    private selectedButtonIndex = 0;
+    private buttonCount = 3;
+    private animating = false;
     
     // Add properties for cycling button
     private cycleOptions: string[] = ['Normal', 'Hard', 'Insane'];
-    private currentCycleIndex: number = 0;
+    private currentCycleIndex = 0;
     private cycleText!: Phaser.GameObjects.Text;
     private cycleButton!: Phaser.GameObjects.Container;
     

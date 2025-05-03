@@ -13,7 +13,7 @@ export interface MenuItem {
 
 export class MenuSystem {
   private currentMenu: MenuType = 'main';
-  private selectedIndex: number = 0;
+  private selectedIndex = 0;
   private menuItems: Record<MenuType, MenuItem[]> = {
     main: [],
     magic: [],
@@ -178,7 +178,7 @@ export class MenuSystem {
     }
   }
 
-  public disableItem(menu: MenuType, itemId: string, disabled: boolean = true): void {
+  public disableItem(menu: MenuType, itemId: string, disabled = true): void {
     const itemIndex = this.menuItems[menu].findIndex(item => item.id === itemId);
     if (itemIndex !== -1) {
       this.menuItems[menu][itemIndex].disabled = disabled;
