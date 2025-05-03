@@ -3,14 +3,14 @@ export const GAME_HEIGHT = 600;
 
 export const BACKGROUNDS = {
   MENU: [
-    './game/assets/backgrounds/menu-bg-1.jpg',
-    './game/assets/backgrounds/menu-bg-2.jpg',
-    './game/assets/backgrounds/menu-bg-3.jpg',
+    '../assets/images/backgrounds/game-bg-1.jpg',
+    '../assets/images/backgrounds/game-bg-2.jpg',
+    '../assets/images/backgrounds/game-bg-3.jpg',
   ],
   GAME: [
-    './game/images/backgrounds/game-bg-1.jpg',
-    './game/images/backgrounds/game-bg-2.jpg',
-    './game/images/backgrounds/game-bg-3.jpg',
+    '../assets/images/backgrounds/game-bg-1.jpg',
+    '../assets/images/backgrounds/game-bg-2.jpg',
+    '../assets/images/backgrounds/game-bg-3.jpg',
   ]
 };
 

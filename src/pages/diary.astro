@@ -1,45 +1,260 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
+// Import directly
+import SecondMay from "../diaryPages/secondMay.tsx";
+
+// You'll add more entries here as you create them
+const entries = [
+  { id: "second-may", component: "SecondMay", date: new Date("2024-05-02"), title: "Starting My Developer Diary" },
+  // Add more entries as you create them
+  { id: "third-may", component: "SecondMay", date: new Date("2024-05-03"), title: "Learning New Technologies" },
+  { id: "fourth-may", component: "SecondMay", date: new Date("2024-05-04"), title: "Project Progress Update" }
+];
+
+// Sort entries by date, newest first
+const sortedEntries = [...entries].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+// Get the entry ID from the URL or use the first entry
+const urlParams = new URL(Astro.request.url).searchParams;
+const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
 ---
 
 <BaseLayout title="My Diary | My Portfolio">
-  <section class="py-24 min-h-[60vh] max-w-3xl mx-auto flex flex-col items-center justify-center">
-    <div data-scroll class="opacity-0 text-center">
-      <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
-        <TypeWriter 
-          client:load 
-          text="My Diary" 
-          speed={100} 
-          delay={300}
-        />
-      </h1>
-      <div class="w-24 h-1 bg-primary-accent mx-auto mb-12"></div>
+  <section class="relative py-12 px-4">
+    <!-- Side panel navigation (moved to left side) -->
+    <div class="fixed top-24 left-0 z-20 transition-all duration-300" id="sidebar">
+      <div class="bg-base-200 rounded-r-lg shadow-md overflow-hidden flex">
+        <!-- Collapsed sidebar for mobile (always visible) -->
+        <div class="w-10 md:hidden flex flex-col items-center py-4 bg-secondary-bg">
+          <button id="expand-sidebar" class="mb-2 text-primary-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div class="writing-mode-vertical text-xs text-primary-accent font-medium">Diary Entries</div>
+          <div class="mt-4 flex flex-col space-y-3">
+            {sortedEntries.map((entry, index) => (
+              <a 
+                href={`?entry=${entry.id}#${entry.id}`}
+                class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  currentEntryId === entry.id
+                    ? "bg-primary-accent text-base-100"
+                    : "bg-base-300 hover:bg-base-100"
+                }`}
+              >
+                {index + 1}
+              </a>
+            ))}
+          </div>
+        </div>
+        
+        <!-- Full sidebar (default on desktop, expandable on mobile) -->
+        <div class="w-56 hidden md:block" id="expanded-sidebar">
+          <div class="bg-secondary-bg py-3 px-4 border-b border-base-300 flex justify-between items-center">
+            <h3 class="font-medium text-primary-accent">Diary Entries</h3>
+            <button id="collapse-sidebar" class="md:hidden text-primary-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="max-h-[60vh] overflow-y-auto p-2">
+            <ul class="space-y-1">
+              {sortedEntries.map(entry => (
+                <li>
+                  <a 
+                    href={`?entry=${entry.id}#${entry.id}`} 
+                    class={`block px-3 py-2 rounded-md text-sm transition ${
+                      currentEntryId === entry.id
+                        ? "bg-primary-accent/20 text-primary-accent"
+                        : "hover:bg-base-300"
+                    }`}
+                  >
+                    <div class="font-medium mb-1">{entry.title}</div>
+                    <div class="text-xs opacity-70">{entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="max-w-3xl mx-auto md:ml-64">
+      <div data-scroll class="opacity-0 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
+          <TypeWriter 
+            client:load 
+            text="My Developer Diary" 
+            speed={100} 
+            delay={300}
+          />
+        </h1>
+        <div class="w-24 h-1 bg-primary-accent mx-auto mb-8"></div>
+        
+        <p class="text-base-content/70 mb-12">
+          Personal thoughts, learnings, and reflections on my journey as a developer.
+        </p>
+      </div>
       
-      <div class="mt-12 p-8 bg-base-200 rounded-xl shadow-lg">
-        <TypeWriter 
-          client:load 
-          text="still in development fuck off" 
-          speed={70}
-          delay={1500}
-          className="text-xl md:text-2xl font-medium text-secondary-accent"
-        />
+      <div data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8">
+        {sortedEntries.map((entry, index) => (
+          <div 
+            id={entry.id} 
+            data-entry-index={index}
+            data-entry-id={entry.id}
+            class={`diary-entry-content ${currentEntryId === entry.id ? "" : "hidden"}`}
+          >
+            {/* Use a single component directly, since all entries are using SecondMay for now */}
+            <SecondMay client:load />
+          </div>
+        ))}
+
+        {sortedEntries.length === 0 && (
+          <div class="text-center p-12 bg-base-200 rounded-xl">
+            <p class="text-xl text-base-content/70">No diary entries yet. Check back soon!</p>
+          </div>
+        )}
       </div>
     </div>
   </section>
 
+  <!-- Mobile entry navigation (bottom navigation) -->
+  <div class="fixed md:hidden bottom-6 left-0 right-0 mx-auto w-64 bg-base-200 rounded-full shadow-lg p-2 z-20">
+    <div class="flex items-center justify-between">
+      <button id="prev-entry" class="btn btn-circle btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+      </button>
+      <div class="text-xs">
+        <span id="current-entry-index">1</span>/<span id="total-entries">{sortedEntries.length}</span>
+      </div>
+      <button id="next-entry" class="btn btn-circle btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <script>
-    // Simple animation for the content
+    // Animation for the content
     document.addEventListener('DOMContentLoaded', () => {
+      // Sidebar mobile toggle functionality
+      const expandButton = document.getElementById('expand-sidebar');
+      const collapseButton = document.getElementById('collapse-sidebar');
+      const expandedSidebar = document.getElementById('expanded-sidebar');
+      
+      expandButton?.addEventListener('click', () => {
+        expandedSidebar?.classList.remove('hidden');
+      });
+      
+      collapseButton?.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+          expandedSidebar?.classList.add('hidden');
+        }
+      });
+      
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+          expandedSidebar?.classList.remove('hidden');
+        }
+      });
+
       const scrollElements = document.querySelectorAll('[data-scroll]');
       
       setTimeout(() => {
         scrollElements.forEach(el => {
           el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-          el.style.opacity = 1;
+          el.style.opacity = '1';
           el.style.transform = 'translateY(0)';
         });
       }, 100);
+      
+      // Add scroll animations for diary entries
+      const entries = document.querySelectorAll('[data-entry-index]');
+      
+      const observerOptions = {
+        root: null,
+        threshold: 0.1,
+        rootMargin: '0px'
+      };
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, observerOptions);
+      
+      entries.forEach(entry => {
+        observer.observe(entry);
+      });
+
+      // Mobile navigation
+      const prevButton = document.getElementById('prev-entry');
+      const nextButton = document.getElementById('next-entry');
+      const totalEntriesEl = document.getElementById('total-entries');
+      const currentEntryIndexEl = document.getElementById('current-entry-index');
+      
+      const diaryEntries = Array.from(document.querySelectorAll('.diary-entry-content'));
+      let currentIndex = diaryEntries.findIndex(entry => 
+        !entry.classList.contains('hidden')
+      );
+      
+      if (currentIndex === -1) currentIndex = 0;
+      
+      // Update current entry index display
+      if (currentEntryIndexEl) {
+        currentEntryIndexEl.textContent = (currentIndex + 1).toString();
+      }
+      
+      // Set up mobile navigation
+      if (prevButton && nextButton) {
+        prevButton.addEventListener('click', () => {
+          navigateEntries('prev');
+        });
+        
+        nextButton.addEventListener('click', () => {
+          navigateEntries('next');
+        });
+      }
+      
+      function navigateEntries(direction) {
+        // Hide current entry
+        diaryEntries[currentIndex].classList.add('hidden');
+        
+        // Calculate new index
+        if (direction === 'next') {
+          currentIndex = (currentIndex + 1) % diaryEntries.length;
+        } else {
+          currentIndex = (currentIndex - 1 + diaryEntries.length) % diaryEntries.length;
+        }
+        
+        // Show new entry
+        diaryEntries[currentIndex].classList.remove('hidden');
+        
+        // Update URL without reloading the page
+        const entryId = diaryEntries[currentIndex].dataset.entryId;
+        history.pushState({}, '', `?entry=${entryId}#${entryId}`);
+        
+        // Update current entry index display
+        if (currentEntryIndexEl) {
+          currentEntryIndexEl.textContent = (currentIndex + 1).toString();
+        }
+        
+        // Scroll to top of entry
+        window.scrollTo({
+          top: diaryEntries[currentIndex].offsetTop - 100,
+          behavior: 'smooth'
+        });
+      }
     });
   </script>
 </BaseLayout>
@@ -48,5 +263,28 @@ import TypeWriter from "../components/TypeWriter.tsx";
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);
+  }
+  
+  [data-entry-index] {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  
+  [data-entry-index].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .diary-entry-content {
+    transition: opacity 0.5s ease;
+  }
+  
+  /* Vertical text for mobile sidebar */
+  .writing-mode-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    padding: 1rem 0;
   }
 </style>

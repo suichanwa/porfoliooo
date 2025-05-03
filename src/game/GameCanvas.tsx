@@ -11,6 +11,10 @@ import { GameIcon } from "./utils/icons";
 import { TemplateRuins } from "../assets/images/backgrounds/TemplateRuins";
 import { HealthBar } from "./assets/ui/HealthBar";
 import { HealthBarFill } from "./assets/ui/HealthBarFill";
+import { ManaBar } from "./assets/ui/ManaBar";
+import { ManaBarFill } from "./assets/ui/ManaBarFill";
+import { Player as PlayerComponent } from "./assets/characters/Player";
+import { RuneConstruct } from "./assets/characters/RuneConstruct";
 import { Button } from "./assets/ui/Button"; 
 import MenuSystemUI from "./components/MenuSystem";
 import SettingsButton from "./components/SettingsButton";
@@ -133,6 +137,10 @@ export default function GameCanvas() {
           private currentState: GameState = GameState.PLAYER_TURN;
           private messageBox: any;
           
+          // Store sprite references to control animations
+          private playerSprite!: Phaser.GameObjects.Image;
+          private enemySprite!: Phaser.GameObjects.Image;
+          
           // Health bar properties
           private playerHealthBar!: Phaser.GameObjects.Image;
           private playerHealthFill!: Phaser.GameObjects.Image;
@@ -189,23 +197,67 @@ export default function GameCanvas() {
             
             // Generate mana bar textures
             await generateTextureFromReactComponent(
-              HealthBar,
+              ManaBar,
               { width: 160, height: 16, isPlayerBar: true },
               'playerManaBar',
               this
             );
             
             await generateTextureFromReactComponent(
-              HealthBarFill,
-              { 
-                width: 160, 
-                height: 16, 
-                fillPercentage: 1, 
-                isPlayerBar: true,
-                mainColor: '#4dabf7',
-                secondaryColor: '#1864ab'
-              },
+              ManaBarFill,
+              { width: 160, height: 16, fillPercentage: 1, isPlayerBar: true },
               'playerManaFill',
+              this
+            );
+            
+            // Generate Player character textures with all variants
+            await generateTextureFromReactComponent(
+              PlayerComponent,
+              { width: 128, height: 128, variant: 'default' },
+              'player_default',
+              this
+            );
+            
+            await generateTextureFromReactComponent(
+              PlayerComponent,
+              { width: 128, height: 128, variant: 'attack' },
+              'player_attack',
+              this
+            );
+            
+            await generateTextureFromReactComponent(
+              PlayerComponent,
+              { width: 128, height: 128, variant: 'hit' },
+              'player_hit',
+              this
+            );
+            
+            await generateTextureFromReactComponent(
+              PlayerComponent,
+              { width: 128, height: 128, variant: 'cast' },
+              'player_cast',
+              this
+            );
+            
+            // Generate RuneConstruct enemy textures with all variants
+            await generateTextureFromReactComponent(
+              RuneConstruct,
+              { width: 128, height: 128, variant: 'default' },
+              'runeConstruct_default',
+              this
+            );
+            
+            await generateTextureFromReactComponent(
+              RuneConstruct,
+              { width: 128, height: 128, variant: 'attack' },
+              'runeConstruct_attack',
+              this
+            );
+            
+            await generateTextureFromReactComponent(
+              RuneConstruct,
+              { width: 128, height: 128, variant: 'hit' },
+              'runeConstruct_hit',
               this
             );
             
@@ -235,23 +287,6 @@ export default function GameCanvas() {
             // Load other game assets as normal or replace with React components later
             this.load.image('menuBg', 'https://i.imgur.com/VnxLq8Y.png');
             
-            // Character/enemy sprites
-            this.load.spritesheet('warrior', 'https://i.imgur.com/NmtfPp2.png', { 
-              frameWidth: 64, frameHeight: 64 
-            });
-            
-            // Enemy sprites - using the same placeholder image for now
-            // In a real implementation, you'd want different sprites for each enemy type
-            this.load.spritesheet('guardian', 'https://i.imgur.com/6YLlJ0k.png', {
-              frameWidth: 32, frameHeight: 32 
-            });
-            this.load.spritesheet('wisp', 'https://i.imgur.com/6YLlJ0k.png', {
-              frameWidth: 32, frameHeight: 32 
-            });
-            this.load.spritesheet('construct', 'https://i.imgur.com/6YLlJ0k.png', {
-              frameWidth: 32, frameHeight: 32 
-            });
-            
             // UI elements
             this.load.image('frame', 'https://i.imgur.com/g3pwvAs.png');
             this.load.image('cursor', 'https://i.imgur.com/dHhW3AN.png');
@@ -265,7 +300,27 @@ export default function GameCanvas() {
             
             // Create player and battle system with themed enemy
             this.player = new Player(this, 200, 320);
-            this.battleSystem = new BattleSystem(this, this.player, 'STONE_GUARDIAN');
+            this.battleSystem = new BattleSystem(this, this.player, 'RUNE_CONSTRUCT');
+            
+            // Add player character sprite using our custom texture - store reference
+            this.playerSprite = this.add.image(200, 320, 'player_default');
+            this.playerSprite.setScale(1.5);
+            this.playerSprite.setDepth(5); // Set higher depth to ensure visibility
+            this.playerSprite.setVisible(true); // Explicitly set visible
+            this.playerSprite.setAlpha(1); // Ensure full opacity
+            
+            // Hide the default sprite from the Player class
+            const defaultSprite = this.player.getSprite();
+            if (defaultSprite) {
+              defaultSprite.setVisible(false);
+            }
+            
+            // Add enemy sprite using our custom texture - store reference
+            this.enemySprite = this.add.image(600, 200, 'runeConstruct_default');
+            this.enemySprite.setScale(1.5);
+            this.enemySprite.setDepth(5); // Set higher depth to ensure visibility
+            this.enemySprite.setVisible(true); // Explicitly set visible
+            this.enemySprite.setAlpha(1); // Ensure full opacity
             
             // Setup UI frames
             const playerFrame = this.add.image(120, 430, 'frame').setScale(1.5);
@@ -364,8 +419,10 @@ export default function GameCanvas() {
             this.battleSystem.addEventListener(this.handleBattleEvent.bind(this));
             this.updateGameState();
             
-            // Show initial message
-            this.battleSystem.resetBattle('STONE_GUARDIAN');
+            // Show initial message after a short delay to ensure everything is rendered
+            this.time.delayedCall(100, () => {
+              this.battleSystem.resetBattle('RUNE_CONSTRUCT');
+            });
           }
           
           updateHealthBars() {
@@ -391,6 +448,83 @@ export default function GameCanvas() {
             
             if (enemyHealthPercent <= 0.3 && enemyStats.hp > 0) {
               this.generateLowHealthFill('enemy', enemyHealthPercent);
+            }
+          }
+          
+          // Update battle animations based on events
+          updateBattleAnimations(event: BattleEvent) {
+            if (event.type === 'attack') {
+              // Player attacks
+              this.playerSprite.setTexture('player_attack');
+              
+              // After a delay, set back to default
+              this.time.delayedCall(500, () => {
+                if (this.playerSprite) {
+                  this.playerSprite.setTexture('player_default');
+                }
+              });
+              
+              // Enemy gets hit after a short delay
+              this.time.delayedCall(300, () => {
+                if (this.enemySprite) {
+                  this.enemySprite.setTexture('runeConstruct_hit');
+                  
+                  // And then return to default
+                  this.time.delayedCall(300, () => {
+                    if (this.enemySprite) {
+                      this.enemySprite.setTexture('runeConstruct_default');
+                    }
+                  });
+                }
+              });
+            } else if (event.type === 'magic') {
+              // Player casts magic
+              this.playerSprite.setTexture('player_cast');
+              
+              // After a delay, set back to default
+              this.time.delayedCall(800, () => {
+                if (this.playerSprite) {
+                  this.playerSprite.setTexture('player_default');
+                }
+              });
+              
+              // Enemy gets hit after a short delay
+              this.time.delayedCall(500, () => {
+                if (this.enemySprite) {
+                  this.enemySprite.setTexture('runeConstruct_hit');
+                  
+                  // And then return to default
+                  this.time.delayedCall(300, () => {
+                    if (this.enemySprite) {
+                      this.enemySprite.setTexture('runeConstruct_default');
+                    }
+                  });
+                }
+              });
+            } else if (event.type === 'enemyAttack') {
+              // Enemy attacks
+              this.enemySprite.setTexture('runeConstruct_attack');
+              
+              // After a delay, enemy returns to default
+              this.time.delayedCall(500, () => {
+                if (this.enemySprite) {
+                  this.enemySprite.setTexture('runeConstruct_default');
+                }
+              });
+              
+              // Player gets hit after a short delay
+              this.time.delayedCall(300, () => {
+                if (this.playerSprite) {
+                  this.playerSprite.setTexture('player_hit');
+                  
+                  // And then return to default
+                  this.time.delayedCall(300, () => {
+                    if (this.playerSprite) {
+                      this.playerSprite.setTexture('player_default');
+                    }
+                  });
+                }
+              });
             }
           }
           
@@ -577,6 +711,9 @@ export default function GameCanvas() {
             
             // Update current state
             this.currentState = this.battleSystem.getState();
+            
+            // Update battle animations
+            this.updateBattleAnimations(event);
             
             // Update health bars when relevant events happen
             if (['attack', 'magic', 'item', 'enemyAttack'].includes(event.type)) {

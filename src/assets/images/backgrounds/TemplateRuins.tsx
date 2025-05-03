@@ -1,22 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { BACKGROUNDS } from '../../../game/constants.tss';
-
-const getCurrentBackgroundIndex = (isMenu: boolean): number => {
-  const key = isMenu ? 'menuBackgroundIndex' : 'gameBackgroundIndex';
-  const saved = localStorage.getItem(key);
-  return saved ? parseInt(saved) : 0;
-};
-
-const cycleBackgroundIndex = (isMenu: boolean): number => {
-  const key = isMenu ? 'menuBackgroundIndex' : 'gameBackgroundIndex';
-  const backgrounds = isMenu ? BACKGROUNDS.MENU : BACKGROUNDS.GAME;
-  
-  const currentIndex = getCurrentBackgroundIndex(isMenu);
-  const newIndex = (currentIndex + 1) % backgrounds.length;
-  
-  localStorage.setItem(key, newIndex.toString());
-  return newIndex;
-};
+// Direct import of the background image from the same folder
+import backgroundImage from './game-bg-1.jpg';
 
 interface TemplateRuinsProps {
   width?: number;
@@ -41,11 +25,6 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      // Select the appropriate backgrounds array and get the current index
-      const backgrounds = isMenuBackground ? BACKGROUNDS.MENU : BACKGROUNDS.GAME;
-      const backgroundIndex = cycleBackgroundIndex(isMenuBackground);
-      const backgroundPath = backgrounds[backgroundIndex];
-      
       // Load and draw the background image
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -66,8 +45,9 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
       };
       
       img.onerror = () => {
+        console.error('Error loading background image:', backgroundImage);
         // Fallback to drawing a generated background
-        console.warn(`Failed to load background image: ${backgroundPath}, using generated fallback`);
+        console.warn(`Failed to load background image, using generated fallback`);
         if (isMenuBackground) {
           drawMenuBackgroundFallback(ctx, width, height);
         } else {
@@ -81,8 +61,14 @@ export const TemplateRuins: React.FC<TemplateRuinsProps> = ({
         }
       };
       
-      // Set the source to the selected background image
-      img.src = backgroundPath;
+      // In Vite, imported images are objects with a src property
+      if (typeof backgroundImage === 'object' && backgroundImage !== null && 'src' in backgroundImage) {
+        img.src = (backgroundImage as any).src;
+        console.log('Using image src:', (backgroundImage as any).src);
+      } else {
+        img.src = backgroundImage as string;
+        console.log('Using direct image path:', backgroundImage);
+      }
     }
   }, [width, height, isMenuBackground, onRender]);
   
