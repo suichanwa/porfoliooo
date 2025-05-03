@@ -219,8 +219,8 @@ export const Player: React.FC<PlayerProps> = ({
     y: number,
     width: number,
     height: number,
-    isDamaged: boolean = false,
-    isMagical: boolean = false
+    isDamaged = false,
+    isMagical = false
   ) => {
     // Draw chestplate
     const armorColor = isDamaged ? '#7a7a7a' : isMagical ? '#a0a0d0' : '#a0a0a0';
@@ -317,9 +317,9 @@ export const Player: React.FC<PlayerProps> = ({
     y: number,
     width: number,
     height: number,
-    isAttacking: boolean = false,
-    isHit: boolean = false,
-    isCasting: boolean = false
+    isAttacking = false,
+    isHit = false,
+    isCasting = false
   ) => {
     // Draw head shape
     ctx.fillStyle = '#e0c0a0'; // Skin tone
@@ -425,8 +425,8 @@ export const Player: React.FC<PlayerProps> = ({
     y: number,
     width: number,
     height: number,
-    isAttacking: boolean = false,
-    isHit: boolean = false
+    isAttacking = false,
+    isHit = false
   ) => {
     // Arm color
     ctx.fillStyle = '#e0c0a0'; // Skin tone
