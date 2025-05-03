@@ -114,7 +114,7 @@ export const RuneConstruct: React.FC<RuneConstructProps> = ({
     y: number, 
     width: number, 
     height: number,
-    isHit: boolean = false
+    isHit = false
   ) => {
     // Body is a large, irregular stone shape
     ctx.fillStyle = isHit ? '#555555' : '#666666';
@@ -241,8 +241,8 @@ export const RuneConstruct: React.FC<RuneConstructProps> = ({
     y: number,
     width: number,
     height: number,
-    isAttacking: boolean = false,
-    isHit: boolean = false
+    isAttacking = false,
+    isHit = false
   ) => {
     const stoneColor = isHit ? '#555555' : '#666666';
     ctx.fillStyle = stoneColor;
@@ -311,8 +311,8 @@ export const RuneConstruct: React.FC<RuneConstructProps> = ({
     y: number,
     width: number,
     height: number,
-    isAttacking: boolean = false,
-    isHit: boolean = false
+    isAttacking = false,
+    isHit = false
   ) => {
     // Head is a smaller stone
     ctx.fillStyle = isHit ? '#555555' : '#666666';
