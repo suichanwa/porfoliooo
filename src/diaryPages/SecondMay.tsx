@@ -1,4 +1,3 @@
-import React from 'react';
 import DiaryEntry from '../components/DiaryEntry';
 
 export default function SecondMay() {
