@@ -152,7 +152,7 @@ export function createMainMenuScene(Phaser: any) {
       this.addDecorativeBorder();
       
       // Add version number
-      this.add.text(10, 580, 'v0.1.0', {
+      this.add.text(10, 580, 'v0.1.1', {
         fontFamily: 'monospace',
         fontSize: '12px',
         color: '#ffffff',
@@ -160,7 +160,7 @@ export function createMainMenuScene(Phaser: any) {
       }).setAlpha(0.6);
       
       // Add copyright
-      this.add.text(790, 580, '© 2023', {
+      this.add.text(790, 580, '© 2024', {
         fontFamily: 'monospace',
         fontSize: '12px',
         color: '#ffffff',
@@ -354,11 +354,40 @@ export function createMainMenuScene(Phaser: any) {
       // Pass the selected difficulty to the battle scene if needed
       const difficulty = this.cycleOptions[this.currentCycleIndex];
       
+      console.log('Starting game transition with difficulty:', difficulty);
+      
       // Fade to black and start the game
       this.cameras.main.fadeOut(1000, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        // Pass data to the next scene
-        this.scene.start('MysticRuinsBattleScene', { difficulty });
+        try {
+          console.log('Camera fade complete, checking if BattleScene exists');
+          
+          // Check if the BattleScene exists in the scene manager
+          if (this.scene.get('BattleScene')) {
+            console.log('Using scene key: BattleScene');
+            this.scene.start('BattleScene', { difficulty });
+          } else if (this.scene.get('MysticRuinsBattleScene')) {
+            console.log('Using scene key: MysticRuinsBattleScene');
+            this.scene.start('MysticRuinsBattleScene', { difficulty });
+          } else {
+            console.error('Error: Neither BattleScene nor MysticRuinsBattleScene was found!');
+            
+            // Show an error message and fade back in if no valid scene is found
+            this.gameTitle.setText('Error: Battle scene not found\nTry reloading the page');
+            this.cameras.main.fadeIn(1000, 0, 0, 0);
+            this.animating = false;
+            
+            // List all available scenes for debugging
+            const scenes = this.scene.manager.scenes.map(s => s.scene.key);
+            console.log('Available scenes:', scenes);
+          }
+        } catch (error) {
+          console.error('Error during scene transition:', error);
+          
+          // Return to main menu functionality in case of error
+          this.cameras.main.fadeIn(1000, 0, 0, 0);
+          this.animating = false;
+        }
       });
     }
     

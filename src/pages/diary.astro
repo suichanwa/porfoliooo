@@ -1,23 +1,44 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
-// Import directly
-import SecondMay from "../diaryPages/secondMay.tsx";
+import { Markdown } from 'astro-remote';
 
-// You'll add more entries here as you create them
-const entries = [
-  { id: "second-may", component: "SecondMay", date: new Date("2024-05-02"), title: "Starting My Developer Diary" },
-  // Add more entries as you create them
-  { id: "third-may", component: "SecondMay", date: new Date("2024-05-03"), title: "Learning New Technologies" },
-  { id: "fourth-may", component: "SecondMay", date: new Date("2024-05-04"), title: "Project Progress Update" }
-];
+// Create a function to import markdown files dynamically
+// This is an async function that will read all markdown files from the directory
+async function importDiaryEntries() {
+  // Use Astro's import.meta.glob to get all markdown files
+  const markdownFiles = import.meta.glob('../content/diary/*.md');
+  const entries = [];
 
-// Sort entries by date, newest first
-const sortedEntries = [...entries].sort((a, b) => b.date.getTime() - a.date.getTime());
+  for (const path in markdownFiles) {
+    const module = await markdownFiles[path]();
+    const filename = path.split('/').pop().replace('.md', '');
+    
+    // Extract metadata and content from the markdown file
+    const { frontmatter, Content } = module;
+
+    // Add entry with metadata from frontmatter
+    entries.push({
+      id: filename.toLowerCase().replace(/\s+/g, '-'), // Generate ID from filename
+      title: frontmatter.title,
+      date: new Date(frontmatter.date),
+      content: Content, // This is the rendered markdown content component
+      mood: frontmatter.mood || "neutral",
+      coverImage: frontmatter.coverImage,
+      tags: frontmatter.tags || []
+    });
+  }
+
+  // Sort entries by date (newest first)
+  return entries.sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
+// Get all diary entries
+const diaryEntries = await importDiaryEntries();
 
 // Get the entry ID from the URL or use the first entry
 const urlParams = new URL(Astro.request.url).searchParams;
-const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
+const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
 ---
 
 <BaseLayout title="My Diary | My Portfolio">
@@ -34,7 +55,7 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
           </button>
           <div class="writing-mode-vertical text-xs text-primary-accent font-medium">Diary Entries</div>
           <div class="mt-4 flex flex-col space-y-3">
-            {sortedEntries.map((entry, index) => (
+            {diaryEntries.map((entry, index) => (
               <a 
                 href={`?entry=${entry.id}#${entry.id}`}
                 class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -50,7 +71,7 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
         </div>
         
         <!-- Full sidebar (default on desktop, expandable on mobile) -->
-        <div class="w-56 hidden md:block" id="expanded-sidebar">
+        <div class="w-64 hidden md:block" id="expanded-sidebar">
           <div class="bg-secondary-bg py-3 px-4 border-b border-base-300 flex justify-between items-center">
             <h3 class="font-medium text-primary-accent">Diary Entries</h3>
             <button id="collapse-sidebar" class="md:hidden text-primary-accent">
@@ -60,9 +81,9 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
             </button>
           </div>
           
-          <div class="max-h-[60vh] overflow-y-auto p-2">
+          <div class="max-h-[70vh] overflow-y-auto p-2">
             <ul class="space-y-1">
-              {sortedEntries.map(entry => (
+              {diaryEntries.map(entry => (
                 <li>
                   <a 
                     href={`?entry=${entry.id}#${entry.id}`} 
@@ -74,6 +95,14 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
                   >
                     <div class="font-medium mb-1">{entry.title}</div>
                     <div class="text-xs opacity-70">{entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                    {entry.tags && entry.tags.length > 0 && (
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        {entry.tags.slice(0, 2).map(tag => (
+                          <span class="text-xs bg-base-300 px-1.5 py-0.5 rounded">{tag}</span>
+                        ))}
+                        {entry.tags.length > 2 && <span class="text-xs">+{entry.tags.length - 2}</span>}
+                      </div>
+                    )}
                   </a>
                 </li>
               ))}
@@ -101,19 +130,70 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
       </div>
       
       <div data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8">
-        {sortedEntries.map((entry, index) => (
-          <div 
-            id={entry.id} 
-            data-entry-index={index}
-            data-entry-id={entry.id}
-            class={`diary-entry-content ${currentEntryId === entry.id ? "" : "hidden"}`}
-          >
-            {/* Use a single component directly, since all entries are using SecondMay for now */}
-            <SecondMay client:load />
-          </div>
-        ))}
+        {diaryEntries.map((entry, index) => {
+          const currentEntry = diaryEntries.find(e => e.id === currentEntryId) || diaryEntries[0];
+          return (
+            <div 
+              id={entry.id} 
+              data-entry-index={index}
+              data-entry-id={entry.id}
+              class={`diary-entry-content ${currentEntryId === entry.id ? "" : "hidden"}`}
+            >
+              <article class="diary-entry bg-base-200 rounded-xl shadow-lg overflow-hidden mb-8">
+                {entry.coverImage && (
+                  <div class="w-full h-64 relative">
+                    <img 
+                      src={entry.coverImage} 
+                      alt={`Cover for ${entry.title}`} 
+                      class="w-full h-full object-cover" 
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent"></div>
+                  </div>
+                )}
+                
+                <div class="p-8">
+                  <div class="flex justify-between items-center mb-4">
+                    <time class="text-sm text-base-content/70">
+                      {entry.date.toLocaleDateString("en-US", { 
+                        weekday: "long", 
+                        month: "long", 
+                        day: "numeric", 
+                        year: "numeric" 
+                      })}
+                    </time>
+                    {entry.mood && (
+                      <div class="text-2xl" title={`Mood: ${entry.mood}`}>
+                        {entry.mood === "happy" ? "😊" :
+                         entry.mood === "creative" ? "💡" :
+                         entry.mood === "reflective" ? "🤔" :
+                         entry.mood === "excited" ? "🤩" :
+                         "😐"}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h2 class="text-2xl md:text-3xl font-bold mb-6 text-primary-accent">{entry.title}</h2>
+                  
+                  <div class="diary-content prose prose-lg max-w-none">
+                    <entry.content />
+                  </div>
+                  
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div class="flex flex-wrap gap-2 mt-6 pt-4 border-t border-base-300">
+                      {entry.tags.map(tag => (
+                        <span class="px-3 py-1 bg-base-300 text-sm rounded-full text-secondary-accent">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </article>
+            </div>
+          )
+        })}
 
-        {sortedEntries.length === 0 && (
+        {diaryEntries.length === 0 && (
           <div class="text-center p-12 bg-base-200 rounded-xl">
             <p class="text-xl text-base-content/70">No diary entries yet. Check back soon!</p>
           </div>
@@ -121,25 +201,6 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
       </div>
     </div>
   </section>
-
-  <!-- Mobile entry navigation (bottom navigation) -->
-  <div class="fixed md:hidden bottom-6 left-0 right-0 mx-auto w-64 bg-base-200 rounded-full shadow-lg p-2 z-20">
-    <div class="flex items-center justify-between">
-      <button id="prev-entry" class="btn btn-circle btn-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-        </svg>
-      </button>
-      <div class="text-xs">
-        <span id="current-entry-index">1</span>/<span id="total-entries">{sortedEntries.length}</span>
-      </div>
-      <button id="next-entry" class="btn btn-circle btn-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-        </svg>
-      </button>
-    </div>
-  </div>
 
   <script>
     // Animation for the content
@@ -196,70 +257,12 @@ const currentEntryId = urlParams.get('entry') || sortedEntries[0]?.id || "";
       entries.forEach(entry => {
         observer.observe(entry);
       });
-
-      // Mobile navigation
-      const prevButton = document.getElementById('prev-entry');
-      const nextButton = document.getElementById('next-entry');
-      const totalEntriesEl = document.getElementById('total-entries');
-      const currentEntryIndexEl = document.getElementById('current-entry-index');
-      
-      const diaryEntries = Array.from(document.querySelectorAll('.diary-entry-content'));
-      let currentIndex = diaryEntries.findIndex(entry => 
-        !entry.classList.contains('hidden')
-      );
-      
-      if (currentIndex === -1) currentIndex = 0;
-      
-      // Update current entry index display
-      if (currentEntryIndexEl) {
-        currentEntryIndexEl.textContent = (currentIndex + 1).toString();
-      }
-      
-      // Set up mobile navigation
-      if (prevButton && nextButton) {
-        prevButton.addEventListener('click', () => {
-          navigateEntries('prev');
-        });
-        
-        nextButton.addEventListener('click', () => {
-          navigateEntries('next');
-        });
-      }
-      
-      function navigateEntries(direction) {
-        // Hide current entry
-        diaryEntries[currentIndex].classList.add('hidden');
-        
-        // Calculate new index
-        if (direction === 'next') {
-          currentIndex = (currentIndex + 1) % diaryEntries.length;
-        } else {
-          currentIndex = (currentIndex - 1 + diaryEntries.length) % diaryEntries.length;
-        }
-        
-        // Show new entry
-        diaryEntries[currentIndex].classList.remove('hidden');
-        
-        // Update URL without reloading the page
-        const entryId = diaryEntries[currentIndex].dataset.entryId;
-        history.pushState({}, '', `?entry=${entryId}#${entryId}`);
-        
-        // Update current entry index display
-        if (currentEntryIndexEl) {
-          currentEntryIndexEl.textContent = (currentIndex + 1).toString();
-        }
-        
-        // Scroll to top of entry
-        window.scrollTo({
-          top: diaryEntries[currentIndex].offsetTop - 100,
-          behavior: 'smooth'
-        });
-      }
     });
   </script>
 </BaseLayout>
 
 <style>
+  /* Make sure there are no triple dashes (---) here, they're causing the error */
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);

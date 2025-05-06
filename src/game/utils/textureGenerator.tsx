@@ -1,6 +1,9 @@
-import ReactDOM from "react-dom/client";
-import React from "react";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
+/**
+ * Generates a texture from a React component and adds it to the Phaser texture manager
+ */
 export const generateTextureFromReactComponent = (
   Component: React.ComponentType<any>,
   props: any,
