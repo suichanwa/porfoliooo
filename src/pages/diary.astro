@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
-import { Markdown } from 'astro-remote';
 
 // Create a function to import markdown files dynamically
 // This is an async function that will read all markdown files from the directory
@@ -20,8 +19,8 @@ async function importDiaryEntries() {
     // Add entry with metadata from frontmatter
     entries.push({
       id: filename.toLowerCase().replace(/\s+/g, '-'), // Generate ID from filename
-      title: frontmatter.title,
-      date: new Date(frontmatter.date),
+      title: frontmatter.title || "Untitled Entry",
+      date: new Date(frontmatter.date || Date.now()),
       content: Content, // This is the rendered markdown content component
       mood: frontmatter.mood || "neutral",
       coverImage: frontmatter.coverImage,
@@ -48,21 +47,24 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
       <div class="bg-base-200 rounded-r-lg shadow-md overflow-hidden flex">
         <!-- Collapsed sidebar for mobile (always visible) -->
         <div class="w-10 md:hidden flex flex-col items-center py-4 bg-secondary-bg">
-          <button id="expand-sidebar" class="mb-2 text-primary-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button id="expand-sidebar" class="mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--primary-accent)">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          <div class="writing-mode-vertical text-xs text-primary-accent font-medium">Diary Entries</div>
+          <div class="writing-mode-vertical text-xs font-medium" style="color: var(--primary-accent)">Diary Entries</div>
           <div class="mt-4 flex flex-col space-y-3">
             {diaryEntries.map((entry, index) => (
               <a 
                 href={`?entry=${entry.id}#${entry.id}`}
                 class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                   currentEntryId === entry.id
-                    ? "bg-primary-accent text-base-100"
+                    ? "bg-base-300 hover:bg-base-100"
                     : "bg-base-300 hover:bg-base-100"
                 }`}
+                style={currentEntryId === entry.id ? 
+                  `background-color: var(--primary-accent); color: var(--base-100);` : 
+                  ``}
               >
                 {index + 1}
               </a>
@@ -73,9 +75,9 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
         <!-- Full sidebar (default on desktop, expandable on mobile) -->
         <div class="w-64 hidden md:block" id="expanded-sidebar">
           <div class="bg-secondary-bg py-3 px-4 border-b border-base-300 flex justify-between items-center">
-            <h3 class="font-medium text-primary-accent">Diary Entries</h3>
-            <button id="collapse-sidebar" class="md:hidden text-primary-accent">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <h3 class="font-medium" style="color: var(--primary-accent)">Diary Entries</h3>
+            <button id="collapse-sidebar" class="md:hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--primary-accent)">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -89,9 +91,12 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
                     href={`?entry=${entry.id}#${entry.id}`} 
                     class={`block px-3 py-2 rounded-md text-sm transition ${
                       currentEntryId === entry.id
-                        ? "bg-primary-accent/20 text-primary-accent"
+                        ? "hover:bg-base-300"
                         : "hover:bg-base-300"
                     }`}
+                    style={currentEntryId === entry.id ? 
+                      `background-color: rgba(var(--primary-accent-rgb), 0.2); color: var(--primary-accent);` : 
+                      ``}
                   >
                     <div class="font-medium mb-1">{entry.title}</div>
                     <div class="text-xs opacity-70">{entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
@@ -122,7 +127,7 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
             delay={300}
           />
         </h1>
-        <div class="w-24 h-1 bg-primary-accent mx-auto mb-8"></div>
+        <div class="w-24 h-1 mx-auto mb-8" style="background-color: var(--primary-accent)"></div>
         
         <p class="text-base-content/70 mb-12">
           Personal thoughts, learnings, and reflections on my journey as a developer.
@@ -172,16 +177,16 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
                     )}
                   </div>
                   
-                  <h2 class="text-2xl md:text-3xl font-bold mb-6 text-primary-accent">{entry.title}</h2>
+                  <h2 class="text-2xl md:text-3xl font-bold mb-6" style="color: var(--primary-accent)">{entry.title}</h2>
                   
-                  <div class="diary-content prose prose-lg max-w-none">
+                  <div class="diary-content text-lg">
                     <entry.content />
                   </div>
                   
                   {entry.tags && entry.tags.length > 0 && (
                     <div class="flex flex-wrap gap-2 mt-6 pt-4 border-t border-base-300">
                       {entry.tags.map(tag => (
-                        <span class="px-3 py-1 bg-base-300 text-sm rounded-full text-secondary-accent">
+                        <span class="px-3 py-1 bg-base-300 text-sm rounded-full" style="color: var(--secondary-accent)">
                           #{tag}
                         </span>
                       ))}
@@ -261,8 +266,76 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
   </script>
 </BaseLayout>
 
+<style is:global>
+  /* Custom styling for markdown content - FIXED VERSION */
+  .diary-content {
+    @apply prose max-w-none;
+  }
+  
+  .diary-content h1, 
+  .diary-content h2, 
+  .diary-content h3, 
+  .diary-content h4 {
+    @apply font-bold;
+    color: var(--primary-accent);
+  }
+  
+  .diary-content a {
+    color: var(--secondary-accent);
+  }
+  
+  .diary-content p {
+    @apply text-base-content;
+  }
+  
+  .diary-content hr {
+    @apply border-base-300;
+  }
+  
+  .diary-content blockquote {
+    @apply bg-base-300/50 py-1 px-4 rounded-r-md italic;
+    border-left: 4px solid rgba(var(--primary-accent-rgb), 0.5);
+  }
+  
+  .diary-content code {
+    @apply bg-base-300 px-1 py-0.5 rounded before:content-none after:content-none;
+  }
+  
+  /* Code block styling */
+  .diary-content pre {
+    @apply bg-base-300 p-4 rounded-md overflow-x-auto border border-base-content/10;
+  }
+  
+  /* List styling */
+  .diary-content ul li::marker {
+    color: var(--primary-accent);
+  }
+  
+  .diary-content ol li::marker {
+    color: var(--primary-accent);
+    @apply font-bold;
+  }
+  
+  /* Image styling */
+  .diary-content img {
+    @apply rounded-lg shadow-md mx-auto my-6;
+  }
+  
+  /* Table styling */
+  .diary-content table {
+    @apply border-collapse my-6 w-full;
+  }
+  
+  .diary-content th {
+    @apply bg-base-300 p-2 border border-base-content/20;
+  }
+  
+  .diary-content td {
+    @apply p-2 border border-base-content/10;
+  }
+</style>
+
 <style>
-  /* Make sure there are no triple dashes (---) here, they're causing the error */
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);
