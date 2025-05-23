@@ -8,6 +8,8 @@ interface TypeWriterProps {
   className?: string;
 }
 
+//no need comment
+
 export default function TypeWriter({ 
   text, 
   speed = 50, 
