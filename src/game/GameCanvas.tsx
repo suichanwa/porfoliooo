@@ -11,7 +11,8 @@ import { GameStateData } from "./types/gameTypes";
 import { GameState } from "./constants";
 import { BattleScene } from "./scenes/BattleScene";
 import SettingsPanel from "./utils/SettingsPanel";
-import ResultModal from "./components/ResultModal"; // Import the new component
+import ResultModal from "./components/ResultModal";
+import { createSettingsScene } from './scenes/SettingsScene';
 
 export default function GameCanvas() {
   // Component refs and state
@@ -23,6 +24,7 @@ export default function GameCanvas() {
   const [isMobile, setIsMobile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [gameInstance, setGameInstance] = useState<any>(null);
+  const [isLoadingBattle, setIsLoadingBattle] = useState(false);
 
   // Check if device is mobile
   useEffect(() => {
@@ -107,12 +109,30 @@ export default function GameCanvas() {
         game = new Phaser.default.Game(config);
         setGameInstance(game);
         
+        // Add loading events after game is created and scene is initialized
+        game.events.once('ready', () => {
+          // Get the battle scene from the scene manager
+          const battleSceneInstance = game.scene.getScene('MysticRuinsBattleScene');
+          
+          if (battleSceneInstance && battleSceneInstance.events) {
+            // Listen for scene events to manage loading state
+            battleSceneInstance.events.on('preload', () => {
+              setIsLoadingBattle(true);
+            });
+            
+            battleSceneInstance.events.on('create', () => {
+              setIsLoadingBattle(false);
+            });
+          }
+        });
+        
         // Expose updateGameState for scene to call
         window.updateGameState = updateGameState;
         
         setGameLoaded(true);
       } catch (error) {
         console.error("Failed to load Phaser:", error);
+        setIsLoadingBattle(false);
       }
     };
     
@@ -120,9 +140,12 @@ export default function GameCanvas() {
     
     // Cleanup on unmount
     return () => {
-      if (game) game.destroy(true);
+      if (game) {
+        game.destroy(true);
+      }
       delete window.updateGameState;
       delete window.gameControlEvent;
+      setIsLoadingBattle(false);
     };
   }, [battleSceneDeps, updateGameState]);
 
@@ -170,6 +193,17 @@ export default function GameCanvas() {
           ref={container} 
           className="w-full aspect-[4/3] md:h-[600px] rounded-lg overflow-hidden bg-gray-900"
         ></div>
+        
+        {/* Battle Loading Overlay */}
+        {isLoadingBattle && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
+            <div className="text-center text-white">
+              <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
+              <p className="text-lg">Loading battle assets...</p>
+              <p className="text-sm opacity-70">Preparing character models</p>
+            </div>
+          </div>
+        )}
         
         {/* Settings Button */}
         <div className="absolute top-4 right-4 z-20">

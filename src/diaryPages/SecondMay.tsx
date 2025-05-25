@@ -4,7 +4,7 @@ export default function SecondMay() {
   return (
     <DiaryEntry
       title="Starting My Developer Diary"
-      date="May 2, 2024"
+      date="May 25, 2025"
       mood="creative"
       coverImage="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80"
       tags={["webdev", "portfolio", "reflection", "beginnings"]}

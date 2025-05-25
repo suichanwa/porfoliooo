@@ -1,0 +1,471 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap');
+
+// Variables
+$primary-color: #5e9fff;
+$secondary-color: #c792ea;
+$dark-bg: #0f1123;
+$error-color: #ff6b6b;
+$success-color: #51cf66;
+$text-light: #f8f9ff;
+$text-dim: rgba(248, 249, 255, 0.7);
+
+// Mixins
+@mixin glow($color, $size: 10px) {
+  box-shadow: 0 0 $size $color, 0 0 ($size * 2) $color, 0 0 ($size * 3) rgba($color, 0.5);
+}
+
+@mixin mystical-gradient($color1, $color2) {
+  background: linear-gradient(135deg, $color1 0%, $color2 50%, $color1 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+// Keyframes
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes runeRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.1);
+  }
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor);
+  }
+}
+
+@keyframes progressGlow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+// Main Component
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Roboto', sans-serif;
+  
+  &__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, 
+      $dark-bg 0%, 
+      darken($dark-bg, 5%) 25%, 
+      darken($dark-bg, 3%) 50%, 
+      darken($dark-bg, 7%) 75%, 
+      $dark-bg 100%
+    );
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(
+        ellipse at center,
+        rgba($primary-color, 0.1) 0%,
+        rgba($secondary-color, 0.05) 30%,
+        transparent 70%
+      );
+    }
+  }
+  
+  &__content {
+    position: relative;
+    text-align: center;
+    color: $text-light;
+    animation: fadeIn 0.8s ease-out;
+    max-width: 90vw;
+  }
+  
+  // Loading State
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  &__logo {
+    margin-bottom: 1rem;
+  }
+  
+  &__rune {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    
+    &-svg {
+      width: 100%;
+      height: 100%;
+      animation: runeRotate 10s linear infinite;
+      filter: drop-shadow(0 0 10px $primary-color);
+    }
+    
+    &-circle {
+      fill: none;
+      stroke: $primary-color;
+      stroke-width: 2;
+      stroke-dasharray: 10, 5;
+      animation: runeRotate 8s linear infinite reverse;
+    }
+    
+    &-cross {
+      stroke: $secondary-color;
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: glowPulse 2s ease-in-out infinite;
+    }
+    
+    &-inner {
+      fill: none;
+      stroke: $text-light;
+      stroke-width: 1;
+      opacity: 0.6;
+    }
+    
+    &-diamond {
+      fill: $primary-color;
+      opacity: 0.3;
+      animation: progressPulse 1.5s ease-in-out infinite;
+    }
+  }
+  
+  &__title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+    @include mystical-gradient($primary-color, $secondary-color);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba($primary-color, 0.5);
+  }
+  
+  &__subtitle {
+    display: block;
+    font-size: 0.4em;
+    font-weight: 400;
+    margin-top: 0.5rem;
+    color: $text-dim;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  
+  &__task {
+    font-size: 1.1rem;
+    color: $text-dim;
+    margin: 0;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+  
+  &__progress {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    &-track {
+      height: 8px;
+      background: rgba($text-light, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba($primary-color, 0.3);
+    }
+    
+    &-fill {
+      height: 100%;
+      background: linear-gradient(90deg, $primary-color 0%, $secondary-color 50%, $primary-color 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease-out;
+      position: relative;
+      @include glow($primary-color, 5px);
+      
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(white, 0.4) 50%, 
+          transparent 100%
+        );
+        animation: progressGlow 2s ease-in-out infinite;
+      }
+    }
+    
+    &-glow {
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba($primary-color, 0.5) 50%, 
+        transparent 100%
+      );
+      border-radius: 6px;
+      animation: progressGlow 3s ease-in-out infinite;
+      z-index: -1;
+    }
+    
+    &-text {
+      font-size: 0.9rem;
+      color: $text-light;
+      font-weight: 500;
+      align-self: flex-end;
+      font-family: 'Roboto Mono', monospace;
+    }
+  }
+  
+  &__particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  
+  &__particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: $primary-color;
+    border-radius: 50%;
+    animation: particleFloat var(--duration, 3s) linear infinite;
+    animation-delay: var(--delay, 0s);
+    @include glow($primary-color, 2px);
+    
+    &:nth-child(odd) {
+      background: $secondary-color;
+      @include glow($secondary-color, 2px);
+    }
+    
+    &:nth-child(3n) {
+      background: $text-light;
+      @include glow($text-light, 1px);
+    }
+  }
+  
+  &__tip {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    color: $text-dim;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    &-label {
+      color: $primary-color;
+      font-weight: 500;
+    }
+    
+    &-text {
+      font-weight: 300;
+    }
+  }
+  
+  // Error State
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 500px;
+    
+    &-icon {
+      width: 80px;
+      height: 80px;
+      color: $error-color;
+      animation: glowPulse 2s ease-in-out infinite;
+      
+      svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 10px currentColor);
+      }
+    }
+    
+    &-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin: 0;
+      color: $error-color;
+      text-shadow: 0 0 20px rgba($error-color, 0.5);
+    }
+    
+    &-message {
+      font-size: 1.1rem;
+      color: $text-dim;
+      margin: 0;
+      text-align: center;
+      line-height: 1.6;
+    }
+  }
+  
+  &__retry-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    @include glow($primary-color, 5px);
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    &:hover {
+      transform: translateY(-2px) scale(1.05);
+      @include glow($primary-color, 10px);
+    }
+    
+    &:active {
+      transform: translateY(0) scale(0.98);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .loading-screen {
+    &__content {
+      padding: 1rem;
+    }
+    
+    &__rune {
+      width: 80px;
+      height: 80px;
+    }
+    
+    &__title {
+      font-size: 2rem;
+    }
+    
+    &__progress {
+      max-width: 300px;
+    }
+    
+    &__tip {
+      position: relative;
+      bottom: auto;
+      transform: none;
+      margin-top: 2rem;
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen {
+    &__rune-svg {
+      animation: none;
+    }
+    
+    &__particle {
+      animation: none;
+      opacity: 0.3;
+    }
+    
+    &__progress-fill::after,
+    &__progress-glow {
+      animation: none;
+    }
+  }
+}
