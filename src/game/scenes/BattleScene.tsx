@@ -12,16 +12,71 @@ interface BattleSceneDependencies {
   updateGameState: (state: GameStateData) => void;
 }
 
+// Enhanced enemy configuration with all character types
+interface EnemyCharacterConfig {
+  type: EnemyType;
+  texturePrefix: string;
+  displayName: string;
+  scale: number;
+  position: { x: number; y: number };
+  idleAnimation?: {
+    scaleVariation: number;
+    duration: number;
+  };
+  specialEffects?: string[];
+}
+
+const ENEMY_CONFIGS: Record<string, EnemyCharacterConfig> = {
+  'RUNE_CONSTRUCT': {
+    type: 'RUNE_CONSTRUCT' as EnemyType,
+    texturePrefix: 'runeConstruct',
+    displayName: 'Ancient Rune Construct',
+    scale: 1.6,
+    position: { x: 600, y: 200 },
+    idleAnimation: {
+      scaleVariation: 0.1,
+      duration: 4000
+    },
+    specialEffects: ['runes', 'magical_glow']
+  },
+  'STONE_GUARDIAN': {
+    type: 'STONE_GUARDIAN' as EnemyType,
+    texturePrefix: 'stoneGuardian',
+    displayName: 'Stone Guardian Sentinel',
+    scale: 1.8,
+    position: { x: 580, y: 180 },
+    idleAnimation: {
+      scaleVariation: 0.05,
+      duration: 5000
+    },
+    specialEffects: ['stone_dust', 'heavy_footsteps']
+  },
+  'SHADOW_WISP': {
+    type: 'SHADOW_WISP' as EnemyType,
+    texturePrefix: 'shadowWisp',
+    displayName: 'Ethereal Shadow Wisp',
+    scale: 1.4,
+    position: { x: 620, y: 220 },
+    idleAnimation: {
+      scaleVariation: 0.15,
+      duration: 2500
+    },
+    specialEffects: ['shadow_trail', 'wisp_glow', 'floating']
+  }
+};
+
 export class BattleScene extends Phaser.Scene {
   private player!: Player;
   private battleSystem!: BattleSystem;
   private currentState: GameState = GameState.PLAYER_TURN;
   private messageBox: any;
   private currentEnemyType: string = 'RUNE_CONSTRUCT';
+  private currentEnemyConfig!: EnemyCharacterConfig;
   
   // Store sprite references to control animations
   private playerSprite!: Phaser.GameObjects.Image;
   private enemySprite!: Phaser.GameObjects.Image;
+  private enemyNameText!: Phaser.GameObjects.Text;
   
   // Health bar properties
   private playerHealthBar!: Phaser.GameObjects.Image;
@@ -56,6 +111,7 @@ export class BattleScene extends Phaser.Scene {
   // Visual effects
   private backgroundParticles?: Phaser.GameObjects.Particles.ParticleEmitter;
   private battleEffects: Phaser.GameObjects.GameObject[] = [];
+  private enemySpecialEffects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(dependencies: BattleSceneDependencies) {
     super({ key: 'MysticRuinsBattleScene' });
@@ -83,20 +139,37 @@ export class BattleScene extends Phaser.Scene {
   init(data: any) {
     console.log('BattleScene init with data:', data);
     
-    // Get difficulty and enemy type from data or use defaults
+    // Enhanced enemy selection with difficulty consideration
     if (data && data.enemyType) {
       this.currentEnemyType = data.enemyType;
-    } else if (Math.random() > 0.7) {
+    } else if (data && data.difficulty) {
+      // Select enemy based on difficulty
+      this.currentEnemyType = this.selectEnemyByDifficulty(data.difficulty);
+    } else {
       // Random enemy selection for variety
-      const enemies = ['RUNE_CONSTRUCT', 'SHADOW_WISP', 'STONE_GUARDIAN'];
+      const enemies = Object.keys(ENEMY_CONFIGS);
       this.currentEnemyType = enemies[Math.floor(Math.random() * enemies.length)];
     }
+    
+    // Set current enemy configuration
+    this.currentEnemyConfig = ENEMY_CONFIGS[this.currentEnemyType];
     
     // Setup loading tasks
     const tasks = LoadingManager.createBattleSceneTasks();
     tasks.forEach(task => this.loadingManager.addTask(task));
     
-    console.log(`Selected enemy type: ${this.currentEnemyType}`);
+    console.log(`Selected enemy: ${this.currentEnemyConfig.displayName} (${this.currentEnemyType})`);
+  }
+
+  private selectEnemyByDifficulty(difficulty: string): string {
+    const difficultyMappings = {
+      'Normal': ['SHADOW_WISP', 'RUNE_CONSTRUCT'],
+      'Hard': ['STONE_GUARDIAN', 'RUNE_CONSTRUCT'],
+      'Insane': ['STONE_GUARDIAN'] // Hardest enemy
+    };
+    
+    const availableEnemies = difficultyMappings[difficulty] || Object.keys(ENEMY_CONFIGS);
+    return availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
   }
 
   async preload() {
@@ -170,13 +243,24 @@ export class BattleScene extends Phaser.Scene {
     // Fade in
     this.cameras.main.fadeIn(500, 0, 0, 0);
     
-    // Show initial message with delay for dramatic effect
+    // Show initial message with enemy-specific flavor text
     this.time.delayedCall(1000, () => {
       if (this.messageBox) {
-        this.messageBox.setText("A battle begins! Choose your action.");
+        const flavorText = this.getEnemyFlavorText();
+        this.messageBox.setText(flavorText);
         this.battleSystem.resetBattle(this.currentEnemyType as EnemyType);
       }
     });
+  }
+
+  private getEnemyFlavorText(): string {
+    const flavorTexts = {
+      'RUNE_CONSTRUCT': "An ancient construct awakens, its runes glowing with mystical power!",
+      'STONE_GUARDIAN': "A massive stone guardian blocks your path, its eyes burning with ancient fury!",
+      'SHADOW_WISP': "A shadow wisp materializes from the darkness, crackling with ethereal energy!"
+    };
+    
+    return flavorTexts[this.currentEnemyType] || "A mysterious enemy appears before you!";
   }
 
   private setupBackground() {
@@ -185,14 +269,25 @@ export class BattleScene extends Phaser.Scene {
     bg.setDisplaySize(800, 600);
     bg.setDepth(0);
     
-    // Add atmospheric overlay
+    // Add atmospheric overlay based on enemy type
     const overlay = this.add.graphics();
-    overlay.fillStyle(0x2a2a4a, 0.1);
+    const overlayColor = this.getEnemyAtmosphereColor();
+    overlay.fillStyle(overlayColor, 0.1);
     overlay.fillRect(0, 0, 800, 600);
     overlay.setDepth(1);
     
     // Create ambient particles
     this.createAmbientParticles();
+  }
+
+  private getEnemyAtmosphereColor(): number {
+    const atmosphereColors = {
+      'RUNE_CONSTRUCT': 0x4a4aff, // Blue mystical
+      'STONE_GUARDIAN': 0x8b4513, // Brown earthy
+      'SHADOW_WISP': 0x4b0082    // Purple dark
+    };
+    
+    return atmosphereColors[this.currentEnemyType] || 0x2a2a4a;
   }
 
   private initializeBattleSystem() {
@@ -202,12 +297,19 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private setupSprites() {
-    // Player sprite
+    // Player sprite with enhanced animations
+    this.setupPlayerSprite();
+    
+    // Enemy sprite with character-specific setup
+    this.setupEnemySprite();
+  }
+
+  private setupPlayerSprite() {
     if (this.textures.exists('player_default')) {
       this.playerSprite = this.add.image(200, 320, 'player_default');
       this.playerSprite.setScale(1.5).setDepth(5);
       
-      // Add subtle idle animation
+      // Add character-specific idle animation
       this.tweens.add({
         targets: this.playerSprite,
         y: this.playerSprite.y - 5,
@@ -223,24 +325,213 @@ export class BattleScene extends Phaser.Scene {
         defaultSprite.setVisible(false);
       }
     }
+  }
+
+  private setupEnemySprite() {
+    const config = this.currentEnemyConfig;
+    const enemyTextureKey = `${config.texturePrefix}_default`;
     
-    // Enemy sprite
-    const enemyTextureKey = `${this.getEnemyTexturePrefix()}_default`;
     if (this.textures.exists(enemyTextureKey)) {
-      this.enemySprite = this.add.image(600, 200, enemyTextureKey);
-      this.enemySprite.setScale(1.5).setDepth(5);
+      this.enemySprite = this.add.image(config.position.x, config.position.y, enemyTextureKey);
+      this.enemySprite.setScale(config.scale).setDepth(5);
       
-      // Add menacing idle animation
-      this.tweens.add({
-        targets: this.enemySprite,
-        scaleX: 1.45,
-        scaleY: 1.55,
-        duration: 3000,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
+      // Add character-specific idle animation
+      if (config.idleAnimation) {
+        const { scaleVariation, duration } = config.idleAnimation;
+        this.tweens.add({
+          targets: this.enemySprite,
+          scaleX: config.scale - scaleVariation,
+          scaleY: config.scale + scaleVariation,
+          duration: duration,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+      
+      // Add special effects for the enemy
+      this.createEnemySpecialEffects();
     }
+    
+    // Add enemy name display
+    this.enemyNameText = this.add.text(config.position.x, config.position.y - 80, config.displayName, {
+      fontFamily: 'serif',
+      fontSize: '18px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3,
+      align: 'center'
+    }).setOrigin(0.5).setDepth(10);
+    
+    // Add name glow effect
+    this.tweens.add({
+      targets: this.enemyNameText,
+      alpha: 0.7,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  private createEnemySpecialEffects() {
+    const config = this.currentEnemyConfig;
+    
+    if (!config.specialEffects) return;
+    
+    config.specialEffects.forEach(effectType => {
+      switch (effectType) {
+        case 'runes':
+          this.createRuneEffect();
+          break;
+        case 'magical_glow':
+          this.createMagicalGlow();
+          break;
+        case 'stone_dust':
+          this.createStoneDustEffect();
+          break;
+        case 'shadow_trail':
+          this.createShadowTrail();
+          break;
+        case 'wisp_glow':
+          this.createWispGlow();
+          break;
+        case 'floating':
+          this.createFloatingEffect();
+          break;
+      }
+    });
+  }
+
+  private createRuneEffect() {
+    // Create floating runes around Rune Construct
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const radius = 60;
+      const x = this.currentEnemyConfig.position.x + Math.cos(angle) * radius;
+      const y = this.currentEnemyConfig.position.y + Math.sin(angle) * radius;
+      
+      const rune = this.add.graphics();
+      rune.lineStyle(2, 0x88ccff, 0.8);
+      rune.strokeCircle(0, 0, 8);
+      rune.lineBetween(-6, 0, 6, 0);
+      rune.lineBetween(0, -6, 0, 6);
+      rune.setPosition(x, y).setDepth(4);
+      
+      // Rotate runes
+      this.tweens.add({
+        targets: rune,
+        rotation: Math.PI * 2,
+        duration: 8000 + (i * 500),
+        repeat: -1,
+        ease: 'Linear'
+      });
+      
+      this.enemySpecialEffects.push(rune);
+    }
+  }
+
+  private createMagicalGlow() {
+    const glow = this.add.graphics();
+    glow.fillStyle(0x4488ff, 0.3);
+    glow.fillCircle(0, 0, 40);
+    glow.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
+    glow.setDepth(3);
+    
+    this.tweens.add({
+      targets: glow,
+      scaleX: { from: 0.8, to: 1.2 },
+      scaleY: { from: 0.8, to: 1.2 },
+      alpha: { from: 0.2, to: 0.5 },
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    this.enemySpecialEffects.push(glow);
+  }
+
+  private createStoneDustEffect() {
+    // Create particle effect for Stone Guardian
+    if (this.textures.exists('frame')) {
+      const dustParticles = this.add.particles(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y + 50, 'frame', {
+        scale: { min: 0.01, max: 0.03 },
+        alpha: { min: 0.3, max: 0.6 },
+        tint: 0x8b7355,
+        lifespan: 3000,
+        frequency: 200,
+        gravityY: 50,
+        speedX: { min: -20, max: 20 },
+        speedY: { min: -30, max: -10 }
+      });
+      dustParticles.setDepth(4);
+      this.enemySpecialEffects.push(dustParticles);
+    }
+  }
+
+  private createShadowTrail() {
+    // Create trailing shadow effect for Shadow Wisp
+    const trail = this.add.graphics();
+    trail.fillStyle(0x220066, 0.4);
+    
+    let trailPoints: { x: number; y: number }[] = [];
+    
+    this.time.addEvent({
+      delay: 50,
+      loop: true,
+      callback: () => {
+        if (this.enemySprite) {
+          trailPoints.push({ x: this.enemySprite.x, y: this.enemySprite.y });
+          if (trailPoints.length > 10) {
+            trailPoints.shift();
+          }
+          
+          trail.clear();
+          trailPoints.forEach((point, index) => {
+            const alpha = (index / trailPoints.length) * 0.4;
+            const size = (index / trailPoints.length) * 20;
+            trail.fillStyle(0x220066, alpha);
+            trail.fillCircle(point.x, point.y, size);
+          });
+        }
+      }
+    });
+    
+    this.enemySpecialEffects.push(trail);
+  }
+
+  private createWispGlow() {
+    const wisp = this.add.graphics();
+    wisp.fillStyle(0x8866ff, 0.6);
+    wisp.fillCircle(0, 0, 25);
+    wisp.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
+    wisp.setDepth(6);
+    
+    this.tweens.add({
+      targets: wisp,
+      alpha: { from: 0.3, to: 0.8 },
+      scaleX: { from: 0.8, to: 1.3 },
+      scaleY: { from: 0.8, to: 1.3 },
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    this.enemySpecialEffects.push(wisp);
+  }
+
+  private createFloatingEffect() {
+    // Make Shadow Wisp float up and down
+    this.tweens.add({
+      targets: this.enemySprite,
+      y: this.currentEnemyConfig.position.y - 15,
+      duration: 3000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
   }
 
   private setupUI() {
@@ -364,6 +655,7 @@ export class BattleScene extends Phaser.Scene {
 
   private createAmbientParticles() {
     if (this.textures.exists('frame')) {
+      const atmosphereColor = this.getEnemyAtmosphereColor();
       const particles = this.add.particles(0, 0, 'frame', {
         x: { min: 0, max: 800 },
         y: { min: 0, max: 600 },
@@ -371,7 +663,7 @@ export class BattleScene extends Phaser.Scene {
         alpha: { min: 0.1, max: 0.3 },
         lifespan: 10000,
         frequency: 1000,
-        tint: 0x88ccff
+        tint: atmosphereColor
       });
       particles.setDepth(2);
     }
@@ -524,10 +816,97 @@ export class BattleScene extends Phaser.Scene {
     this.updateGameState();
     this.updateButtonHighlights();
     
-    // Add screen shake for impactful events
+    // Add character-specific screen effects
+    this.addCharacterSpecificEffects(event);
+  }
+
+  private addCharacterSpecificEffects(event: BattleEvent) {
     if (['attack', 'enemyAttack'].includes(event.type)) {
-      this.cameras.main.shake(200, 0.01);
+      // Different shake intensities based on enemy type
+      const shakeIntensity = this.getShakeIntensityForEnemy();
+      this.cameras.main.shake(200, shakeIntensity);
     }
+    
+    // Add character-specific visual effects
+    if (event.type === 'enemyAttack') {
+      this.addEnemyAttackEffect();
+    }
+  }
+
+  private getShakeIntensityForEnemy(): number {
+    const intensities = {
+      'STONE_GUARDIAN': 0.02,   // Heavy shake
+      'RUNE_CONSTRUCT': 0.015,  // Medium shake
+      'SHADOW_WISP': 0.008      // Light shake
+    };
+    
+    return intensities[this.currentEnemyType] || 0.01;
+  }
+
+  private addEnemyAttackEffect() {
+    switch (this.currentEnemyType) {
+      case 'STONE_GUARDIAN':
+        // Create stone impact effect
+        this.createStoneImpactEffect();
+        break;
+      case 'RUNE_CONSTRUCT':
+        // Create magical blast effect
+        this.createMagicalBlastEffect();
+        break;
+      case 'SHADOW_WISP':
+        // Create shadow energy effect
+        this.createShadowEnergyEffect();
+        break;
+    }
+  }
+
+  private createStoneImpactEffect() {
+    const impact = this.add.graphics();
+    impact.fillStyle(0x8b4513, 0.8);
+    impact.fillCircle(this.playerSprite.x, this.playerSprite.y, 5);
+    impact.setDepth(7);
+    
+    this.tweens.add({
+      targets: impact,
+      scaleX: 8,
+      scaleY: 8,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => impact.destroy()
+    });
+  }
+
+  private createMagicalBlastEffect() {
+    const blast = this.add.graphics();
+    blast.fillStyle(0x4488ff, 0.7);
+    blast.fillCircle(this.playerSprite.x, this.playerSprite.y, 10);
+    blast.setDepth(7);
+    
+    this.tweens.add({
+      targets: blast,
+      scaleX: 6,
+      scaleY: 6,
+      alpha: 0,
+      duration: 400,
+      onComplete: () => blast.destroy()
+    });
+  }
+
+  private createShadowEnergyEffect() {
+    const energy = this.add.graphics();
+    energy.fillStyle(0x4b0082, 0.6);
+    energy.fillCircle(this.playerSprite.x, this.playerSprite.y, 8);
+    energy.setDepth(7);
+    
+    this.tweens.add({
+      targets: energy,
+      scaleX: 5,
+      scaleY: 5,
+      alpha: 0,
+      rotation: Math.PI * 2,
+      duration: 500,
+      onComplete: () => energy.destroy()
+    });
   }
 
   private displayMessageWithEffect(message: string) {
@@ -614,7 +993,7 @@ export class BattleScene extends Phaser.Scene {
   private updateBattleAnimations(event: BattleEvent) {
     if (!this.sceneInitialized) return;
     
-    const enemyTexturePrefix = this.getEnemyTexturePrefix();
+    const enemyTexturePrefix = this.currentEnemyConfig.texturePrefix;
     
     // Clear any existing animation tweens
     this.clearAnimationTweens();
@@ -769,12 +1148,15 @@ export class BattleScene extends Phaser.Scene {
       this.enemySprite.setTexture(attackTexture);
     }
     
-    // Enemy lunges forward
+    // Character-specific attack animation
+    const config = this.currentEnemyConfig;
+    const attackDistance = this.getEnemyAttackDistance();
+    
     const lungeTween = this.tweens.add({
       targets: this.enemySprite,
-      x: this.enemySprite.x - 80,
-      scaleX: 1.7,
-      scaleY: 1.7,
+      x: this.enemySprite.x - attackDistance,
+      scaleX: config.scale + 0.2,
+      scaleY: config.scale + 0.2,
       duration: 400,
       ease: 'Power2'
     });
@@ -784,9 +1166,9 @@ export class BattleScene extends Phaser.Scene {
       if (this.enemySprite) {
         const returnTween = this.tweens.add({
           targets: this.enemySprite,
-          x: 600,
-          scaleX: 1.5,
-          scaleY: 1.5,
+          x: config.position.x,
+          scaleX: config.scale,
+          scaleY: config.scale,
           duration: 300,
           ease: 'Power2'
         });
@@ -826,6 +1208,16 @@ export class BattleScene extends Phaser.Scene {
         });
       }
     });
+  }
+
+  private getEnemyAttackDistance(): number {
+    const distances = {
+      'STONE_GUARDIAN': 100,  // Heavy, slow movement
+      'RUNE_CONSTRUCT': 80,   // Moderate movement
+      'SHADOW_WISP': 60       // Quick, agile movement
+    };
+    
+    return distances[this.currentEnemyType] || 80;
   }
 
   private createMagicProjectile() {
@@ -883,30 +1275,56 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private nextLevel(): void {
-    const enemyTypes: EnemyType[] = ['STONE_GUARDIAN', 'SHADOW_WISP', 'RUNE_CONSTRUCT'];
+    const enemyTypes = Object.keys(ENEMY_CONFIGS);
     const nextEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
     
     this.currentEnemyType = nextEnemyType;
+    this.currentEnemyConfig = ENEMY_CONFIGS[nextEnemyType];
     
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.battleSystem.resetBattle(nextEnemyType);
+      // Clean up old enemy effects
+      this.cleanupEnemyEffects();
       
+      this.battleSystem.resetBattle(nextEnemyType as EnemyType);
+      
+      // Update enemy sprite and setup new effects
       if (this.enemySprite) {
-        const enemyTextureKey = `${this.getEnemyTexturePrefix()}_default`;
+        const enemyTextureKey = `${this.currentEnemyConfig.texturePrefix}_default`;
         if (this.textures.exists(enemyTextureKey)) {
           this.enemySprite.setTexture(enemyTextureKey);
+          this.enemySprite.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
+          this.enemySprite.setScale(this.currentEnemyConfig.scale);
         }
       }
+      
+      // Update enemy name
+      if (this.enemyNameText) {
+        this.enemyNameText.setText(this.currentEnemyConfig.displayName);
+        this.enemyNameText.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y - 80);
+      }
+      
+      // Create new enemy effects
+      this.createEnemySpecialEffects();
       
       this.player.heal(1000);
       this.updateHealthBars();
       this.updateGameState();
       
-      this.messageBox.setText("You venture deeper into the mystical ruins...");
+      const progressMessage = `You venture deeper into the ruins and encounter ${this.currentEnemyConfig.displayName}!`;
+      this.messageBox.setText(progressMessage);
       this.cameras.main.fadeIn(500, 0, 0, 0);
     });
+  }
+
+  private cleanupEnemyEffects() {
+    this.enemySpecialEffects.forEach(effect => {
+      if (effect && effect.destroy) {
+        effect.destroy();
+      }
+    });
+    this.enemySpecialEffects = [];
   }
 
   private retry(): void {
@@ -945,15 +1363,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private getEnemyTexturePrefix() {
-    switch(this.currentEnemyType) {
-      case 'SHADOW_WISP':
-        return 'shadowWisp';
-      case 'STONE_GUARDIAN':
-        return 'stoneGuardian';
-      case 'RUNE_CONSTRUCT':
-      default:
-        return 'runeConstruct';
-    }
+    return this.currentEnemyConfig.texturePrefix;
   }
 
   private showErrorState() {
@@ -1015,6 +1425,9 @@ export class BattleScene extends Phaser.Scene {
     
     // Clean up animation tweens
     this.clearAnimationTweens();
+    
+    // Clean up enemy special effects
+    this.cleanupEnemyEffects();
     
     // Stop and clean up audio
     if (this.battleMusic && this.battleMusic.isPlaying) {

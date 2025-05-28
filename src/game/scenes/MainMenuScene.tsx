@@ -385,12 +385,12 @@ export function createMainMenuScene(Phaser: any) {
       
       // Add game logo/title
       if (this.textures.exists('logo')) {
-        const logo = this.add.image(400, 140, 'logo').setScale(1.5);
+        const logo = this.add.image(400, 120, 'logo').setScale(1.5); // Moved up slightly
         logo.setDepth(10);
       }
       
       // Add title text with glow
-      this.gameTitle = this.add.text(400, 220, 'Mystic Ruins', {
+      this.gameTitle = this.add.text(400, 200, 'Mystic Ruins', { // Moved up
         fontFamily: 'serif',
         fontSize: '48px',
         color: '#ffffff',
@@ -401,7 +401,7 @@ export function createMainMenuScene(Phaser: any) {
       this.gameTitle.setDepth(10);
       
       // Add subtitle
-      const subtitle = this.add.text(400, 270, 'Lost Civilization', {
+      const subtitle = this.add.text(400, 250, 'Lost Civilization', { // Moved up
         fontFamily: 'serif',
         fontSize: '24px',
         color: '#aaccff',
@@ -409,10 +409,10 @@ export function createMainMenuScene(Phaser: any) {
       }).setOrigin(0.5);
       subtitle.setDepth(10);
       
-      // Add menu buttons
+      // Add menu buttons (adjusted positions)
       this.addMenuButtons();
       
-      // Add the cycling button
+      // Add the cycling button with more space
       this.addCycleButton();
       
       // Add decorative runes around the border
@@ -446,9 +446,9 @@ export function createMainMenuScene(Phaser: any) {
     
     addMenuButtons() {
       const buttonData = [
-        { id: 'start', y: 360, callback: this.startGame.bind(this) },
-        { id: 'settings', y: 420, callback: this.openSettings.bind(this) },
-        { id: 'credits', y: 480, callback: this.showCredits.bind(this) }
+        { id: 'start', y: 320, callback: this.startGame.bind(this) },    // Moved up
+        { id: 'settings', y: 380, callback: this.openSettings.bind(this) }, // Moved up
+        { id: 'credits', y: 440, callback: this.showCredits.bind(this) }     // Moved up
       ];
       
       buttonData.forEach((button, index) => {
@@ -514,38 +514,94 @@ export function createMainMenuScene(Phaser: any) {
       const cycleTextureKey = 'button_cycle_normal';
       if (!this.textures.exists(cycleTextureKey)) {
         console.warn(`Texture ${cycleTextureKey} not found, creating fallback`);
-        this.createButtonFallback('cycle');
+        this.createDifficultyButtonFallback();
       }
       
-      // Add the button background
-      const buttonBg = this.add.image(0, 0, cycleTextureKey);
+      // Create a wider background for better spacing
+      const buttonBg = this.add.graphics();
+      buttonBg.fillStyle(0x2a2a4a, 0.9);
+      buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
+      buttonBg.lineStyle(2, 0x88ccff, 0.5);
+      buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
+      buttonBg.setInteractive(new Phaser.Geom.Rectangle(-140, -25, 280, 50), Phaser.Geom.Rectangle.Contains);
       
-      // Add the label text
-      const labelText = this.add.text(-80, 0, "Difficulty:", {
+      // Add the label text on the left
+      const labelText = this.add.text(-120, 0, "Difficulty:", {
         fontFamily: 'serif',
-        fontSize: '18px',
+        fontSize: '16px',
         color: '#ffffff',
+        fontWeight: 'bold'
       }).setOrigin(0, 0.5);
       
-      // Add the cycling text that will change
-      this.cycleText = this.add.text(10, 0, this.cycleOptions[this.currentCycleIndex], {
+      // Add separator
+      const separator = this.add.text(-20, 0, "►", {
+        fontFamily: 'serif',
+        fontSize: '14px',
+        color: '#88ccff',
+      }).setOrigin(0.5, 0.5);
+      
+      // Add the cycling text on the right with better positioning
+      this.cycleText = this.add.text(40, 0, this.cycleOptions[this.currentCycleIndex], {
         fontFamily: 'serif',
         fontSize: '18px',
         color: '#ffcc00',
-        fontStyle: 'bold'
-      }).setOrigin(0, 0.5);
+        fontStyle: 'bold',
+        stroke: '#2a2a4a',
+        strokeThickness: 2
+      }).setOrigin(0.5, 0.5);
       
-      // Make button interactive
-      buttonBg.setInteractive();
+      // Add difficulty color indicator
+      const difficultyColors = {
+        'Normal': '#28a745',  // Green
+        'Hard': '#ffc107',    // Yellow
+        'Insane': '#dc3545'   // Red
+      };
+      
+      const difficultyIndicator = this.add.graphics();
+      const currentDifficulty = this.cycleOptions[this.currentCycleIndex];
+      difficultyIndicator.fillStyle(Phaser.Display.Color.HexStringToColor(difficultyColors[currentDifficulty]).color);
+      difficultyIndicator.fillCircle(100, 0, 8);
+      difficultyIndicator.lineStyle(2, 0xffffff, 0.8);
+      difficultyIndicator.strokeCircle(100, 0, 8);
+      
+      // Store reference for updates
+      this.cycleButton.setData('difficultyIndicator', difficultyIndicator);
+      
+      // Make button interactive with improved hover effects
       buttonBg.on('pointerover', () => {
-        const hoverTexture = 'button_cycle_hover';
-        if (this.textures.exists(hoverTexture)) {
-          buttonBg.setTexture(hoverTexture);
-        }
+        // Hover effect - lighten background
+        buttonBg.clear();
+        buttonBg.fillStyle(0x3a3a5a, 0.9);
+        buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
+        buttonBg.lineStyle(2, 0x99ddff, 0.8);
+        buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
+        
+        // Scale effect
+        this.tweens.add({
+          targets: [labelText, separator, this.cycleText, difficultyIndicator],
+          scaleX: 1.05,
+          scaleY: 1.05,
+          duration: 150,
+          ease: 'Power2'
+        });
       });
       
       buttonBg.on('pointerout', () => {
-        buttonBg.setTexture(cycleTextureKey);
+        // Reset background
+        buttonBg.clear();
+        buttonBg.fillStyle(0x2a2a4a, 0.9);
+        buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
+        buttonBg.lineStyle(2, 0x88ccff, 0.5);
+        buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
+        
+        // Reset scale
+        this.tweens.add({
+          targets: [labelText, separator, this.cycleText, difficultyIndicator],
+          scaleX: 1,
+          scaleY: 1,
+          duration: 150,
+          ease: 'Power2'
+        });
       });
       
       buttonBg.on('pointerdown', () => {
@@ -553,71 +609,126 @@ export function createMainMenuScene(Phaser: any) {
       });
       
       // Add all elements to the container
-      this.cycleButton.add([buttonBg, labelText, this.cycleText]);
+      this.cycleButton.add([buttonBg, labelText, separator, this.cycleText, difficultyIndicator]);
       
-      // Add a pulsing effect to draw attention
+      // Add a subtle pulsing effect to draw attention
       this.tweens.add({
-        targets: this.cycleText,
-        scale: { from: 1, to: 1.1 },
-        duration: 800,
+        targets: separator,
+        alpha: { from: 0.6, to: 1 },
+        duration: 1200,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut'
       });
+      
+      // Add instructional text below
+      const instructionText = this.add.text(400, 570, 'Click to change difficulty', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#888888',
+        align: 'center'
+      }).setOrigin(0.5).setAlpha(0.7);
     }
 
-    private createButtonFallback(buttonId: string) {
-      const graphics = this.add.graphics();
-      
-      // Different colors for different buttons
-      let color = 0x666666;
-      if (buttonId === 'start') color = 0x4a9eff;
-      else if (buttonId === 'settings') color = 0x6c757d;
-      else if (buttonId === 'credits') color = 0x6c757d;
-      else if (buttonId === 'cycle') color = 0xdc3545;
-      
-      graphics.fillStyle(color);
-      graphics.fillRoundedRect(0, 0, 220, 50, 8);
-      graphics.lineStyle(2, 0xffffff, 0.3);
-      graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-      graphics.generateTexture(`button_${buttonId}_normal`, 220, 50);
-      
-      // Hover version
-      graphics.clear();
-      graphics.fillStyle((color & 0xfefefe) >> 1 | 0x808080);
-      graphics.fillRoundedRect(0, 0, 220, 50, 8);
-      graphics.lineStyle(2, 0xffffff, 0.5);
-      graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-      graphics.generateTexture(`button_${buttonId}_hover`, 220, 50);
-      
-      graphics.destroy();
-    }
-    
+    // Update the cycleDifficulty method for better visual feedback
     cycleDifficulty() {
       // Increment the index and wrap around if needed
       this.currentCycleIndex = (this.currentCycleIndex + 1) % this.cycleOptions.length;
       
-      // Update the text
-      this.cycleText.setText(this.cycleOptions[this.currentCycleIndex]);
-      
-      // Flash effect on change
+      // Update the text with animation
       this.tweens.add({
         targets: this.cycleText,
-        alpha: { from: 0.5, to: 1 },
-        duration: 200,
-        ease: 'Sine.easeOut'
+        alpha: 0,
+        scaleX: 0.8,
+        duration: 100,
+        ease: 'Power2',
+        onComplete: () => {
+          this.cycleText.setText(this.cycleOptions[this.currentCycleIndex]);
+          
+          // Update difficulty indicator color
+          const difficultyColors = {
+            'Normal': '#28a745',  // Green
+            'Hard': '#ffc107',    // Yellow
+            'Insane': '#dc3545'   // Red
+          };
+          
+          const difficultyIndicator = this.cycleButton.getData('difficultyIndicator');
+          if (difficultyIndicator) {
+            const currentDifficulty = this.cycleOptions[this.currentCycleIndex];
+            difficultyIndicator.clear();
+            difficultyIndicator.fillStyle(Phaser.Display.Color.HexStringToColor(difficultyColors[currentDifficulty]).color);
+            difficultyIndicator.fillCircle(100, 0, 8);
+            difficultyIndicator.lineStyle(2, 0xffffff, 0.8);
+            difficultyIndicator.strokeCircle(100, 0, 8);
+            
+            // Add glow effect for dramatic difficulties
+            if (currentDifficulty === 'Insane') {
+              difficultyIndicator.lineStyle(3, 0xff0000, 0.6);
+              difficultyIndicator.strokeCircle(100, 0, 12);
+            }
+          }
+          
+          // Fade back in with new text
+          this.tweens.add({
+            targets: this.cycleText,
+            alpha: 1,
+            scaleX: 1,
+            duration: 150,
+            ease: 'Back.easeOut'
+          });
+        }
       });
       
-      // Save the selected difficulty (you could store this in a game config)
-      this.saveDifficulty(this.cycleOptions[this.currentCycleIndex]);
-    }
-    
-    saveDifficulty(difficulty: string) {
-      // You can implement saving to localStorage or a game config object
-      console.log(`Difficulty set to: ${difficulty}`);
+      // Add screen shake for dramatic effect on harder difficulties
+      if (this.cycleOptions[this.currentCycleIndex] === 'Insane') {
+        this.cameras.main.shake(100, 0.01);
+      }
       
-      // Example of saving to localStorage
-      localStorage.setItem('mysticRuins_difficulty', difficulty);
+      // Save the selected difficulty
+      this.saveDifficulty(this.cycleOptions[this.currentCycleIndex]);
+      
+      // Play a sound effect (if available)
+      try {
+        this.sound.play('menuSelect', { volume: 0.3 });
+      } catch (error) {
+        // Fallback if sound doesn't exist
+        console.log('Menu sound not available');
+      }
+    }
+
+    // Add this new method for better button fallbacks
+    private createDifficultyButtonFallback() {
+      const graphics = this.add.graphics();
+      
+      // Create a more sophisticated button design
+      const buttonWidth = 280;
+      const buttonHeight = 50;
+      
+      // Main button background with gradient effect
+      graphics.fillStyle(0x2a2a4a);
+      graphics.fillRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
+      
+      // Add highlight
+      graphics.fillStyle(0x3a3a5a);
+      graphics.fillRoundedRect(2, 2, buttonWidth - 4, buttonHeight / 3, 6);
+      
+      // Border
+      graphics.lineStyle(2, 0x88ccff, 0.5);
+      graphics.strokeRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
+      
+      graphics.generateTexture('button_cycle_normal', buttonWidth, buttonHeight);
+      
+      // Hover version
+      graphics.clear();
+      graphics.fillStyle(0x3a3a5a);
+      graphics.fillRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
+      graphics.fillStyle(0x4a4a6a);
+      graphics.fillRoundedRect(2, 2, buttonWidth - 4, buttonHeight / 3, 6);
+      graphics.lineStyle(2, 0x99ddff, 0.8);
+      graphics.strokeRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
+      graphics.generateTexture('button_cycle_hover', buttonWidth, buttonHeight);
+      
+      graphics.destroy();
     }
     
     selectButton(index: number) {
