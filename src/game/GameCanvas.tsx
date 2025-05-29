@@ -1,247 +1,599 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import StatusBar from "./components/StatusBar";
-import MessageBox from "./components/MessageBox";
-import { MenuSystem } from "./systems/MenuSystem";
-import { SettingsSystem } from "./systems/SettingsSystem";
-import MenuSystemUI from "./components/MenuSystem";
-import SettingsButton from "./components/SettingsButton";
-import { ChevronUp, ChevronDown, Check, X } from "lucide-react";
-import { createMainMenuScene } from "./scenes/MainMenuScene";
-import { GameStateData } from "./types/gameTypes";
-import { GameState } from "./constants";
-import { BattleScene } from "./scenes/BattleScene";
-import SettingsPanel from "./utils/SettingsPanel";
-import ResultModal from "./components/ResultModal";
-import { createSettingsScene } from './scenes/SettingsScene';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import Phaser from 'phaser';
+import { createBattleScene } from './scenes/BattleScene';
+import { GameStateData } from './types/gameTypes';
+import StatusBar from './components/StatusBar';
+import MessageBox from './components/MessageBox';
+import ResultModal from './components/ResultModal';
+import SettingsButton from './components/SettingsButton';
+import SettingsPanel from './utils/SettingsPanel';
+import { SettingsSystem } from './systems/SettingsSystem';
+import { MenuSystem } from './systems/MenuSystem';
+
+// Debug logging utility
+const debugLog = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.log(`[${timestamp}] [${component}] ${message}`, data ? data : '');
+};
+
+// Simple Main Menu Scene directly in this file
+function createMainMenuScene() {
+  debugLog('GameCanvas', 'Creating MainMenuScene class');
+  
+  return class MainMenuScene extends Phaser.Scene {
+    private selectedIndex = 0;
+    private menuItems = ['Start Game', 'Settings', 'Credits'];
+    private sceneInitialized = false;
+
+    constructor() {
+      debugLog('MainMenuScene', 'Constructor called');
+      super({ key: 'MainMenuScene' });
+      debugLog('MainMenuScene', 'Constructor completed');
+    }
+
+    preload() {
+      debugLog('MainMenuScene', 'Preload started');
+      try {
+        // Simulate some preload work
+        this.load.once('complete', () => {
+          debugLog('MainMenuScene', 'Preload complete event fired');
+        });
+        
+        debugLog('MainMenuScene', 'Preload completed successfully');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error in preload:', error);
+      }
+    }
+
+    create() {
+      debugLog('MainMenuScene', 'Create started');
+      
+      try {
+        debugLog('MainMenuScene', 'About to call setupScene()');
+        this.setupScene();
+        this.sceneInitialized = true;
+        debugLog('MainMenuScene', 'Scene created successfully');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error creating scene:', error);
+        this.showErrorState();
+      }
+    }
+
+    private setupScene() {
+      debugLog('MainMenuScene', 'Setting up scene components');
+      
+      try {
+        // Background
+        debugLog('MainMenuScene', 'Creating background');
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1a2e, 1);
+        bg.fillRect(0, 0, 800, 600);
+        debugLog('MainMenuScene', 'Background created');
+
+        // Title
+        debugLog('MainMenuScene', 'Creating title text');
+        this.add.text(400, 150, 'Mystic Ruins', {
+          fontFamily: 'Arial',
+          fontSize: '48px',
+          color: '#ffffff',
+          stroke: '#2a2a4a',
+          strokeThickness: 4
+        }).setOrigin(0.5);
+        debugLog('MainMenuScene', 'Title created');
+
+        // Subtitle
+        debugLog('MainMenuScene', 'Creating subtitle');
+        this.add.text(400, 200, 'Lost Civilization', {
+          fontFamily: 'Arial',
+          fontSize: '20px',
+          color: '#aaccff'
+        }).setOrigin(0.5);
+        debugLog('MainMenuScene', 'Subtitle created');
+
+        // Menu buttons
+        debugLog('MainMenuScene', 'Creating menu buttons');
+        this.createMenuButtons();
+        debugLog('MainMenuScene', 'Menu buttons created');
+        
+        debugLog('MainMenuScene', 'Setting up input');
+        this.setupInput();
+        debugLog('MainMenuScene', 'Input setup complete');
+        
+        debugLog('MainMenuScene', 'Updating menu selection');
+        this.updateMenuSelection();
+        debugLog('MainMenuScene', 'Menu selection updated');
+
+        // Fade in
+        debugLog('MainMenuScene', 'Starting fade in');
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+        debugLog('MainMenuScene', 'Fade in started');
+        
+        debugLog('MainMenuScene', 'Scene setup completed successfully');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error in setupScene:', error);
+        throw error;
+      }
+    }
+
+    private createMenuButtons() {
+      debugLog('MainMenuScene', `Creating ${this.menuItems.length} menu buttons`);
+      
+      this.menuItems.forEach((item, index) => {
+        try {
+          debugLog('MainMenuScene', `Creating button ${index}: ${item}`);
+          const y = 320 + (index * 60);
+          
+          // Button background
+          const button = this.add.graphics();
+          button.fillStyle(0x4488ff, 1);
+          button.fillRoundedRect(-80, -20, 160, 40, 5);
+          button.lineStyle(2, 0xffffff, 1);
+          button.strokeRoundedRect(-80, -20, 160, 40, 5);
+          button.setPosition(400, y);
+          button.setInteractive(new Phaser.Geom.Rectangle(-80, -20, 160, 40), Phaser.Geom.Rectangle.Contains);
+
+          // Button text
+          const text = this.add.text(400, y, item, {
+            fontFamily: 'Arial',
+            fontSize: '18px',
+            color: '#ffffff'
+          }).setOrigin(0.5);
+
+          // Store references
+          button.setName(`button_${index}`);
+          text.setName(`text_${index}`);
+
+          // Button interactions
+          button.on('pointerover', () => {
+            debugLog('MainMenuScene', `Button ${index} hovered`);
+            this.selectedIndex = index;
+            this.updateMenuSelection();
+          });
+
+          button.on('pointerdown', () => {
+            debugLog('MainMenuScene', `Button ${index} clicked`);
+            this.selectMenuItem();
+          });
+          
+          debugLog('MainMenuScene', `Button ${index} created successfully`);
+        } catch (error) {
+          debugLog('MainMenuScene', `Error creating button ${index}:`, error);
+        }
+      });
+      
+      debugLog('MainMenuScene', 'All menu buttons created');
+    }
+
+    private setupInput() {
+      debugLog('MainMenuScene', 'Setting up keyboard input');
+      
+      try {
+        this.input.keyboard.on('keydown-UP', () => {
+          debugLog('MainMenuScene', 'UP key pressed');
+          this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : this.menuItems.length - 1;
+          this.updateMenuSelection();
+        });
+
+        this.input.keyboard.on('keydown-DOWN', () => {
+          debugLog('MainMenuScene', 'DOWN key pressed');
+          this.selectedIndex = this.selectedIndex < this.menuItems.length - 1 ? this.selectedIndex + 1 : 0;
+          this.updateMenuSelection();
+        });
+
+        this.input.keyboard.on('keydown-SPACE', () => {
+          debugLog('MainMenuScene', 'SPACE key pressed');
+          this.selectMenuItem();
+        });
+
+        this.input.keyboard.on('keydown-ENTER', () => {
+          debugLog('MainMenuScene', 'ENTER key pressed');
+          this.selectMenuItem();
+        });
+        
+        debugLog('MainMenuScene', 'Keyboard input setup complete');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error setting up input:', error);
+      }
+    }
+
+    private updateMenuSelection() {
+      debugLog('MainMenuScene', `Updating menu selection to index ${this.selectedIndex}`);
+      
+      try {
+        for (let i = 0; i < this.menuItems.length; i++) {
+          const button = this.children.getByName(`button_${i}`) as Phaser.GameObjects.Graphics;
+          const text = this.children.getByName(`text_${i}`) as Phaser.GameObjects.Text;
+          
+          if (button && text) {
+            button.clear();
+            if (i === this.selectedIndex) {
+              button.fillStyle(0x66aaff, 1);
+              button.fillRoundedRect(-80, -20, 160, 40, 5);
+              button.lineStyle(2, 0xffffff, 1);
+              button.strokeRoundedRect(-80, -20, 160, 40, 5);
+              button.setScale(1.05);
+              text.setScale(1.05);
+            } else {
+              button.fillStyle(0x4488ff, 1);
+              button.fillRoundedRect(-80, -20, 160, 40, 5);
+              button.lineStyle(2, 0xffffff, 1);
+              button.strokeRoundedRect(-80, -20, 160, 40, 5);
+              button.setScale(1.0);
+              text.setScale(1.0);
+            }
+          } else {
+            debugLog('MainMenuScene', `Warning: Could not find button or text for index ${i}`);
+          }
+        }
+        debugLog('MainMenuScene', 'Menu selection update complete');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error updating menu selection:', error);
+      }
+    }
+
+    private selectMenuItem() {
+      debugLog('MainMenuScene', `Selecting menu item ${this.selectedIndex}: ${this.menuItems[this.selectedIndex]}`);
+      
+      switch (this.selectedIndex) {
+        case 0: // Start Game
+          this.startGame();
+          break;
+        case 1: // Settings
+          debugLog('MainMenuScene', 'Settings selected');
+          break;
+        case 2: // Credits
+          debugLog('MainMenuScene', 'Credits selected');
+          break;
+      }
+    }
+
+    private startGame() {
+      debugLog('MainMenuScene', 'Starting game transition');
+      
+      try {
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          debugLog('MainMenuScene', 'Fade out complete, starting battle scene');
+          this.scene.start('MysticRuinsBattleScene', {
+            enemyType: 'SLIME',
+            difficulty: 'Normal'
+          });
+        });
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error starting game:', error);
+      }
+    }
+
+    private showErrorState() {
+      debugLog('MainMenuScene', 'Showing error state');
+      
+      try {
+        const errorBg = this.add.graphics();
+        errorBg.fillStyle(0x000000, 0.9);
+        errorBg.fillRect(0, 0, 800, 600);
+
+        const errorText = this.add.text(400, 300, 'Scene Error: Failed to initialize main menu', {
+          fontFamily: 'Arial',
+          fontSize: '24px',
+          color: '#ff0000',
+          align: 'center',
+          wordWrap: { width: 600 }
+        }).setOrigin(0.5);
+
+        const restartText = this.add.text(400, 400, 'Click to restart scene', {
+          fontFamily: 'Arial',
+          fontSize: '18px',
+          color: '#ffffff',
+          align: 'center'
+        }).setOrigin(0.5).setInteractive();
+
+        restartText.on('pointerdown', () => {
+          debugLog('MainMenuScene', 'Restart button clicked');
+          this.scene.restart();
+        });
+        
+        debugLog('MainMenuScene', 'Error state displayed');
+      } catch (error) {
+        debugLog('MainMenuScene', 'Error showing error state:', error);
+      }
+    }
+
+    getLoadingProgress(): number {
+      return 100;
+    }
+
+    getCurrentLoadingTask(): string {
+      return 'Menu ready!';
+    }
+
+    getLoadingError(): string | null {
+      return null;
+    }
+
+    isCurrentlyLoading(): boolean {
+      return false;
+    }
+
+    destroy() {
+      debugLog('MainMenuScene', 'Destroy called');
+      super.destroy();
+      debugLog('MainMenuScene', 'Destroy complete');
+    }
+  };
+}
 
 export default function GameCanvas() {
+  debugLog('GameCanvas', 'Component rendering started');
+  
   // Component refs and state
   const container = useRef<HTMLDivElement>(null);
   const [gameLoaded, setGameLoaded] = useState(false);
   const [gameState, setGameState] = useState<GameStateData | null>(null);
-  const [menuSystem] = useState(() => new MenuSystem());
-  const [settingsSystem] = useState(() => new SettingsSystem());
-  const [isMobile, setIsMobile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [gameInstance, setGameInstance] = useState<any>(null);
-  const [isLoadingBattle, setIsLoadingBattle] = useState(false);
-
-  // Check if device is mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Function to handle menu item selection
-  const handleMenuItemSelect = useCallback((index: number) => {
-    if (window.gameControlEvent) {
-      if (index === menuSystem.getSelectedIndex()) {
-        // If clicking on already selected item, trigger selection
-        window.gameControlEvent("select");
-      } else {
-        // First update the selection
-        const diff = index - menuSystem.getSelectedIndex();
-        for (let i = 0; i < Math.abs(diff); i++) {
-          if (diff > 0) {
-            window.gameControlEvent("down");
-          } else {
-            window.gameControlEvent("up");
-          }
-        }
-      }
-    }
-  }, [menuSystem]);
+  const [gameInstance, setGameInstance] = useState<Phaser.Game | null>(null);
+  
+  // Create systems
+  const [menuSystem] = useState(() => {
+    debugLog('GameCanvas', 'Creating MenuSystem');
+    return new MenuSystem();
+  });
+  const [settingsSystem] = useState(() => {
+    debugLog('GameCanvas', 'Creating SettingsSystem');
+    return new SettingsSystem();
+  });
 
   // Update game state handler
   const updateGameState = useCallback((state: GameStateData) => {
+    debugLog('GameCanvas', 'Game state updated:', state);
     setGameState(state);
   }, []);
 
   // Create battle scene dependencies
-  const battleSceneDeps = useMemo(() => ({
-    menuSystem,
-    updateGameState
-  }), [menuSystem, updateGameState]);
+  const battleSceneDeps = useMemo(() => {
+    debugLog('GameCanvas', 'Creating battle scene dependencies');
+    return {
+      menuSystem,
+      updateGameState
+    };
+  }, [menuSystem, updateGameState]);
 
-  // Initialize Phaser and create the game
+  // Initialize Phaser game - SIMPLIFIED APPROACH
   useEffect(() => {
-    let game: any = null;
+    debugLog('GameCanvas', 'useEffect triggered for game initialization');
     
-    const initPhaser = async () => {
+    if (gameInstance) {
+      debugLog('GameCanvas', 'Game instance already exists, skipping initialization');
+      return;
+    }
+
+    // Use a more aggressive timeout to ensure DOM is ready
+    const initTimeout = setTimeout(() => {
+      debugLog('GameCanvas', 'Starting Phaser game initialization after delay');
+
       try {
-        const Phaser = await import('phaser');
+        // Check container availability
+        if (!container.current) {
+          debugLog('GameCanvas', 'Container still not available, retrying in 500ms');
+          setTimeout(() => {
+            if (container.current) {
+              debugLog('GameCanvas', 'Container found on retry, initializing game');
+              initializeGame();
+            } else {
+              debugLog('GameCanvas', 'Container never became available, setting loaded anyway');
+              setGameLoaded(true);
+            }
+          }, 500);
+          return;
+        }
+
+        initializeGame();
+
+      } catch (error) {
+        debugLog('GameCanvas', 'Error in initialization timeout:', error);
+        setGameLoaded(true);
+      }
+    }, 250); // Increased delay
+
+    function initializeGame() {
+      try {
+        debugLog('GameCanvas', 'initializeGame() called');
         
-        // Create the main menu scene
-        const MainMenuScene = createMainMenuScene(Phaser.default);
+        if (!container.current) {
+          debugLog('GameCanvas', 'Container not available in initializeGame');
+          setGameLoaded(true);
+          return;
+        }
+
+        debugLog('GameCanvas', 'Container confirmed available, proceeding with Phaser');
+
+        // Log dependencies
+        debugLog('GameCanvas', 'Battle scene dependencies:', battleSceneDeps);
         
-        // Create custom battle scene class instance
-        const battleScene = new BattleScene(battleSceneDeps);
+        // Create main menu scene
+        debugLog('GameCanvas', 'Creating main menu scene');
+        const MainMenuScene = createMainMenuScene();
         
-        // Define game configuration
-        const config = {
-          type: Phaser.default.AUTO,
+        // Create battle scene
+        debugLog('GameCanvas', 'Creating battle scene');
+        const BattleScene = createBattleScene(Phaser, battleSceneDeps);
+        
+        debugLog('GameCanvas', 'Both scenes created, setting up Phaser config');
+
+        // Simple Phaser configuration
+        const config: Phaser.Types.Core.GameConfig = {
+          type: Phaser.AUTO,
           width: 800,
           height: 600,
-          parent: container.current!,
+          parent: container.current,
+          backgroundColor: '#1a1a2e',
           physics: {
             default: 'arcade',
             arcade: {
-              gravity: { y: 0 },
+              gravity: { y: 0, x: 0 },
               debug: false
             }
           },
-          scene: [MainMenuScene, battleScene], // MainMenuScene first
-          pixelArt: true,
-          backgroundColor: '#000000',
+          scene: [
+            MainMenuScene,
+            BattleScene
+          ],
           scale: {
-            mode: Phaser.default.Scale.FIT,
-            autoCenter: Phaser.default.Scale.CENTER_BOTH
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            width: 800,
+            height: 600
           }
         };
+
+        debugLog('GameCanvas', 'Phaser config created:', config);
+
+        debugLog('GameCanvas', 'Creating Phaser game instance');
+        const game = new Phaser.Game(config);
         
-        // Create the game
-        game = new Phaser.default.Game(config);
-        setGameInstance(game);
-        
-        // Add loading events after game is created and scene is initialized
+        // Add game event listeners for debugging
         game.events.once('ready', () => {
-          // Get the battle scene from the scene manager
-          const battleSceneInstance = game.scene.getScene('MysticRuinsBattleScene');
-          
-          if (battleSceneInstance && battleSceneInstance.events) {
-            // Listen for scene events to manage loading state
-            battleSceneInstance.events.on('preload', () => {
-              setIsLoadingBattle(true);
-            });
-            
-            battleSceneInstance.events.on('create', () => {
-              setIsLoadingBattle(false);
-            });
-          }
+          debugLog('GameCanvas', 'Phaser game ready event fired');
+          setGameLoaded(true);
         });
+
+        // Fallback timeout in case ready event doesn't fire
+        setTimeout(() => {
+          if (!gameLoaded) {
+            debugLog('GameCanvas', 'Fallback timeout: Setting game loaded to true');
+            setGameLoaded(true);
+          }
+        }, 2000);
+
+        setGameInstance(game);
+        debugLog('GameCanvas', 'Game instance set in state');
         
-        // Expose updateGameState for scene to call
-        window.updateGameState = updateGameState;
-        
-        setGameLoaded(true);
+        debugLog('GameCanvas', 'Game initialization completed successfully');
+
       } catch (error) {
-        console.error("Failed to load Phaser:", error);
-        setIsLoadingBattle(false);
+        debugLog('GameCanvas', 'Error in initializeGame:', error);
+        debugLog('GameCanvas', 'Error stack:', error.stack);
+        setGameLoaded(true);
       }
-    };
-    
-    initPhaser();
-    
-    // Cleanup on unmount
+    }
+
+    // Cleanup timeout if effect is cleaned up
     return () => {
-      if (game) {
-        game.destroy(true);
-      }
-      delete window.updateGameState;
-      delete window.gameControlEvent;
-      setIsLoadingBattle(false);
+      debugLog('GameCanvas', 'Cleanup timeout');
+      clearTimeout(initTimeout);
     };
-  }, [battleSceneDeps, updateGameState]);
+    
+  }, [battleSceneDeps, gameLoaded]); // Added gameLoaded as dependency
+
+  // Cleanup game instance on unmount
+  useEffect(() => {
+    return () => {
+      if (gameInstance) {
+        debugLog('GameCanvas', 'Cleaning up Phaser game on unmount');
+        gameInstance.destroy(true);
+      }
+    };
+  }, [gameInstance]);
 
   // Handle touch control button clicks
   const handleControlClick = useCallback((action: string) => {
-    if (window.gameControlEvent) {
-      window.gameControlEvent(action);
+    debugLog('GameCanvas', `Control button clicked: ${action}`);
+    if ((window as any).gameControlEvent) {
+      (window as any).gameControlEvent(action);
+    } else {
+      debugLog('GameCanvas', 'Warning: gameControlEvent not found on window');
     }
   }, []);
 
   // Handle settings toggle
   const toggleSettings = useCallback(() => {
+    debugLog('GameCanvas', 'Toggling settings panel');
     setShowSettings(prev => !prev);
   }, []);
 
   // Handle continuing to next level after victory
   const handleContinueJourney = useCallback(() => {
-    if (window.gameControlEvent && gameInstance) {
-      // Reset the battle with a new enemy type (for the "next level")
-      window.gameControlEvent("nextLevel");
+    debugLog('GameCanvas', 'Continue journey requested');
+    if (gameInstance && gameState) {
+      const battleScene = gameInstance.scene.getScene('MysticRuinsBattleScene');
+      if (battleScene) {
+        debugLog('GameCanvas', 'Starting new battle scene');
+        gameInstance.scene.start('MysticRuinsBattleScene', { 
+          difficulty: 'Normal' 
+        });
+      } else {
+        debugLog('GameCanvas', 'Warning: Battle scene not found');
+      }
+    } else {
+      debugLog('GameCanvas', 'Warning: Game instance or state not available for continue');
     }
-  }, [gameInstance]);
+  }, [gameInstance, gameState]);
 
   // Handle retrying after defeat
-  const handleRetry = useCallback(() => {
-    if (window.gameControlEvent && gameInstance) {
-      // Reset the battle with the same enemy type
-      window.gameControlEvent("retry");
+  const handleRetryBattle = useCallback(() => {
+    debugLog('GameCanvas', 'Retry battle requested');
+    if (gameInstance) {
+      try {
+        const currentScene = gameInstance.scene.getScenes(true)[0];
+        if (currentScene && currentScene.scene) {
+          debugLog('GameCanvas', 'Restarting current scene');
+          currentScene.scene.restart();
+        } else {
+          debugLog('GameCanvas', 'Warning: No active scene found for retry');
+        }
+      } catch (error) {
+        debugLog('GameCanvas', 'Error retrying battle:', error);
+      }
+    } else {
+      debugLog('GameCanvas', 'Warning: Game instance not available for retry');
     }
   }, [gameInstance]);
 
-  // Determine if menu should be shown
-  const shouldShowMenu = useMemo(() => (
-    !showSettings && gameState?.currentState === GameState.PLAYER_TURN
-  ), [showSettings, gameState?.currentState]);
+  debugLog('GameCanvas', `Rendering component - gameLoaded: ${gameLoaded}, gameState: ${gameState ? 'exists' : 'null'}`);
 
-  return (
-    <div className="relative">
-      <div className="text-white text-center mb-4">Mystic Ruins: Lost Civilization</div>
-      
-      {/* Game Canvas Container */}
-      <div className="relative">
-        {/* Game Canvas */}
-        <div 
-          ref={container} 
-          className="w-full aspect-[4/3] md:h-[600px] rounded-lg overflow-hidden bg-gray-900"
-        ></div>
-        
-        {/* Battle Loading Overlay */}
-        {isLoadingBattle && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-lg">
-            <div className="text-center text-white">
-              <span className="loading loading-spinner loading-lg text-primary mb-4"></span>
-              <p className="text-lg">Loading battle assets...</p>
-              <p className="text-sm opacity-70">Preparing character models</p>
-            </div>
+  if (!gameLoaded) {
+    debugLog('GameCanvas', 'Rendering loading screen');
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="bg-base-300 rounded-lg p-8 text-center">
+          <div className="loading loading-spinner loading-lg mb-4"></div>
+          <p className="text-lg">Loading Mystic Ruins...</p>
+          <p className="text-sm text-base-content/70 mt-2">
+            Initializing game systems...
+          </p>
+          <div className="text-xs text-base-content/50 mt-4">
+            Check console for detailed loading information
           </div>
-        )}
-        
-        {/* Settings Button */}
-        <div className="absolute top-4 right-4 z-20">
-          <SettingsButton onClick={toggleSettings} />
         </div>
-        
-        {/* Settings Panel Component */}
-        <SettingsPanel 
-          settingsSystem={settingsSystem}
-          show={showSettings}
-          onClose={() => setShowSettings(false)}
-        />
-        
-        {/* Victory/Defeat Modal */}
-        {gameState && (gameState.currentState === GameState.VICTORY || gameState.currentState === GameState.DEFEAT) && (
-          <ResultModal
-            gameState={gameState.currentState}
-            enemyName={gameState.enemyName}
-            onContinue={handleContinueJourney}
-            onRetry={handleRetry}
-            experience={15 + Math.floor(Math.random() * 10)}
-            gold={8 + Math.floor(Math.random() * 7)}
-          />
-        )}
       </div>
+    );
+  }
+
+  debugLog('GameCanvas', 'Rendering main game interface');
+  return (
+    <div className="w-full max-w-4xl mx-auto relative">
+      {/* Game Container */}
+      <div 
+        ref={container} 
+        className="relative bg-base-300 rounded-lg overflow-hidden shadow-2xl"
+        style={{ aspectRatio: '4/3' }}
+      />
       
-      {/* Loading State */}
-      {!gameLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-base-300 bg-opacity-50">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-        </div>
-      )}
+      {/* Settings Button */}
+      <SettingsButton onClick={toggleSettings} />
       
-      {/* Game UI */}
+      {/* Settings Panel */}
+      <SettingsPanel 
+        settingsSystem={settingsSystem}
+        show={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+      
+      {/* Game UI Overlay */}
       {gameState && (
-        <div className="mt-4 bg-base-300 p-4 rounded-lg border border-base-content/10">
-          {/* Status Bars */}
-          <StatusBar 
+        <div className="mt-4 space-y-4">
+          {/* Status Bar */}
+          <StatusBar
             playerHP={gameState.playerHP}
             maxPlayerHP={gameState.maxPlayerHP}
             playerMP={gameState.playerMP}
@@ -254,69 +606,50 @@ export default function GameCanvas() {
           {/* Message Box */}
           <MessageBox message={gameState.message} />
           
-          {/* Menu System UI */}
-          {shouldShowMenu && (
-            <div className="my-4">
-              <MenuSystemUI 
-                menuItems={menuSystem.getMenuItems()}
-                selectedIndex={menuSystem.getSelectedIndex()}
-                currentMenu={menuSystem.getCurrentMenu()}
-                onSelectItem={handleMenuItemSelect}
-              />
-            </div>
-          )}
+          {/* Mobile Controls */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+            <button 
+              className="btn btn-sm"
+              onClick={() => handleControlClick('attack')}
+            >
+              Attack
+            </button>
+            <button 
+              className="btn btn-sm"
+              onClick={() => handleControlClick('magic')}
+            >
+              Magic
+            </button>
+            <button 
+              className="btn btn-sm"
+              onClick={() => handleControlClick('item')}
+            >
+              Item
+            </button>
+            <button 
+              className="btn btn-sm"
+              onClick={() => handleControlClick('defend')}
+            >
+              Defend
+            </button>
+          </div>
           
-          {/* Controls */}
-          {isMobile ? (
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <button 
-                className="btn btn-circle btn-outline btn-lg mx-auto"
-                onClick={() => handleControlClick('up')}
-              >
-                <ChevronUp size={24} />
-              </button>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  className="btn btn-circle btn-outline btn-success btn-lg"
-                  onClick={() => handleControlClick('select')}
-                >
-                  <Check size={24} />
-                </button>
-                <button 
-                  className="btn btn-circle btn-outline btn-error btn-lg"
-                  onClick={() => handleControlClick('back')}
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              
-              <button 
-                className="btn btn-circle btn-outline btn-lg mx-auto"
-                onClick={() => handleControlClick('down')}
-              >
-                <ChevronDown size={24} />
-              </button>
-            </div>
-          ) : (
-            <div className="mt-4 flex items-center justify-center gap-4 text-sm opacity-70 border-t border-base-content/10 pt-2">
-              <div className="flex items-center gap-1">
-                <kbd className="kbd kbd-sm">↑</kbd>
-                <kbd className="kbd kbd-sm">↓</kbd>
-                <span>Navigate</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <kbd className="kbd kbd-sm">Z</kbd>
-                <span>Select</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <kbd className="kbd kbd-sm">X</kbd>
-                <span>Back</span>
-              </div>
-            </div>
-          )}
+          {/* Result Modal */}
+          <ResultModal
+            gameState={gameState.currentState}
+            enemyName={gameState.enemyName}
+            onContinue={handleContinueJourney}
+            onRetry={handleRetryBattle}
+          />
         </div>
       )}
+      
+      {/* Debug Info */}
+      <div className="mt-2 text-xs text-base-content/50">
+        Game Instance: {gameInstance ? 'Ready' : 'Not Ready'} | 
+        Game State: {gameState ? 'Active' : 'Waiting'} | 
+        Settings: {showSettings ? 'Open' : 'Closed'}
+      </div>
     </div>
   );
 }

@@ -1,367 +1,50 @@
-import { Button } from "../assets/ui/Button";
-import { generateTextureFromReactComponent } from "../utils/textureGenerator";
-import { TemplateRuins } from "../../assets/images/backgrounds/TemplateRuins";
-import { LoadingManager } from "../utils/LoadingManager";
-import { AssetLoader } from "../utils/AssetLoader";
+import { generateTextureFromReactComponent } from '../utils/textureGenerator';
+import TemplateRuins from '../../assets/images/backgrounds/TemplateRuins';
+import Frame from '../assets/ui/Frame';
+import Button from '../assets/ui/Button';
 
-// Custom Asset Loader for Main Menu
-class MainMenuAssetLoader {
-  private scene: Phaser.Scene;
-  private loadingManager: LoadingManager;
-
-  constructor(scene: Phaser.Scene, loadingManager: LoadingManager) {
-    this.scene = scene;
-    this.loadingManager = loadingManager;
-  }
-
-  async loadAllAssets() {
-    try {
-      console.log('MainMenuAssetLoader: Starting asset loading process');
-      
-      await this.loadBackgroundAssets();
-      await this.loadButtonAssets();
-      await this.loadUIAssets();
-      await this.loadExternalAssets();
-      
-      this.loadingManager.completeTask('finalize');
-      console.log('MainMenuAssetLoader: All assets loaded successfully');
-    } catch (error) {
-      console.error('MainMenuAssetLoader: Asset loading failed:', error);
-      throw error;
-    }
-  }
-
-  private async loadBackgroundAssets() {
-    this.loadingManager.setCurrentTask('background');
-    console.log('MainMenuAssetLoader: Loading background assets');
-    
-    try {
-      await generateTextureFromReactComponent(
-        TemplateRuins,
-        { width: 800, height: 600, isMenuBackground: true },
-        'menuBg',
-        this.scene
-      );
-      console.log('MainMenuAssetLoader: Background assets loaded');
-    } catch (error) {
-      console.error('MainMenuAssetLoader: Failed to load background assets:', error);
-      this.createFallbackBackground();
-    }
-    
-    this.loadingManager.completeTask('background');
-  }
-
-  private async loadButtonAssets() {
-    this.loadingManager.setCurrentTask('buttons');
-    console.log('MainMenuAssetLoader: Loading button assets');
-    
-    const menuItems = [
-      { id: 'start', text: 'Start Game', variant: 'primary' },
-      { id: 'settings', text: 'Settings', variant: 'secondary' },
-      { id: 'credits', text: 'Credits', variant: 'secondary' }
-    ];
-
-    // Load cycle button first
-    try {
-      await generateTextureFromReactComponent(
-        Button,
-        { 
-          width: 220, 
-          height: 50, 
-          text: "Difficulty", 
-          variant: "danger", 
-          state: 'normal' 
-        },
-        `button_cycle_normal`,
-        this.scene
-      );
-
-      await generateTextureFromReactComponent(
-        Button,
-        { 
-          width: 220, 
-          height: 50, 
-          text: "Difficulty", 
-          variant: "danger", 
-          state: 'hover' 
-        },
-        `button_cycle_hover`,
-        this.scene
-      );
-    } catch (error) {
-      console.warn('MainMenuAssetLoader: Failed to load cycle buttons, creating fallbacks:', error);
-      this.createFallbackButton('button_cycle_normal', 'cycle', 'normal');
-      this.createFallbackButton('button_cycle_hover', 'cycle', 'hover');
-    }
-
-    // Load menu buttons
-    for (const item of menuItems) {
-      try {
-        // Normal state
-        await generateTextureFromReactComponent(
-          Button,
-          { 
-            width: 220, 
-            height: 50, 
-            text: item.text, 
-            variant: item.variant as any, 
-            state: 'normal' 
-          },
-          `button_${item.id}_normal`,
-          this.scene
-        );
-        
-        // Hover state
-        await generateTextureFromReactComponent(
-          Button,
-          { 
-            width: 220, 
-            height: 50, 
-            text: item.text, 
-            variant: item.variant as any, 
-            state: 'hover' 
-          },
-          `button_${item.id}_hover`,
-          this.scene
-        );
-      } catch (error) {
-        console.warn(`MainMenuAssetLoader: Failed to load button ${item.id}, creating fallbacks:`, error);
-        this.createFallbackButton(`button_${item.id}_normal`, item.id, 'normal');
-        this.createFallbackButton(`button_${item.id}_hover`, item.id, 'hover');
-      }
-    }
-    
-    console.log('MainMenuAssetLoader: Button assets loaded');
-    this.loadingManager.completeTask('buttons');
-  }
-
-  private async loadUIAssets() {
-    this.loadingManager.setCurrentTask('ui');
-    console.log('MainMenuAssetLoader: Loading UI assets');
-    
-    // Create particle texture
-    try {
-      const particleGraphic = this.scene.make.graphics({ x: 0, y: 0 });
-      particleGraphic.fillStyle(0xffffff);
-      particleGraphic.fillCircle(8, 8, 2);
-      particleGraphic.generateTexture('particle', 16, 16);
-      particleGraphic.destroy();
-    } catch (error) {
-      console.warn('MainMenuAssetLoader: Failed to create particle texture:', error);
-      this.createFallbackParticle();
-    }
-    
-    console.log('MainMenuAssetLoader: UI assets loaded');
-    this.loadingManager.completeTask('ui');
-  }
-
-  private async loadExternalAssets() {
-    this.loadingManager.setCurrentTask('external');
-    console.log('MainMenuAssetLoader: Loading external assets');
-    
-    // Create fallback logo first
-    this.createFallbackLogo();
-    
-    // Try to load external logo
-    this.scene.load.image('logo', 'https://i.imgur.com/Z1U1YTy.png');
-    this.scene.load.start();
-    
-    return new Promise<void>((resolve) => {
-      this.scene.load.once('complete', () => {
-        console.log('MainMenuAssetLoader: External assets loaded');
-        this.loadingManager.completeTask('external');
-        resolve();
-      });
-      
-      // Add timeout fallback
-      setTimeout(() => {
-        console.warn('MainMenuAssetLoader: External asset loading timed out, using fallbacks');
-        this.loadingManager.completeTask('external');
-        resolve();
-      }, 5000); // 5 second timeout
-    });
-  }
-
-  // Fallback asset creation methods
-  private createFallbackBackground() {
-    const graphics = this.scene.add.graphics();
-    
-    // Create mystical gradient background
-    graphics.fillGradientStyle(0x1a1a3a, 0x1a1a3a, 0x2a2a5a, 0x2a2a5a, 1);
-    graphics.fillRect(0, 0, 800, 600);
-    
-    // Add some mystical atmosphere
-    graphics.fillStyle(0x4a4a8a, 0.3);
-    for (let i = 0; i < 100; i++) {
-      const x = Math.random() * 800;
-      const y = Math.random() * 600;
-      const size = Math.random() * 2 + 0.5;
-      graphics.fillCircle(x, y, size);
-    }
-    
-    // Add mystical ruins silhouettes
-    graphics.fillStyle(0x0a0a2a, 0.6);
-    graphics.fillRect(50, 400, 100, 200);
-    graphics.fillRect(650, 350, 120, 250);
-    graphics.fillTriangle(100, 400, 50, 400, 75, 350);
-    graphics.fillTriangle(710, 350, 650, 350, 680, 300);
-    
-    graphics.generateTexture('menuBg', 800, 600);
-    graphics.destroy();
-  }
-
-  private createFallbackButton(key: string, variant: string, state: string) {
-    const graphics = this.scene.add.graphics();
-    
-    // Button colors based on variant and state
-    let color = 0x666666;
-    let textColor = '#ffffff';
-    
-    if (variant === 'start' || variant === 'primary') {
-      color = 0x4a9eff;
-      textColor = '#ffffff';
-    } else if (variant === 'settings' || variant === 'secondary') {
-      color = 0x6c757d;
-      textColor = '#ffffff';
-    } else if (variant === 'credits') {
-      color = 0x6c757d;
-      textColor = '#ffffff';
-    } else if (variant === 'cycle' || variant === 'danger') {
-      color = 0xdc3545;
-      textColor = '#ffffff';
-    }
-    
-    if (state === 'hover') {
-      color = (color & 0xfefefe) >> 1 | 0x808080;
-    }
-    
-    // Draw button background
-    graphics.fillStyle(color);
-    graphics.fillRoundedRect(0, 0, 220, 50, 8);
-    
-    // Border
-    graphics.lineStyle(2, 0xffffff, 0.3);
-    graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-    
-    graphics.generateTexture(key, 220, 50);
-    graphics.destroy();
-  }
-
-  private createFallbackParticle() {
-    const graphics = this.scene.add.graphics();
-    graphics.fillStyle(0xffffff);
-    graphics.fillCircle(8, 8, 2);
-    graphics.generateTexture('particle', 16, 16);
-    graphics.destroy();
-  }
-
-  private createFallbackLogo() {
-    const graphics = this.scene.add.graphics();
-    
-    // Create a simple mystical logo
-    graphics.fillStyle(0x88ccff);
-    graphics.fillCircle(32, 32, 30);
-    
-    graphics.fillStyle(0x4a9eff);
-    graphics.fillCircle(32, 32, 20);
-    
-    graphics.fillStyle(0x2a6eff);
-    graphics.fillCircle(32, 32, 10);
-    
-    graphics.generateTexture('logo', 64, 64);
-    graphics.destroy();
-  }
-}
-
-// Instead of direct extension, we'll create a factory function that accepts the Phaser instance
 export function createMainMenuScene(Phaser: any) {
   return class MainMenuScene extends Phaser.Scene {
-    private gameTitle!: Phaser.GameObjects.Text;
+    private selectedIndex = 0;
+    private menuItems = [
+      { id: 'start', text: 'Start Adventure', icon: '⚔️' },
+      { id: 'settings', text: 'Settings', icon: '⚙️' },
+      { id: 'credits', text: 'Credits', icon: '📜' }
+    ];
+    private sceneInitialized = false;
+    
+    // Visual elements
+    private backgroundImage!: Phaser.GameObjects.Image;
+    private titleText!: Phaser.GameObjects.Text;
+    private subtitleText!: Phaser.GameObjects.Text;
     private menuButtons: Phaser.GameObjects.Image[] = [];
-    private selectedButtonIndex = 0;
-    private buttonCount = 3;
-    private animating = false;
+    private menuTexts: Phaser.GameObjects.Text[] = [];
+    private menuIcons: Phaser.GameObjects.Text[] = [];
+    private decorativeFrames: Phaser.GameObjects.Image[] = [];
+    private backgroundParticles: Phaser.GameObjects.Graphics[] = [];
+    private runeSymbols: Phaser.GameObjects.Graphics[] = [];
+    private glowEffect!: Phaser.GameObjects.Graphics;
     
-    // Add properties for cycling button
-    private cycleOptions: string[] = ['Normal', 'Hard', 'Insane'];
-    private currentCycleIndex = 0;
-    private cycleText!: Phaser.GameObjects.Text;
-    private cycleButton!: Phaser.GameObjects.Container;
-    
-    // Loading management
-    private loadingManager: LoadingManager;
-    private assetLoader: MainMenuAssetLoader;
-    private isLoading: boolean = true;
-    private loadingError: string | null = null;
-    
+    // Animation tweens
+    private titleTween?: Phaser.Tweens.Tween;
+    private particleTweens: Phaser.Tweens.Tween[] = [];
+
     constructor() {
       super({ key: 'MainMenuScene' });
-      this.loadingManager = new LoadingManager();
-      this.assetLoader = new MainMenuAssetLoader(this, this.loadingManager);
-      
-      // Setup loading progress tracking
-      this.setupLoadingTracking();
     }
 
-    private setupLoadingTracking() {
-      // Listen for loading progress updates
-      this.loadingManager.onProgress((progress, currentTask) => {
-        // Emit progress for external loading screen
-        this.events.emit('loading-progress', { progress, currentTask });
-        console.log(`MainMenu Loading: ${progress.toFixed(1)}% - ${currentTask}`);
-      });
-    }
-
-    init() {
-      // Setup loading tasks
-      const tasks = LoadingManager.createMainMenuTasks();
-      tasks.forEach(task => this.loadingManager.addTask(task));
-    }
-    
-    async preload() {
+    preload() {
       console.log('MainMenuScene preload started');
-      
-      try {
-        this.isLoading = true;
-        this.loadingError = null;
-        
-        // Emit loading start event for external loading screen
-        this.events.emit('loading-start');
-        
-        // Load all assets using the modular loader
-        await this.assetLoader.loadAllAssets();
-        
-        console.log('MainMenu: All assets loaded successfully');
-        this.isLoading = false;
-        
-        // Emit loading complete
-        this.events.emit('loading-complete');
-        
-      } catch (error) {
-        console.error('Error loading main menu assets:', error);
-        this.loadingError = error instanceof Error ? error.message : 'Unknown loading error';
-        this.isLoading = false;
-        
-        // Emit loading error
-        this.events.emit('loading-error', { error: this.loadingError });
-      }
+      // The assets will be generated in create()
+      console.log('MainMenuScene preload completed');
     }
-    
+
     create() {
       console.log('MainMenuScene create started');
       
-      if (this.isLoading) {
-        this.time.delayedCall(100, () => this.create());
-        return;
-      }
-      
-      if (this.loadingError) {
-        this.showErrorState();
-        return;
-      }
-      
       try {
         this.setupScene();
+        this.sceneInitialized = true;
         console.log('MainMenuScene created successfully');
       } catch (error) {
         console.error('Error creating main menu scene:', error);
@@ -369,805 +52,772 @@ export function createMainMenuScene(Phaser: any) {
       }
     }
 
-    private setupScene() {
-      // Add background with parallax effect
-      const bg = this.add.image(400, 300, 'menuBg');
-      bg.setDepth(0);
+    private async setupScene() {
+      console.log('Setting up main menu scene...');
       
-      // Create a subtle fog overlay
-      const fog = this.add.graphics();
-      fog.fillStyle(0xaaccff, 0.05);
-      fog.fillRect(0, 0, 800, 600);
-      fog.setDepth(1);
+      // Load the background image first
+      await this.loadBackgroundAssets();
       
-      // Create animated particles for mystical atmosphere
-      this.createParticles();
+      // Create the background
+      this.createBackground();
       
-      // Add game logo/title
-      if (this.textures.exists('logo')) {
-        const logo = this.add.image(400, 120, 'logo').setScale(1.5); // Moved up slightly
-        logo.setDepth(10);
+      // Create decorative elements
+      this.createDecorations();
+      
+      // Create mystical particle effects
+      this.createParticleEffects();
+      
+      // Create main UI elements
+      await this.createTitle();
+      await this.createMenuButtons();
+      this.setupInput();
+      this.updateMenuSelection();
+      
+      // Start entrance animations
+      this.playEntranceAnimation();
+    }
+
+    private async loadBackgroundAssets() {
+      console.log('Loading background assets...');
+      
+      try {
+        // Generate the menu background texture
+        await generateTextureFromReactComponent(
+          TemplateRuins,
+          { 
+            width: 800, 
+            height: 600, 
+            isMenuBackground: true 
+          },
+          'menu_background',
+          this
+        );
+        
+        // Generate decorative frames
+        await generateTextureFromReactComponent(
+          Frame,
+          { 
+            width: 300, 
+            height: 80, 
+            variant: 'decorative' 
+          },
+          'title_frame',
+          this
+        );
+        
+        await generateTextureFromReactComponent(
+          Frame,
+          { 
+            width: 120, 
+            height: 120, 
+            variant: 'default' 
+          },
+          'corner_frame',
+          this
+        );
+        
+        console.log('Background assets loaded successfully');
+      } catch (error) {
+        console.error('Error loading background assets:', error);
+        this.createFallbackBackground();
+      }
+    }
+
+    private createBackground() {
+      console.log('Creating background...');
+      
+      // Use the generated background texture
+      if (this.textures.exists('menu_background')) {
+        this.backgroundImage = this.add.image(400, 300, 'menu_background');
+        this.backgroundImage.setDepth(0);
+        console.log('Menu background created from TemplateRuins');
+      } else {
+        // Fallback gradient background
+        this.createFallbackBackground();
+      }
+    }
+
+    private createDecorations() {
+      console.log('Creating decorative elements...');
+      
+      // Add decorative frames in corners
+      if (this.textures.exists('corner_frame')) {
+        const corners = [
+          { x: 100, y: 100 },
+          { x: 700, y: 100 },
+          { x: 100, y: 500 },
+          { x: 700, y: 500 }
+        ];
+        
+        corners.forEach((corner, index) => {
+          const frame = this.add.image(corner.x, corner.y, 'corner_frame');
+          frame.setDepth(2);
+          frame.setAlpha(0.7);
+          frame.setRotation(index * Math.PI / 2);
+          this.decorativeFrames.push(frame);
+          
+          // Add subtle animation to frames
+          this.tweens.add({
+            targets: frame,
+            alpha: { from: 0.7, to: 0.9 },
+            scale: { from: 1, to: 1.05 },
+            duration: 3000 + index * 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        });
       }
       
-      // Add title text with glow
-      this.gameTitle = this.add.text(400, 200, 'Mystic Ruins', { // Moved up
-        fontFamily: 'serif',
-        fontSize: '48px',
-        color: '#ffffff',
-        stroke: '#2a2a4a',
-        strokeThickness: 6,
-        align: 'center'
-      }).setOrigin(0.5);
-      this.gameTitle.setDepth(10);
-      
-      // Add subtitle
-      const subtitle = this.add.text(400, 250, 'Lost Civilization', { // Moved up
-        fontFamily: 'serif',
-        fontSize: '24px',
-        color: '#aaccff',
-        align: 'center'
-      }).setOrigin(0.5);
-      subtitle.setDepth(10);
-      
-      // Add menu buttons (adjusted positions)
-      this.addMenuButtons();
-      
-      // Add the cycling button with more space
-      this.addCycleButton();
-      
-      // Add decorative runes around the border
-      this.addDecorativeBorder();
-      
-      // Add version number
-      this.add.text(10, 580, 'v0.1.1', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#ffffff',
-        align: 'left'
-      }).setAlpha(0.6);
-      
-      // Add copyright
-      this.add.text(790, 580, '© 2024', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#ffffff',
-        align: 'right'
-      }).setOrigin(1, 0).setAlpha(0.6);
-      
-      // Setup input
-      this.setupInput();
-      
-      // Initial button highlight
-      this.selectButton(0);
-      
-      // Add fade-in effect
-      this.cameras.main.fadeIn(1000, 0, 0, 0);
+      // Create mystical rune symbols
+      this.createRuneDecorations();
     }
-    
-    addMenuButtons() {
-      const buttonData = [
-        { id: 'start', y: 320, callback: this.startGame.bind(this) },    // Moved up
-        { id: 'settings', y: 380, callback: this.openSettings.bind(this) }, // Moved up
-        { id: 'credits', y: 440, callback: this.showCredits.bind(this) }     // Moved up
+
+    private createRuneDecorations() {
+      // Create decorative rune symbols around the screen
+      const runePositions = [
+        { x: 150, y: 150 }, { x: 650, y: 150 },
+        { x: 150, y: 450 }, { x: 650, y: 450 },
+        { x: 75, y: 300 }, { x: 725, y: 300 }
       ];
       
-      buttonData.forEach((button, index) => {
-        const textureKey = `button_${button.id}_normal`;
+      runePositions.forEach((pos, index) => {
+        const rune = this.add.graphics();
+        rune.setPosition(pos.x, pos.y);
+        rune.setDepth(3);
+        rune.setAlpha(0.4);
         
-        // Check if texture exists, use fallback if not
-        if (!this.textures.exists(textureKey)) {
-          console.warn(`Texture ${textureKey} not found, creating fallback`);
-          this.createButtonFallback(button.id);
-        }
+        // Draw mystical rune symbol with enhanced design
+        rune.lineStyle(2, 0x88ccff, 0.8);
+        rune.beginPath();
+        rune.arc(0, 0, 20, 0, Math.PI * 2);
+        rune.strokePath();
         
-        const buttonImage = this.add.image(400, button.y, textureKey);
-        buttonImage.setDepth(10);
-        buttonImage.setInteractive();
+        // Inner cross pattern
+        rune.beginPath();
+        rune.moveTo(-15, -15);
+        rune.lineTo(15, 15);
+        rune.moveTo(15, -15);
+        rune.lineTo(-15, 15);
+        rune.moveTo(0, -20);
+        rune.lineTo(0, 20);
+        rune.moveTo(-20, 0);
+        rune.lineTo(20, 0);
+        rune.strokePath();
         
-        // Add hover effect
-        buttonImage.on('pointerover', () => {
-          this.selectButton(index);
+        // Add inner circle
+        rune.lineStyle(1, 0xaaccff, 0.6);
+        rune.strokeCircle(0, 0, 10);
+        
+        this.runeSymbols.push(rune);
+        
+        // Animate rune rotation and pulsing
+        this.tweens.add({
+          targets: rune,
+          rotation: Math.PI * 2,
+          duration: 20000 + index * 2000,
+          repeat: -1,
+          ease: 'Linear'
         });
         
-        // Add click effect
-        buttonImage.on('pointerup', () => {
-          button.callback();
+        this.tweens.add({
+          targets: rune,
+          alpha: { from: 0.4, to: 0.8 },
+          scale: { from: 1, to: 1.2 },
+          duration: 3000 + index * 500,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
         });
-        
-        this.menuButtons.push(buttonImage);
       });
     }
 
-    private createButtonFallback(buttonId: string) {
-      const graphics = this.add.graphics();
-      
-      // Different colors for different buttons
-      let color = 0x666666;
-      if (buttonId === 'start') color = 0x4a9eff;
-      else if (buttonId === 'settings') color = 0x6c757d;
-      else if (buttonId === 'credits') color = 0x6c757d;
-      
-      graphics.fillStyle(color);
-      graphics.fillRoundedRect(0, 0, 220, 50, 8);
-      graphics.lineStyle(2, 0xffffff, 0.3);
-      graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-      graphics.generateTexture(`button_${buttonId}_normal`, 220, 50);
-      
-      // Hover version
-      graphics.clear();
-      graphics.fillStyle((color & 0xfefefe) >> 1 | 0x808080);
-      graphics.fillRoundedRect(0, 0, 220, 50, 8);
-      graphics.lineStyle(2, 0xffffff, 0.5);
-      graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-      graphics.generateTexture(`button_${buttonId}_hover`, 220, 50);
-      
-      graphics.destroy();
-    }
-    
-    // Add the cycling difficulty button
-    addCycleButton() {
-      // Create a container for the button and text
-      this.cycleButton = this.add.container(400, 540);
-      this.cycleButton.setDepth(10);
-      
-      // Check if cycle button texture exists
-      const cycleTextureKey = 'button_cycle_normal';
-      if (!this.textures.exists(cycleTextureKey)) {
-        console.warn(`Texture ${cycleTextureKey} not found, creating fallback`);
-        this.createDifficultyButtonFallback();
+    private createParticleEffects() {
+      // Create floating magical particles
+      for (let i = 0; i < 20; i++) {
+        const particle = this.add.graphics();
+        particle.fillStyle(0x88ccff, 0.6);
+        particle.fillCircle(0, 0, 2);
+        particle.setPosition(
+          Math.random() * 800,
+          Math.random() * 600
+        );
+        particle.setDepth(4);
+        
+        this.backgroundParticles.push(particle);
+        
+        // Create floating animation
+        const tween = this.tweens.add({
+          targets: particle,
+          y: particle.y - 100,
+          alpha: { from: 0.6, to: 0 },
+          scale: { from: 1, to: 0.3 },
+          duration: 4000 + Math.random() * 2000,
+          ease: 'Sine.easeOut',
+          onComplete: () => {
+            // Reset particle position
+            particle.setPosition(
+              Math.random() * 800,
+              600 + Math.random() * 100
+            );
+            particle.setAlpha(0.6);
+            particle.setScale(1);
+            tween.restart();
+          }
+        });
+        
+        this.particleTweens.push(tween);
       }
+    }
+
+    private async createTitle() {
+      console.log('Creating title elements...');
       
-      // Create a wider background for better spacing
-      const buttonBg = this.add.graphics();
-      buttonBg.fillStyle(0x2a2a4a, 0.9);
-      buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
-      buttonBg.lineStyle(2, 0x88ccff, 0.5);
-      buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
-      buttonBg.setInteractive(new Phaser.Geom.Rectangle(-140, -25, 280, 50), Phaser.Geom.Rectangle.Contains);
-      
-      // Add the label text on the left
-      const labelText = this.add.text(-120, 0, "Difficulty:", {
+      // Main title with enhanced styling
+      this.titleText = this.add.text(400, 150, 'MYSTIC RUINS', {
         fontFamily: 'serif',
-        fontSize: '16px',
+        fontSize: '56px',
+        fontStyle: 'bold',
         color: '#ffffff',
-        fontWeight: 'bold'
-      }).setOrigin(0, 0.5);
+        stroke: '#2a2a4a',
+        strokeThickness: 6,
+        shadow: {
+          offsetX: 3,
+          offsetY: 3,
+          color: '#000000',
+          blur: 8,
+          stroke: true,
+          fill: true
+        }
+      }).setOrigin(0.5).setDepth(10);
       
-      // Add separator
-      const separator = this.add.text(-20, 0, "►", {
-        fontFamily: 'serif',
-        fontSize: '14px',
-        color: '#88ccff',
-      }).setOrigin(0.5, 0.5);
-      
-      // Add the cycling text on the right with better positioning
-      this.cycleText = this.add.text(40, 0, this.cycleOptions[this.currentCycleIndex], {
+      // Subtitle with mystical feel
+      this.subtitleText = this.add.text(400, 200, '~ Lost Civilization ~', {
         fontFamily: 'serif',
         fontSize: '18px',
-        color: '#ffcc00',
-        fontStyle: 'bold',
-        stroke: '#2a2a4a',
-        strokeThickness: 2
-      }).setOrigin(0.5, 0.5);
+        fontStyle: 'italic',
+        color: '#aaccff',
+        shadow: {
+          offsetX: 2,
+          offsetY: 2,
+          color: '#000000',
+          blur: 4
+        }
+      }).setOrigin(0.5).setDepth(10);
       
-      // Add difficulty color indicator
-      const difficultyColors = {
-        'Normal': '#28a745',  // Green
-        'Hard': '#ffc107',    // Yellow
-        'Insane': '#dc3545'   // Red
-      };
+      // Add decorative frame behind title if available
+      if (this.textures.exists('title_frame')) {
+        const titleFrame = this.add.image(400, 175, 'title_frame');
+        titleFrame.setDepth(9);
+        titleFrame.setAlpha(0.8);
+      }
       
-      const difficultyIndicator = this.add.graphics();
-      const currentDifficulty = this.cycleOptions[this.currentCycleIndex];
-      difficultyIndicator.fillStyle(Phaser.Display.Color.HexStringToColor(difficultyColors[currentDifficulty]).color);
-      difficultyIndicator.fillCircle(100, 0, 8);
-      difficultyIndicator.lineStyle(2, 0xffffff, 0.8);
-      difficultyIndicator.strokeCircle(100, 0, 8);
+      // Add magical glow effect to title
+      this.glowEffect = this.add.graphics();
+      this.glowEffect.setDepth(8);
+      this.updateTitleGlow();
+    }
+
+    private updateTitleGlow() {
+      this.glowEffect.clear();
+      this.glowEffect.fillGradientStyle(0x88ccff, 0x88ccff, 0x4466bb, 0x4466bb, 0.2, 0.2, 0.05, 0.05);
+      this.glowEffect.fillEllipse(400, 175, 350, 80);
+    }
+
+    private async createMenuButtons() {
+      console.log('Creating menu buttons...');
       
-      // Store reference for updates
-      this.cycleButton.setData('difficultyIndicator', difficultyIndicator);
+      const startY = 300;
+      const buttonSpacing = 70;
       
-      // Make button interactive with improved hover effects
-      buttonBg.on('pointerover', () => {
-        // Hover effect - lighten background
-        buttonBg.clear();
-        buttonBg.fillStyle(0x3a3a5a, 0.9);
-        buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
-        buttonBg.lineStyle(2, 0x99ddff, 0.8);
-        buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
+      for (let index = 0; index < this.menuItems.length; index++) {
+        const item = this.menuItems[index];
+        const y = startY + (index * buttonSpacing);
         
-        // Scale effect
+        try {
+          // Generate button texture for each state
+          await generateTextureFromReactComponent(
+            Button,
+            {
+              width: 250,
+              height: 50,
+              text: item.text,
+              variant: 'primary',
+              state: 'normal'
+            },
+            `button_${item.id}_normal`,
+            this
+          );
+          
+          await generateTextureFromReactComponent(
+            Button,
+            {
+              width: 250,
+              height: 50,
+              text: item.text,
+              variant: 'primary',
+              state: 'hover'
+            },
+            `button_${item.id}_hover`,
+            this
+          );
+          
+          // Create button using generated texture
+          const button = this.add.image(400, y, `button_${item.id}_normal`);
+          button.setDepth(15);
+          button.setInteractive();
+          
+          // Create icon
+          const icon = this.add.text(320, y, item.icon, {
+            fontSize: '24px'
+          }).setOrigin(0.5);
+          icon.setDepth(16);
+          
+          // Store references
+          button.setName(`button_${index}`);
+          icon.setName(`icon_${index}`);
+          
+          this.menuButtons.push(button);
+          this.menuIcons.push(icon);
+          
+          // Button interactions
+          button.on('pointerover', () => {
+            this.selectedIndex = index;
+            this.updateMenuSelection();
+            this.playHoverSound();
+          });
+          
+          button.on('pointerdown', () => {
+            this.playClickSound();
+            this.selectMenuItem();
+          });
+          
+          // Set initial state for entrance animation
+          button.setAlpha(0);
+          icon.setAlpha(0);
+          button.setScale(0.8);
+          icon.setScale(0.8);
+          
+        } catch (error) {
+          console.error(`Error creating button ${item.id}:`, error);
+          // Create fallback button
+          this.createFallbackButton(index, item, y);
+        }
+      }
+    }
+
+    private createFallbackButton(index: number, item: any, y: number) {
+      // Fallback button creation using graphics
+      const button = this.add.graphics();
+      button.setPosition(400, y);
+      button.setDepth(15);
+      
+      // Create button text
+      const text = this.add.text(400, y, item.text, {
+        fontFamily: 'serif',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        shadow: {
+          offsetX: 2,
+          offsetY: 2,
+          color: '#000000',
+          blur: 3
+        }
+      }).setOrigin(0.5);
+      text.setDepth(16);
+      
+      // Create icon
+      const icon = this.add.text(320, y, item.icon, {
+        fontSize: '24px'
+      }).setOrigin(0.5);
+      icon.setDepth(16);
+      
+      // Store references
+      button.setName(`button_${index}`);
+      text.setName(`text_${index}`);
+      icon.setName(`icon_${index}`);
+      
+      this.menuButtons.push(button as any);
+      this.menuTexts.push(text);
+      this.menuIcons.push(icon);
+      
+      // Button interactions
+      const buttonArea = this.add.zone(400, y, 250, 50);
+      buttonArea.setInteractive();
+      buttonArea.setDepth(17);
+      
+      buttonArea.on('pointerover', () => {
+        this.selectedIndex = index;
+        this.updateMenuSelection();
+        this.playHoverSound();
+      });
+      
+      buttonArea.on('pointerdown', () => {
+        this.playClickSound();
+        this.selectMenuItem();
+      });
+      
+      // Set initial state
+      button.setAlpha(0);
+      text.setAlpha(0);
+      icon.setAlpha(0);
+    }
+
+    private updateMenuSelection() {
+      this.menuButtons.forEach((button, index) => {
+        const icon = this.menuIcons[index];
+        const isSelected = index === this.selectedIndex;
+        const item = this.menuItems[index];
+        
+        // Update button texture if using generated buttons
+        if (button instanceof Phaser.GameObjects.Image) {
+          const textureKey = `button_${item.id}_${isSelected ? 'hover' : 'normal'}`;
+          if (this.textures.exists(textureKey)) {
+            button.setTexture(textureKey);
+          }
+        } else {
+          // Fallback graphics button
+          this.drawFallbackButton(button as Phaser.GameObjects.Graphics, isSelected);
+        }
+        
+        // Animate selection
+        const targetScale = isSelected ? 1.05 : 1.0;
+        const targetAlpha = isSelected ? 1.0 : 0.9;
+        
         this.tweens.add({
-          targets: [labelText, separator, this.cycleText, difficultyIndicator],
-          scaleX: 1.05,
-          scaleY: 1.05,
-          duration: 150,
+          targets: [button, icon],
+          scaleX: targetScale,
+          scaleY: targetScale,
+          alpha: targetAlpha,
+          duration: 200,
+          ease: 'Power2'
+        });
+        
+        // Special effects for selected item
+        if (isSelected && icon) {
+          // Add floating effect to icon
+          this.tweens.add({
+            targets: icon,
+            y: icon.y - 3,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        } else if (icon) {
+          // Stop floating effect
+          this.tweens.killTweensOf(icon);
+          const baseY = 300 + (index * 70);
+          icon.y = baseY;
+        }
+      });
+    }
+
+    private drawFallbackButton(button: Phaser.GameObjects.Graphics, isSelected: boolean) {
+      button.clear();
+      
+      const width = 250;
+      const height = 50;
+      
+      if (isSelected) {
+        // Selected button - using Frame-like styling
+        button.fillGradientStyle(0x4488ff, 0x6699ff, 0x2266dd, 0x4488ff, 1, 1, 1, 1);
+        button.fillRoundedRect(-width/2, -height/2, width, height, 8);
+        
+        // Mystical border like Frame component
+        button.lineStyle(2, 0x88ccff, 0.9);
+        button.strokeRoundedRect(-width/2, -height/2, width, height, 8);
+        
+        // Inner highlight
+        button.lineStyle(1, 0xaaccff, 0.7);
+        button.strokeRoundedRect(-width/2 + 2, -height/2 + 2, width - 4, height - 4, 6);
+      } else {
+        // Normal button - subtle Frame-like styling
+        button.fillGradientStyle(0x334466, 0x445577, 0x223344, 0x334466, 0.8, 0.8, 0.8, 0.8);
+        button.fillRoundedRect(-width/2, -height/2, width, height, 8);
+        
+        // Subtle mystical border
+        button.lineStyle(1.5, 0x556688, 0.6);
+        button.strokeRoundedRect(-width/2, -height/2, width, height, 8);
+      }
+    }
+
+    private setupInput() {
+      // Keyboard input with smoother handling
+      let lastInputTime = 0;
+      const inputDelay = 150;
+      
+      this.input.keyboard.on('keydown-UP', () => {
+        const now = Date.now();
+        if (now - lastInputTime < inputDelay) return;
+        lastInputTime = now;
+        
+        this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : this.menuItems.length - 1;
+        this.updateMenuSelection();
+        this.playNavigateSound();
+      });
+
+      this.input.keyboard.on('keydown-DOWN', () => {
+        const now = Date.now();
+        if (now - lastInputTime < inputDelay) return;
+        lastInputTime = now;
+        
+        this.selectedIndex = this.selectedIndex < this.menuItems.length - 1 ? this.selectedIndex + 1 : 0;
+        this.updateMenuSelection();
+        this.playNavigateSound();
+      });
+
+      this.input.keyboard.on('keydown-SPACE', () => {
+        this.selectMenuItem();
+        this.playClickSound();
+      });
+
+      this.input.keyboard.on('keydown-ENTER', () => {
+        this.selectMenuItem();
+        this.playClickSound();
+      });
+    }
+
+    private selectMenuItem() {
+      const selectedItem = this.menuItems[this.selectedIndex];
+      
+      // Add button press animation
+      const button = this.menuButtons[this.selectedIndex];
+      const icon = this.menuIcons[this.selectedIndex];
+      
+      this.tweens.add({
+        targets: [button, icon],
+        scaleX: 0.95,
+        scaleY: 0.95,
+        duration: 100,
+        yoyo: true,
+        ease: 'Power2'
+      });
+      
+      // Handle selection after animation
+      this.time.delayedCall(150, () => {
+        switch (selectedItem.id) {
+          case 'start':
+            this.startGame();
+            break;
+          case 'settings':
+            console.log('Settings selected - Future feature');
+            this.showComingSoon('Settings');
+            break;
+          case 'credits':
+            console.log('Credits selected - Future feature');
+            this.showComingSoon('Credits');
+            break;
+        }
+      });
+    }
+
+    private startGame() {
+      console.log('Starting adventure...');
+      
+      // Enhanced exit animation
+      this.cameras.main.flash(100, 255, 255, 255, false);
+      
+      // Fade out all elements
+      this.tweens.add({
+        targets: [this.titleText, this.subtitleText],
+        alpha: 0,
+        y: '-=50',
+        duration: 500,
+        ease: 'Power2'
+      });
+      
+      this.menuButtons.forEach((button, index) => {
+        this.tweens.add({
+          targets: [button, this.menuIcons[index]],
+          alpha: 0,
+          x: '+=100',
+          duration: 300,
+          delay: index * 100,
           ease: 'Power2'
         });
       });
       
-      buttonBg.on('pointerout', () => {
-        // Reset background
-        buttonBg.clear();
-        buttonBg.fillStyle(0x2a2a4a, 0.9);
-        buttonBg.fillRoundedRect(-140, -25, 280, 50, 8);
-        buttonBg.lineStyle(2, 0x88ccff, 0.5);
-        buttonBg.strokeRoundedRect(-140, -25, 280, 50, 8);
-        
-        // Reset scale
+      // Transition to battle scene
+      this.cameras.main.fadeOut(800, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('MysticRuinsBattleScene', {
+          enemyType: 'SLIME',
+          difficulty: 'Normal'
+        });
+      });
+    }
+
+    private showComingSoon(feature: string) {
+      // Create coming soon popup with Frame styling
+      const popup = this.add.graphics();
+      popup.fillStyle(0x000000, 0.8);
+      popup.fillRect(0, 0, 800, 600);
+      popup.setDepth(50);
+      
+      const popupText = this.add.text(400, 300, `${feature}\nComing Soon!`, {
+        fontFamily: 'serif',
+        fontSize: '32px',
+        color: '#ffffff',
+        align: 'center',
+        shadow: {
+          offsetX: 2,
+          offsetY: 2,
+          color: '#000000',
+          blur: 5
+        }
+      }).setOrigin(0.5).setDepth(51);
+      
+      const closeText = this.add.text(400, 380, 'Click anywhere to close', {
+        fontFamily: 'serif',
+        fontSize: '16px',
+        color: '#aaccff',
+        align: 'center'
+      }).setOrigin(0.5).setDepth(51);
+      
+      // Make popup interactive
+      popup.setInteractive();
+      popup.on('pointerdown', () => {
+        popup.destroy();
+        popupText.destroy();
+        closeText.destroy();
+      });
+      
+      // Auto close after 3 seconds
+      this.time.delayedCall(3000, () => {
+        if (popup.active) {
+          popup.destroy();
+          popupText.destroy();
+          closeText.destroy();
+        }
+      });
+    }
+
+    private playEntranceAnimation() {
+      // Background fade in
+      if (this.backgroundImage) {
+        this.backgroundImage.setAlpha(0);
         this.tweens.add({
-          targets: [labelText, separator, this.cycleText, difficultyIndicator],
+          targets: this.backgroundImage,
+          alpha: 1,
+          duration: 1500,
+          ease: 'Power2'
+        });
+      }
+      
+      // Decorative frames entrance
+      this.decorativeFrames.forEach((frame, index) => {
+        frame.setAlpha(0);
+        frame.setScale(0.5);
+        this.tweens.add({
+          targets: frame,
+          alpha: 0.7,
+          scale: 1,
+          duration: 800,
+          delay: 200 + (index * 100),
+          ease: 'Back.easeOut'
+        });
+      });
+      
+      // Title entrance
+      this.titleText.setAlpha(0);
+      this.titleText.y -= 30;
+      this.subtitleText.setAlpha(0);
+      this.subtitleText.y -= 20;
+      
+      this.tweens.add({
+        targets: this.titleText,
+        alpha: 1,
+        y: '+=30',
+        duration: 1000,
+        delay: 400,
+        ease: 'Back.easeOut'
+      });
+      
+      this.tweens.add({
+        targets: this.subtitleText,
+        alpha: 1,
+        y: '+=20',
+        duration: 800,
+        delay: 600,
+        ease: 'Power2'
+      });
+      
+      // Menu buttons entrance
+      this.menuButtons.forEach((button, index) => {
+        const icon = this.menuIcons[index];
+        
+        this.tweens.add({
+          targets: [button, icon],
+          alpha: 1,
           scaleX: 1,
           scaleY: 1,
-          duration: 150,
-          ease: 'Power2'
+          duration: 600,
+          delay: 1000 + (index * 150),
+          ease: 'Back.easeOut'
         });
       });
       
-      buttonBg.on('pointerdown', () => {
-        this.cycleDifficulty();
-      });
-      
-      // Add all elements to the container
-      this.cycleButton.add([buttonBg, labelText, separator, this.cycleText, difficultyIndicator]);
-      
-      // Add a subtle pulsing effect to draw attention
-      this.tweens.add({
-        targets: separator,
-        alpha: { from: 0.6, to: 1 },
-        duration: 1200,
+      // Start title glow animation
+      this.titleTween = this.tweens.add({
+        targets: this.glowEffect,
+        alpha: { from: 0.2, to: 0.5 },
+        scaleX: { from: 1, to: 1.1 },
+        scaleY: { from: 1, to: 1.1 },
+        duration: 2500,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut'
       });
       
-      // Add instructional text below
-      const instructionText = this.add.text(400, 570, 'Click to change difficulty', {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#888888',
-        align: 'center'
-      }).setOrigin(0.5).setAlpha(0.7);
+      // Camera fade in
+      this.cameras.main.fadeIn(1200, 15, 17, 35);
     }
 
-    // Update the cycleDifficulty method for better visual feedback
-    cycleDifficulty() {
-      // Increment the index and wrap around if needed
-      this.currentCycleIndex = (this.currentCycleIndex + 1) % this.cycleOptions.length;
+    private createFallbackBackground() {
+      // Fallback gradient background
+      const bg = this.add.graphics();
+      bg.fillGradientStyle(0x1a1a2e, 0x1a1a2e, 0x2a2a4e, 0x2a2a4e, 1, 1, 1, 1);
+      bg.fillRect(0, 0, 800, 600);
+      bg.setDepth(0);
       
-      // Update the text with animation
-      this.tweens.add({
-        targets: this.cycleText,
-        alpha: 0,
-        scaleX: 0.8,
-        duration: 100,
-        ease: 'Power2',
-        onComplete: () => {
-          this.cycleText.setText(this.cycleOptions[this.currentCycleIndex]);
-          
-          // Update difficulty indicator color
-          const difficultyColors = {
-            'Normal': '#28a745',  // Green
-            'Hard': '#ffc107',    // Yellow
-            'Insane': '#dc3545'   // Red
-          };
-          
-          const difficultyIndicator = this.cycleButton.getData('difficultyIndicator');
-          if (difficultyIndicator) {
-            const currentDifficulty = this.cycleOptions[this.currentCycleIndex];
-            difficultyIndicator.clear();
-            difficultyIndicator.fillStyle(Phaser.Display.Color.HexStringToColor(difficultyColors[currentDifficulty]).color);
-            difficultyIndicator.fillCircle(100, 0, 8);
-            difficultyIndicator.lineStyle(2, 0xffffff, 0.8);
-            difficultyIndicator.strokeCircle(100, 0, 8);
-            
-            // Add glow effect for dramatic difficulties
-            if (currentDifficulty === 'Insane') {
-              difficultyIndicator.lineStyle(3, 0xff0000, 0.6);
-              difficultyIndicator.strokeCircle(100, 0, 12);
-            }
-          }
-          
-          // Fade back in with new text
-          this.tweens.add({
-            targets: this.cycleText,
-            alpha: 1,
-            scaleX: 1,
-            duration: 150,
-            ease: 'Back.easeOut'
-          });
-        }
-      });
-      
-      // Add screen shake for dramatic effect on harder difficulties
-      if (this.cycleOptions[this.currentCycleIndex] === 'Insane') {
-        this.cameras.main.shake(100, 0.01);
-      }
-      
-      // Save the selected difficulty
-      this.saveDifficulty(this.cycleOptions[this.currentCycleIndex]);
-      
-      // Play a sound effect (if available)
-      try {
-        this.sound.play('menuSelect', { volume: 0.3 });
-      } catch (error) {
-        // Fallback if sound doesn't exist
-        console.log('Menu sound not available');
-      }
+      console.log('Created fallback background');
     }
 
-    // Add this new method for better button fallbacks
-    private createDifficultyButtonFallback() {
-      const graphics = this.add.graphics();
-      
-      // Create a more sophisticated button design
-      const buttonWidth = 280;
-      const buttonHeight = 50;
-      
-      // Main button background with gradient effect
-      graphics.fillStyle(0x2a2a4a);
-      graphics.fillRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
-      
-      // Add highlight
-      graphics.fillStyle(0x3a3a5a);
-      graphics.fillRoundedRect(2, 2, buttonWidth - 4, buttonHeight / 3, 6);
-      
-      // Border
-      graphics.lineStyle(2, 0x88ccff, 0.5);
-      graphics.strokeRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
-      
-      graphics.generateTexture('button_cycle_normal', buttonWidth, buttonHeight);
-      
-      // Hover version
-      graphics.clear();
-      graphics.fillStyle(0x3a3a5a);
-      graphics.fillRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
-      graphics.fillStyle(0x4a4a6a);
-      graphics.fillRoundedRect(2, 2, buttonWidth - 4, buttonHeight / 3, 6);
-      graphics.lineStyle(2, 0x99ddff, 0.8);
-      graphics.strokeRoundedRect(0, 0, buttonWidth, buttonHeight, 8);
-      graphics.generateTexture('button_cycle_hover', buttonWidth, buttonHeight);
-      
-      graphics.destroy();
+    // Audio feedback methods (placeholder for future audio implementation)
+    private playHoverSound() {
+      // Future: Play hover sound effect
     }
     
-    selectButton(index: number) {
-      // Make sure index is within bounds
-      this.selectedButtonIndex = Math.max(0, Math.min(this.buttonCount - 1, index));
-      
-      // Update button textures
-      this.menuButtons.forEach((button, i) => {
-        const buttonId = ['start', 'settings', 'credits'][i];
-        const texture = `button_${buttonId}_${i === this.selectedButtonIndex ? 'hover' : 'normal'}`;
-        
-        if (this.textures.exists(texture)) {
-          button.setTexture(texture);
-        }
-        
-        // Add subtle pulse effect to the selected button
-        if (i === this.selectedButtonIndex) {
-          this.tweens.add({
-            targets: button,
-            scaleX: 1.05,
-            scaleY: 1.05,
-            duration: 300,
-            yoyo: true,
-            repeat: 0
-          });
-        } else {
-          button.setScale(1);
-        }
-      });
+    private playClickSound() {
+      // Future: Play click sound effect
     }
     
-    setupInput() {
-      // Keyboard navigation
-      this.input.keyboard.on('keydown-UP', () => {
-        this.selectButton(this.selectedButtonIndex - 1);
-      });
-      
-      this.input.keyboard.on('keydown-DOWN', () => {
-        this.selectButton(this.selectedButtonIndex + 1);
-      });
-      
-      // Selection with Enter or Space
-      this.input.keyboard.on('keydown-ENTER', () => {
-        this.confirmSelection();
-      });
-      
-      this.input.keyboard.on('keydown-SPACE', () => {
-        this.confirmSelection();
-      });
-      
-      this.input.keyboard.on('keydown-Z', () => {
-        this.confirmSelection();
-      });
-    }
-    
-    confirmSelection() {
-      if (this.animating) return;
-      
-      switch (this.selectedButtonIndex) {
-        case 0: // Start Game
-          this.startGame();
-          break;
-        case 1: // Settings
-          this.openSettings();
-          break;
-        case 2: // Credits
-          this.showCredits();
-          break;
-      }
-    }
-    
-    startGame() {
-      if (this.animating) return;
-      this.animating = true;
-      
-      // Pass the selected difficulty to the battle scene if needed
-      const difficulty = this.cycleOptions[this.currentCycleIndex];
-      
-      console.log('Starting game transition with difficulty:', difficulty);
-      
-      // Fade to black and start the game
-      this.cameras.main.fadeOut(1000, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => {
-        try {
-          console.log('Camera fade complete, checking if BattleScene exists');
-          
-          // Check if the BattleScene exists in the scene manager
-          if (this.scene.get('BattleScene')) {
-            console.log('Using scene key: BattleScene');
-            this.scene.start('BattleScene', { difficulty });
-          } else if (this.scene.get('MysticRuinsBattleScene')) {
-            console.log('Using scene key: MysticRuinsBattleScene');
-            this.scene.start('MysticRuinsBattleScene', { difficulty });
-          } else {
-            console.error('Error: Neither BattleScene nor MysticRuinsBattleScene was found!');
-            
-            // Show an error message and fade back in if no valid scene is found
-            this.gameTitle.setText('Error: Battle scene not found\nTry reloading the page');
-            this.cameras.main.fadeIn(1000, 0, 0, 0);
-            this.animating = false;
-            
-            // List all available scenes for debugging
-            const scenes = this.scene.manager.scenes.map(s => s.scene.key);
-            console.log('Available scenes:', scenes);
-          }
-        } catch (error) {
-          console.error('Error during scene transition:', error);
-          
-          // Return to main menu functionality in case of error
-          this.cameras.main.fadeIn(1000, 0, 0, 0);
-          this.animating = false;
-        }
-      });
-    }
-    
-    openSettings() {
-      if (this.animating) return;
-      this.animating = true;
-      
-      console.log('Opening settings menu');
-      
-      // Fade to settings scene
-      this.cameras.main.fadeOut(500, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => {
-        try {
-          // Check if the SettingsScene exists in the scene manager
-          if (this.scene.get('SettingsScene')) {
-            console.log('Using scene key: SettingsScene');
-            this.scene.start('SettingsScene');
-          } else {
-            console.warn('SettingsScene not found, showing enhanced placeholder');
-            
-            // Enhanced fallback settings interface
-            this.showSettingsPlaceholder();
-            this.cameras.main.fadeIn(500, 0, 0, 0);
-            this.animating = false;
-          }
-        } catch (error) {
-          console.error('Error during settings transition:', error);
-          
-          // Return to main menu functionality in case of error
-          this.showSettingsPlaceholder();
-          this.cameras.main.fadeIn(500, 0, 0, 0);
-          this.animating = false;
-        }
-      });
-    }
-
-    private showSettingsPlaceholder() {
-      // Create an enhanced placeholder settings interface
-      const settingsOverlay = this.add.graphics();
-      settingsOverlay.fillStyle(0x000000, 0.8);
-      settingsOverlay.fillRect(0, 0, 800, 600);
-      settingsOverlay.setDepth(100);
-      
-      // Settings panel background
-      settingsOverlay.fillStyle(0x1a1a3a, 0.9);
-      settingsOverlay.fillRoundedRect(100, 100, 600, 400, 16);
-      settingsOverlay.lineStyle(2, 0x88ccff, 0.5);
-      settingsOverlay.strokeRoundedRect(100, 100, 600, 400, 16);
-      
-      // Title
-      const settingsTitle = this.add.text(400, 150, 'Game Settings', {
-        fontFamily: 'serif',
-        fontSize: '32px',
-        color: '#ffffff',
-        stroke: '#2a2a4a',
-        strokeThickness: 4,
-        align: 'center'
-      }).setOrigin(0.5).setDepth(101);
-      
-      // Settings options (placeholder)
-      const settingsText = this.add.text(400, 250, [
-        '🔊 Sound Effects: ON',
-        '🎵 Background Music: ON', 
-        '⚔️ Difficulty: Normal',
-        '',
-        '⚠️ Full settings menu coming soon!',
-        '',
-        'Press ESC or click Back to return'
-      ].join('\n'), {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#aaccff',
-        align: 'center',
-        lineSpacing: 10
-      }).setOrigin(0.5).setDepth(101);
-      
-      // Back button
-      const backButton = this.add.text(400, 420, '← Back to Main Menu', {
-        fontFamily: 'serif',
-        fontSize: '20px',
-        color: '#ffcc00',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(101).setInteractive();
-      
-      // Button hover effects
-      backButton.on('pointerover', () => {
-        backButton.setColor('#ffffff');
-        backButton.setScale(1.1);
-      });
-      
-      backButton.on('pointerout', () => {
-        backButton.setColor('#ffcc00');
-        backButton.setScale(1.0);
-      });
-      
-      // Close settings placeholder
-      const closeSettings = () => {
-        settingsOverlay.destroy();
-        settingsTitle.destroy();
-        settingsText.destroy();
-        backButton.destroy();
-        this.gameTitle.setText('Mystic Ruins');
-      };
-      
-      backButton.on('pointerdown', closeSettings);
-      
-      // ESC key to close
-      const escKey = this.input.keyboard.addKey('ESC');
-      escKey.once('down', closeSettings);
-      
-      // Auto-close after 10 seconds
-      this.time.delayedCall(10000, closeSettings);
-    }
-    
-    showCredits() {
-      if (this.animating) return;
-      this.animating = true;
-      
-      // Enhanced credits placeholder
-      const creditsOverlay = this.add.graphics();
-      creditsOverlay.fillStyle(0x000000, 0.8);
-      creditsOverlay.fillRect(0, 0, 800, 600);
-      creditsOverlay.setDepth(100);
-      
-      // Credits panel background
-      creditsOverlay.fillStyle(0x1a1a3a, 0.9);
-      creditsOverlay.fillRoundedRect(100, 50, 600, 500, 16);
-      creditsOverlay.lineStyle(2, 0x88ccff, 0.5);
-      creditsOverlay.strokeRoundedRect(100, 50, 600, 500, 16);
-      
-      // Credits content
-      const creditsTitle = this.add.text(400, 100, 'Credits', {
-        fontFamily: 'serif',
-        fontSize: '32px',
-        color: '#ffffff',
-        stroke: '#2a2a4a',
-        strokeThickness: 4,
-        align: 'center'
-      }).setOrigin(0.5).setDepth(101);
-      
-      const creditsText = this.add.text(400, 300, [
-        'Mystic Ruins: Lost Civilization',
-        '',
-        '🎮 Game Development',
-        'Powered by Phaser 3 & React',
-        '',
-        '🎨 Visual Design',
-        'Custom UI Components',
-        'Mystical Theme Assets',
-        '',
-        '⚡ Technology Stack',
-        'TypeScript • Astro • Tailwind CSS',
-        'Phaser 3 • React • Vite',
-        '',
-        '🏛️ Special Thanks',
-        'Ancient civilizations for inspiration',
-        '',
-        'Version 0.1.1 - 2024'
-      ].join('\n'), {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#aaccff',
-        align: 'center',
-        lineSpacing: 8
-      }).setOrigin(0.5).setDepth(101);
-      
-      // Back button
-      const backButton = this.add.text(400, 480, '← Back to Main Menu', {
-        fontFamily: 'serif',
-        fontSize: '20px',
-        color: '#ffcc00',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(101).setInteractive();
-      
-      // Button hover effects
-      backButton.on('pointerover', () => {
-        backButton.setColor('#ffffff');
-        backButton.setScale(1.1);
-      });
-      
-      backButton.on('pointerout', () => {
-        backButton.setColor('#ffcc00');
-        backButton.setScale(1.0);
-      });
-      
-      // Close credits
-      const closeCredits = () => {
-        creditsOverlay.destroy();
-        creditsTitle.destroy();
-        creditsText.destroy();
-        backButton.destroy();
-        this.gameTitle.setText('Mystic Ruins');
-        this.animating = false;
-      };
-      
-      backButton.on('pointerdown', closeCredits);
-      
-      // ESC key to close
-      const escKey = this.input.keyboard.addKey('ESC');
-      escKey.once('down', closeCredits);
-      
-      // Auto-close after 15 seconds
-      this.time.delayedCall(15000, closeCredits);
-    }
-    
-    createParticles() {
-      // Make sure the particle texture exists
-      if (!this.textures.exists('particle')) {
-        const particleGraphic = this.make.graphics({ x: 0, y: 0 });
-        particleGraphic.fillStyle(0xffffff);
-        particleGraphic.fillCircle(8, 8, 2);
-        particleGraphic.generateTexture('particle', 16, 16);
-        particleGraphic.destroy();
-      }
-      
-      // Create simple particle effects with fallback
-      try {
-        // Create a simple animation as fallback when particles aren't working
-        for (let i = 0; i < 30; i++) {
-          const x = Math.random() * 800;
-          const y = 600 + Math.random() * 50;
-          const particle = this.add.image(x, y, 'particle');
-          particle.setScale(0.1);
-          particle.setAlpha(0.3);
-          particle.setTint(0x96f2ff);
-          
-          this.tweens.add({
-            targets: particle,
-            y: y - 400 - Math.random() * 200,
-            alpha: 0,
-            scale: 0,
-            duration: 8000 + Math.random() * 4000,
-            ease: 'Linear',
-            onComplete: () => particle.destroy()
-          });
-        }
-        
-        // Add new particles periodically
-        this.time.addEvent({
-          delay: 200,
-          loop: true,
-          callback: () => {
-            const x = Math.random() * 800;
-            const y = 600;
-            const particle = this.add.image(x, y, 'particle');
-            particle.setScale(0.1);
-            particle.setAlpha(0.3);
-            particle.setTint(0x96f2ff);
-            
-            this.tweens.add({
-              targets: particle,
-              y: y - 400 - Math.random() * 200,
-              alpha: 0,
-              scale: 0,
-              duration: 8000 + Math.random() * 4000,
-              ease: 'Linear',
-              onComplete: () => particle.destroy()
-            });
-          }
-        });
-      } catch (error) {
-        console.warn("Could not create particles:", error);
-      }
-    }
-    
-    addDecorativeBorder() {
-      // Create a decorative border with ancient runes
-      const graphics = this.add.graphics();
-      graphics.lineStyle(2, 0x6a81a8, 0.5);
-      
-      // Draw border with slight inset
-      const padding = 20;
-      graphics.strokeRect(padding, padding, 800 - padding * 2, 600 - padding * 2);
-      
-      // Add corner decorations
-      const cornerSize = 20;
-      const corners = [
-        [padding, padding], // Top left
-        [800 - padding, padding], // Top right
-        [800 - padding, 600 - padding], // Bottom right
-        [padding, 600 - padding] // Bottom left
-      ];
-      
-      corners.forEach((corner, i) => {
-        const [x, y] = corner;
-        
-        // Draw rune circle at each corner
-        graphics.strokeCircle(x, y, cornerSize);
-        
-        // Add crossed lines inside circle based on corner position
-        graphics.lineStyle(1, 0x6a81a8, 0.5);
-        if (i === 0) { // Top left
-          graphics.lineBetween(x - cornerSize/2, y - cornerSize/2, x + cornerSize/2, y + cornerSize/2);
-          graphics.lineBetween(x + cornerSize/2, y - cornerSize/2, x - cornerSize/2, y + cornerSize/2);
-        } else if (i === 1) { // Top right
-          graphics.lineBetween(x - cornerSize/2, y - cornerSize/2, x + cornerSize/2, y + cornerSize/2);
-          graphics.lineBetween(x - cornerSize/2, y + cornerSize/2, x + cornerSize/2, y - cornerSize/2);
-        } else if (i === 2) { // Bottom right
-          graphics.lineBetween(x - cornerSize/2, y - cornerSize/2, x + cornerSize/2, y + cornerSize/2);
-          graphics.lineBetween(x, y - cornerSize, x, y + cornerSize);
-        } else { // Bottom left
-          graphics.lineBetween(x - cornerSize, y, x + cornerSize, y);
-          graphics.lineBetween(x, y - cornerSize, x, y + cornerSize);
-        }
-      });
+    private playNavigateSound() {
+      // Future: Play navigation sound effect
     }
 
     private showErrorState() {
       const errorBg = this.add.graphics();
       errorBg.fillStyle(0x000000, 0.9);
       errorBg.fillRect(0, 0, 800, 600);
-      
-      const errorText = this.add.text(400, 300, `Main Menu Error: ${this.loadingError || 'Unknown error'}`, {
+
+      const errorText = this.add.text(400, 300, 'Scene Error: Failed to initialize main menu', {
         fontFamily: 'Arial',
         fontSize: '24px',
         color: '#ff0000',
         align: 'center',
         wordWrap: { width: 600 }
       }).setOrigin(0.5);
-      
+
       const restartText = this.add.text(400, 400, 'Click to restart scene', {
         fontFamily: 'Arial',
         fontSize: '18px',
         color: '#ffffff',
         align: 'center'
       }).setOrigin(0.5).setInteractive();
-      
+
       restartText.on('pointerdown', () => {
         this.scene.restart();
       });
@@ -1175,22 +825,35 @@ export function createMainMenuScene(Phaser: any) {
 
     // Public getters for external loading screen integration
     getLoadingProgress(): number {
-      return this.loadingManager.getProgress();
+      return 100;
     }
 
     getCurrentLoadingTask(): string {
-      return this.loadingManager.getCurrentTask();
+      return 'Menu ready!';
     }
 
     getLoadingError(): string | null {
-      return this.loadingError;
+      return null;
     }
 
-    retryLoading() {
-      this.loadingManager.reset();
-      const tasks = LoadingManager.createMainMenuTasks();
-      tasks.forEach(task => this.loadingManager.addTask(task));
-      this.scene.restart();
+    isCurrentlyLoading(): boolean {
+      return false;
+    }
+
+    destroy() {
+      console.log('MainMenuScene cleanup started');
+      
+      // Clean up animations
+      if (this.titleTween) {
+        this.titleTween.destroy();
+      }
+      
+      this.particleTweens.forEach(tween => {
+        if (tween) tween.destroy();
+      });
+      
+      console.log('MainMenuScene destroyed and cleaned up');
+      super.destroy();
     }
   };
 }

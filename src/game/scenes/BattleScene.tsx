@@ -1,218 +1,259 @@
 import Phaser from 'phaser';
-import { Player } from '../entities/Player';
-import { BattleSystem, BattleEvent } from '../systems/BattleSystem';
 import { GameState, EnemyType } from '../constants';
 import { GameStateData } from '../types/gameTypes';
-import { LoadingManager } from '../utils/LoadingManager';
-import { AssetLoader } from '../utils/AssetLoader';
 
-// Interface to handle menu system references that would be passed from the parent component
+// Simple interfaces for the battle scene
 interface BattleSceneDependencies {
-  menuSystem: any; // Replace with your actual MenuSystem type
+  menuSystem: {
+    getCurrentMenu: () => string;
+    getSelectedIndex: () => number;
+    getMenuItems: () => Array<{ id: string; text: string }>;
+    moveUp: () => void;
+    moveDown: () => void;
+    select: () => void;
+    back: () => void;
+    setSelectedIndex: (index: number) => void;
+  };
   updateGameState: (state: GameStateData) => void;
 }
 
-// Enhanced enemy configuration with all character types
-interface EnemyCharacterConfig {
-  type: EnemyType;
-  texturePrefix: string;
-  displayName: string;
+interface EnemyConfig {
+  name: string;
+  maxHp: number;
+  attack: number;
+  defense: number;
+  color: number;
   scale: number;
   position: { x: number; y: number };
-  idleAnimation?: {
-    scaleVariation: number;
-    duration: number;
-  };
-  specialEffects?: string[];
 }
 
-const ENEMY_CONFIGS: Record<string, EnemyCharacterConfig> = {
+// Enemy configurations
+const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
   'RUNE_CONSTRUCT': {
-    type: 'RUNE_CONSTRUCT' as EnemyType,
-    texturePrefix: 'runeConstruct',
-    displayName: 'Ancient Rune Construct',
+    name: 'Ancient Rune Construct',
+    maxHp: 120,
+    attack: 25,
+    defense: 15,
+    color: 0x4488ff,
     scale: 1.6,
-    position: { x: 600, y: 200 },
-    idleAnimation: {
-      scaleVariation: 0.1,
-      duration: 4000
-    },
-    specialEffects: ['runes', 'magical_glow']
+    position: { x: 600, y: 250 }
   },
   'STONE_GUARDIAN': {
-    type: 'STONE_GUARDIAN' as EnemyType,
-    texturePrefix: 'stoneGuardian',
-    displayName: 'Stone Guardian Sentinel',
+    name: 'Stone Guardian',
+    maxHp: 150,
+    attack: 30,
+    defense: 20,
+    color: 0x8b4513,
     scale: 1.8,
-    position: { x: 580, y: 180 },
-    idleAnimation: {
-      scaleVariation: 0.05,
-      duration: 5000
-    },
-    specialEffects: ['stone_dust', 'heavy_footsteps']
+    position: { x: 580, y: 230 }
   },
   'SHADOW_WISP': {
-    type: 'SHADOW_WISP' as EnemyType,
-    texturePrefix: 'shadowWisp',
-    displayName: 'Ethereal Shadow Wisp',
+    name: 'Shadow Wisp',
+    maxHp: 80,
+    attack: 35,
+    defense: 5,
+    color: 0x4b0082,
     scale: 1.4,
-    position: { x: 620, y: 220 },
-    idleAnimation: {
-      scaleVariation: 0.15,
-      duration: 2500
-    },
-    specialEffects: ['shadow_trail', 'wisp_glow', 'floating']
+    position: { x: 620, y: 270 }
+  },
+  'SLIME': {
+    name: 'Slime',
+    maxHp: 60,
+    attack: 15,
+    defense: 5,
+    color: 0x32cd32,
+    scale: 1.2,
+    position: { x: 600, y: 280 }
+  },
+  'BAT': {
+    name: 'Giant Bat',
+    maxHp: 40,
+    attack: 20,
+    defense: 8,
+    color: 0x2f4f4f,
+    scale: 1.3,
+    position: { x: 610, y: 240 }
+  },
+  'SKELETON': {
+    name: 'Skeleton Warrior',
+    maxHp: 90,
+    attack: 22,
+    defense: 12,
+    color: 0xf5f5dc,
+    scale: 1.5,
+    position: { x: 590, y: 250 }
   }
 };
 
-export class BattleScene extends Phaser.Scene {
+// Simple entity classes
+class Player {
+  public hp: number = 100;
+  public maxHp: number = 100;
+  public mp: number = 50;
+  public maxMp: number = 50;
+  public attack: number = 25;
+  public defense: number = 10;
+  public sprite: Phaser.GameObjects.Graphics;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    // Create player sprite using graphics
+    this.sprite = scene.add.graphics();
+    this.sprite.fillStyle(0x4488ff);
+    this.sprite.fillCircle(0, 0, 20);
+    this.sprite.lineStyle(2, 0xffffff);
+    this.sprite.strokeCircle(0, 0, 20);
+    this.sprite.setPosition(x, y);
+    this.sprite.setDepth(5);
+  }
+
+  takeDamage(amount: number): number {
+    const actualDamage = Math.max(1, amount - this.defense);
+    this.hp = Math.max(0, this.hp - actualDamage);
+    return actualDamage;
+  }
+
+  heal(amount: number): number {
+    const actualHeal = Math.min(amount, this.maxHp - this.hp);
+    this.hp += actualHeal;
+    return actualHeal;
+  }
+
+  restoreMp(amount: number): number {
+    const actualRestore = Math.min(amount, this.maxMp - this.mp);
+    this.mp += actualRestore;
+    return actualRestore;
+  }
+
+  isDead(): boolean {
+    return this.hp <= 0;
+  }
+
+  getStats() {
+    return {
+      hp: this.hp,
+      maxHp: this.maxHp,
+      mp: this.mp,
+      maxMp: this.maxMp
+    };
+  }
+}
+
+class Enemy {
+  public hp: number;
+  public maxHp: number;
+  public attack: number;
+  public defense: number;
+  public name: string;
+  public sprite: Phaser.GameObjects.Graphics;
+  public type: EnemyType;
+
+  constructor(scene: Phaser.Scene, type: EnemyType) {
+    this.type = type;
+    const config = ENEMY_CONFIGS[type];
+    
+    this.name = config.name;
+    this.maxHp = config.maxHp;
+    this.hp = this.maxHp;
+    this.attack = config.attack;
+    this.defense = config.defense;
+
+    // Create enemy sprite using graphics
+    this.sprite = scene.add.graphics();
+    this.sprite.fillStyle(config.color);
+    this.sprite.fillRect(-25, -25, 50, 50);
+    this.sprite.lineStyle(2, 0xffffff);
+    this.sprite.strokeRect(-25, -25, 50, 50);
+    this.sprite.setPosition(config.position.x, config.position.y);
+    this.sprite.setScale(config.scale);
+    this.sprite.setDepth(5);
+  }
+
+  takeDamage(amount: number): number {
+    const actualDamage = Math.max(1, amount - this.defense);
+    this.hp = Math.max(0, this.hp - actualDamage);
+    return actualDamage;
+  }
+
+  isDead(): boolean {
+    return this.hp <= 0;
+  }
+
+  getStats() {
+    return {
+      hp: this.hp,
+      maxHp: this.maxHp,
+      name: this.name
+    };
+  }
+}
+
+class BattleScene extends Phaser.Scene {
+  // Core game objects
   private player!: Player;
-  private battleSystem!: BattleSystem;
+  private enemy!: Enemy;
   private currentState: GameState = GameState.PLAYER_TURN;
-  private messageBox: any;
-  private currentEnemyType: string = 'RUNE_CONSTRUCT';
-  private currentEnemyConfig!: EnemyCharacterConfig;
+  private currentEnemyType: EnemyType = 'RUNE_CONSTRUCT';
   
-  // Store sprite references to control animations
-  private playerSprite!: Phaser.GameObjects.Image;
-  private enemySprite!: Phaser.GameObjects.Image;
+  // UI elements
+  private messageBox!: Phaser.GameObjects.Text;
+  private playerHealthBar!: Phaser.GameObjects.Graphics;
+  private playerHealthFill!: Phaser.GameObjects.Graphics;
+  private playerManaBar!: Phaser.GameObjects.Graphics;
+  private playerManaFill!: Phaser.GameObjects.Graphics;
+  private enemyHealthBar!: Phaser.GameObjects.Graphics;
+  private enemyHealthFill!: Phaser.GameObjects.Graphics;
   private enemyNameText!: Phaser.GameObjects.Text;
   
-  // Health bar properties
-  private playerHealthBar!: Phaser.GameObjects.Image;
-  private playerHealthFill!: Phaser.GameObjects.Image;
-  private playerManaBar!: Phaser.GameObjects.Image;
-  private playerManaFill!: Phaser.GameObjects.Image;
-  private enemyHealthBar!: Phaser.GameObjects.Image;
-  private enemyHealthFill!: Phaser.GameObjects.Image;
+  // Action buttons
+  private actionButtons: Record<string, Phaser.GameObjects.Graphics> = {};
+  private buttonTexts: Record<string, Phaser.GameObjects.Text> = {};
   
-  // Button properties
-  private actionButtons: Record<string, Phaser.GameObjects.Image> = {};
-  
-  // Dependencies
+  // Dependencies and state
   private deps: BattleSceneDependencies;
-  
-  // Loading management
-  private loadingManager: LoadingManager;
-  private assetLoader: AssetLoader;
-  private isLoading: boolean = true;
-  private loadingError: string | null = null;
-  private loadingProgress: number = 0;
-  private currentLoadingTask: string = 'Initializing...';
-  
-  // Scene management
   private sceneInitialized = false;
-  private animationTweens: Phaser.Tweens.Tween[] = [];
-  
-  // Audio management
-  private battleMusic?: Phaser.Sound.BaseSound;
-  private soundEffects: Record<string, Phaser.Sound.BaseSound> = {};
-  
-  // Visual effects
-  private backgroundParticles?: Phaser.GameObjects.Particles.ParticleEmitter;
-  private battleEffects: Phaser.GameObjects.GameObject[] = [];
-  private enemySpecialEffects: Phaser.GameObjects.GameObject[] = [];
+  private isProcessingAction = false;
 
   constructor(dependencies: BattleSceneDependencies) {
     super({ key: 'MysticRuinsBattleScene' });
     this.deps = dependencies;
-    this.loadingManager = new LoadingManager();
-    this.assetLoader = new AssetLoader(this, this.loadingManager);
-    
-    // Setup loading progress tracking
-    this.setupLoadingTracking();
-  }
-
-  private setupLoadingTracking() {
-    // Listen for loading progress updates
-    this.loadingManager.onProgress((progress, currentTask) => {
-      this.loadingProgress = progress;
-      this.currentLoadingTask = currentTask;
-      
-      // Emit progress for external loading screen
-      this.events.emit('loading-progress', { progress, currentTask });
-      
-      console.log(`Loading: ${progress.toFixed(1)}% - ${currentTask}`);
-    });
   }
 
   init(data: any) {
     console.log('BattleScene init with data:', data);
     
-    // Enhanced enemy selection with difficulty consideration
+    // Select enemy type
     if (data && data.enemyType) {
       this.currentEnemyType = data.enemyType;
     } else if (data && data.difficulty) {
-      // Select enemy based on difficulty
       this.currentEnemyType = this.selectEnemyByDifficulty(data.difficulty);
     } else {
-      // Random enemy selection for variety
-      const enemies = Object.keys(ENEMY_CONFIGS);
+      // Random enemy selection
+      const enemies: EnemyType[] = ['RUNE_CONSTRUCT', 'STONE_GUARDIAN', 'SHADOW_WISP', 'SLIME', 'BAT', 'SKELETON'];
       this.currentEnemyType = enemies[Math.floor(Math.random() * enemies.length)];
     }
     
-    // Set current enemy configuration
-    this.currentEnemyConfig = ENEMY_CONFIGS[this.currentEnemyType];
-    
-    // Setup loading tasks
-    const tasks = LoadingManager.createBattleSceneTasks();
-    tasks.forEach(task => this.loadingManager.addTask(task));
-    
-    console.log(`Selected enemy: ${this.currentEnemyConfig.displayName} (${this.currentEnemyType})`);
+    console.log(`Selected enemy: ${this.currentEnemyType}`);
   }
 
-  private selectEnemyByDifficulty(difficulty: string): string {
+  private selectEnemyByDifficulty(difficulty: string): EnemyType {
     const difficultyMappings = {
-      'Normal': ['SHADOW_WISP', 'RUNE_CONSTRUCT'],
-      'Hard': ['STONE_GUARDIAN', 'RUNE_CONSTRUCT'],
-      'Insane': ['STONE_GUARDIAN'] // Hardest enemy
+      'Normal': ['SLIME', 'BAT', 'SHADOW_WISP'],
+      'Hard': ['SKELETON', 'RUNE_CONSTRUCT'],
+      'Insane': ['STONE_GUARDIAN']
     };
     
-    const availableEnemies = difficultyMappings[difficulty] || Object.keys(ENEMY_CONFIGS);
-    return availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
+    const availableEnemies = difficultyMappings[difficulty] || ['SLIME'];
+    return availableEnemies[Math.floor(Math.random() * availableEnemies.length)] as EnemyType;
   }
 
-  async preload() {
+  preload() {
     console.log('BattleScene preload started');
-    
-    try {
-      this.isLoading = true;
-      this.loadingError = null;
-      
-      // Emit loading start event for external loading screen
-      this.events.emit('loading-start');
-      
-      // Load all assets using the modular loader
-      await this.assetLoader.loadAllAssets();
-      
-      console.log('All assets loaded successfully');
-      this.isLoading = false;
-      
-      // Emit loading complete
-      this.events.emit('loading-complete');
-      
-    } catch (error) {
-      console.error('Error loading battle scene assets:', error);
-      this.loadingError = error instanceof Error ? error.message : 'Unknown loading error';
-      this.isLoading = false;
-      
-      // Emit loading error
-      this.events.emit('loading-error', { error: this.loadingError });
-    }
+    // No external assets to load, everything uses graphics
+    console.log('BattleScene preload completed');
   }
 
   create() {
     console.log('BattleScene create started');
-    
-    if (this.isLoading) {
-      this.time.delayedCall(100, () => this.create());
-      return;
-    }
-    
-    if (this.loadingError) {
-      this.showErrorState();
-      return;
-    }
     
     try {
       this.setupScene();
@@ -228,493 +269,262 @@ export class BattleScene extends Phaser.Scene {
     // Setup background
     this.setupBackground();
     
-    // Initialize battle system
-    this.initializeBattleSystem();
+    // Create entities
+    this.player = new Player(this, 200, 320);
+    this.enemy = new Enemy(this, this.currentEnemyType);
     
-    // Setup sprites and UI
-    this.setupSprites();
+    // Setup UI
     this.setupUI();
     this.setupInput();
     
-    // Initialize battle
-    this.battleSystem.addEventListener(this.handleBattleEvent.bind(this));
+    // Initialize state
     this.updateGameState();
+    
+    // Show initial message
+    this.showMessage(this.getEnemyFlavorText());
     
     // Fade in
     this.cameras.main.fadeIn(500, 0, 0, 0);
-    
-    // Show initial message with enemy-specific flavor text
-    this.time.delayedCall(1000, () => {
-      if (this.messageBox) {
-        const flavorText = this.getEnemyFlavorText();
-        this.messageBox.setText(flavorText);
-        this.battleSystem.resetBattle(this.currentEnemyType as EnemyType);
-      }
-    });
-  }
-
-  private getEnemyFlavorText(): string {
-    const flavorTexts = {
-      'RUNE_CONSTRUCT': "An ancient construct awakens, its runes glowing with mystical power!",
-      'STONE_GUARDIAN': "A massive stone guardian blocks your path, its eyes burning with ancient fury!",
-      'SHADOW_WISP': "A shadow wisp materializes from the darkness, crackling with ethereal energy!"
-    };
-    
-    return flavorTexts[this.currentEnemyType] || "A mysterious enemy appears before you!";
   }
 
   private setupBackground() {
     // Main background
-    const bg = this.add.image(400, 300, 'battleBg');
-    bg.setDisplaySize(800, 600);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x1a1a2e, 1);
+    bg.fillRect(0, 0, 800, 600);
     bg.setDepth(0);
     
-    // Add atmospheric overlay based on enemy type
+    // Atmospheric overlay
     const overlay = this.add.graphics();
     const overlayColor = this.getEnemyAtmosphereColor();
     overlay.fillStyle(overlayColor, 0.1);
     overlay.fillRect(0, 0, 800, 600);
     overlay.setDepth(1);
     
-    // Create ambient particles
+    // Simple particles
     this.createAmbientParticles();
   }
 
   private getEnemyAtmosphereColor(): number {
     const atmosphereColors = {
-      'RUNE_CONSTRUCT': 0x4a4aff, // Blue mystical
-      'STONE_GUARDIAN': 0x8b4513, // Brown earthy
-      'SHADOW_WISP': 0x4b0082    // Purple dark
+      'RUNE_CONSTRUCT': 0x4a4aff,
+      'STONE_GUARDIAN': 0x8b4513,
+      'SHADOW_WISP': 0x4b0082,
+      'SLIME': 0x32cd32,
+      'BAT': 0x2f4f4f,
+      'SKELETON': 0xf5f5dc
     };
     
     return atmosphereColors[this.currentEnemyType] || 0x2a2a4a;
   }
 
-  private initializeBattleSystem() {
-    // Create player and battle system with selected enemy type
-    this.player = new Player(this, 200, 320);
-    this.battleSystem = new BattleSystem(this, this.player, this.currentEnemyType as EnemyType);
-  }
-
-  private setupSprites() {
-    // Player sprite with enhanced animations
-    this.setupPlayerSprite();
+  private getEnemyFlavorText(): string {
+    const flavorTexts = {
+      'RUNE_CONSTRUCT': "An ancient construct awakens, its runes glowing with mystical power!",
+      'STONE_GUARDIAN': "A massive stone guardian blocks your path, its eyes burning with ancient fury!",
+      'SHADOW_WISP': "A shadow wisp materializes from the darkness, crackling with ethereal energy!",
+      'SLIME': "A gelatinous slime oozes towards you, bubbling menacingly!",
+      'BAT': "A giant bat swoops down from the shadows, screeching loudly!",
+      'SKELETON': "A skeleton warrior emerges, its bones rattling as it prepares to fight!"
+    };
     
-    // Enemy sprite with character-specific setup
-    this.setupEnemySprite();
+    return flavorTexts[this.currentEnemyType] || "A mysterious enemy appears before you!";
   }
 
-  private setupPlayerSprite() {
-    if (this.textures.exists('player_default')) {
-      this.playerSprite = this.add.image(200, 320, 'player_default');
-      this.playerSprite.setScale(1.5).setDepth(5);
+  private createAmbientParticles() {
+    for (let i = 0; i < 15; i++) {
+      const particle = this.add.graphics();
+      const atmosphereColor = this.getEnemyAtmosphereColor();
+      particle.fillStyle(atmosphereColor, 0.3);
+      particle.fillCircle(0, 0, 1);
+      particle.setPosition(Math.random() * 800, Math.random() * 600);
+      particle.setDepth(2);
       
-      // Add character-specific idle animation
       this.tweens.add({
-        targets: this.playerSprite,
-        y: this.playerSprite.y - 5,
-        duration: 2000,
-        yoyo: true,
+        targets: particle,
+        y: particle.y - 100,
+        alpha: 0,
+        duration: 3000 + Math.random() * 2000,
         repeat: -1,
-        ease: 'Sine.easeInOut'
+        delay: Math.random() * 3000
       });
-      
-      // Hide default player sprite
-      const defaultSprite = this.player.getSprite();
-      if (defaultSprite) {
-        defaultSprite.setVisible(false);
-      }
     }
-  }
-
-  private setupEnemySprite() {
-    const config = this.currentEnemyConfig;
-    const enemyTextureKey = `${config.texturePrefix}_default`;
-    
-    if (this.textures.exists(enemyTextureKey)) {
-      this.enemySprite = this.add.image(config.position.x, config.position.y, enemyTextureKey);
-      this.enemySprite.setScale(config.scale).setDepth(5);
-      
-      // Add character-specific idle animation
-      if (config.idleAnimation) {
-        const { scaleVariation, duration } = config.idleAnimation;
-        this.tweens.add({
-          targets: this.enemySprite,
-          scaleX: config.scale - scaleVariation,
-          scaleY: config.scale + scaleVariation,
-          duration: duration,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut'
-        });
-      }
-      
-      // Add special effects for the enemy
-      this.createEnemySpecialEffects();
-    }
-    
-    // Add enemy name display
-    this.enemyNameText = this.add.text(config.position.x, config.position.y - 80, config.displayName, {
-      fontFamily: 'serif',
-      fontSize: '18px',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 3,
-      align: 'center'
-    }).setOrigin(0.5).setDepth(10);
-    
-    // Add name glow effect
-    this.tweens.add({
-      targets: this.enemyNameText,
-      alpha: 0.7,
-      duration: 1500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-  }
-
-  private createEnemySpecialEffects() {
-    const config = this.currentEnemyConfig;
-    
-    if (!config.specialEffects) return;
-    
-    config.specialEffects.forEach(effectType => {
-      switch (effectType) {
-        case 'runes':
-          this.createRuneEffect();
-          break;
-        case 'magical_glow':
-          this.createMagicalGlow();
-          break;
-        case 'stone_dust':
-          this.createStoneDustEffect();
-          break;
-        case 'shadow_trail':
-          this.createShadowTrail();
-          break;
-        case 'wisp_glow':
-          this.createWispGlow();
-          break;
-        case 'floating':
-          this.createFloatingEffect();
-          break;
-      }
-    });
-  }
-
-  private createRuneEffect() {
-    // Create floating runes around Rune Construct
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const radius = 60;
-      const x = this.currentEnemyConfig.position.x + Math.cos(angle) * radius;
-      const y = this.currentEnemyConfig.position.y + Math.sin(angle) * radius;
-      
-      const rune = this.add.graphics();
-      rune.lineStyle(2, 0x88ccff, 0.8);
-      rune.strokeCircle(0, 0, 8);
-      rune.lineBetween(-6, 0, 6, 0);
-      rune.lineBetween(0, -6, 0, 6);
-      rune.setPosition(x, y).setDepth(4);
-      
-      // Rotate runes
-      this.tweens.add({
-        targets: rune,
-        rotation: Math.PI * 2,
-        duration: 8000 + (i * 500),
-        repeat: -1,
-        ease: 'Linear'
-      });
-      
-      this.enemySpecialEffects.push(rune);
-    }
-  }
-
-  private createMagicalGlow() {
-    const glow = this.add.graphics();
-    glow.fillStyle(0x4488ff, 0.3);
-    glow.fillCircle(0, 0, 40);
-    glow.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
-    glow.setDepth(3);
-    
-    this.tweens.add({
-      targets: glow,
-      scaleX: { from: 0.8, to: 1.2 },
-      scaleY: { from: 0.8, to: 1.2 },
-      alpha: { from: 0.2, to: 0.5 },
-      duration: 2000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    
-    this.enemySpecialEffects.push(glow);
-  }
-
-  private createStoneDustEffect() {
-    // Create particle effect for Stone Guardian
-    if (this.textures.exists('frame')) {
-      const dustParticles = this.add.particles(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y + 50, 'frame', {
-        scale: { min: 0.01, max: 0.03 },
-        alpha: { min: 0.3, max: 0.6 },
-        tint: 0x8b7355,
-        lifespan: 3000,
-        frequency: 200,
-        gravityY: 50,
-        speedX: { min: -20, max: 20 },
-        speedY: { min: -30, max: -10 }
-      });
-      dustParticles.setDepth(4);
-      this.enemySpecialEffects.push(dustParticles);
-    }
-  }
-
-  private createShadowTrail() {
-    // Create trailing shadow effect for Shadow Wisp
-    const trail = this.add.graphics();
-    trail.fillStyle(0x220066, 0.4);
-    
-    let trailPoints: { x: number; y: number }[] = [];
-    
-    this.time.addEvent({
-      delay: 50,
-      loop: true,
-      callback: () => {
-        if (this.enemySprite) {
-          trailPoints.push({ x: this.enemySprite.x, y: this.enemySprite.y });
-          if (trailPoints.length > 10) {
-            trailPoints.shift();
-          }
-          
-          trail.clear();
-          trailPoints.forEach((point, index) => {
-            const alpha = (index / trailPoints.length) * 0.4;
-            const size = (index / trailPoints.length) * 20;
-            trail.fillStyle(0x220066, alpha);
-            trail.fillCircle(point.x, point.y, size);
-          });
-        }
-      }
-    });
-    
-    this.enemySpecialEffects.push(trail);
-  }
-
-  private createWispGlow() {
-    const wisp = this.add.graphics();
-    wisp.fillStyle(0x8866ff, 0.6);
-    wisp.fillCircle(0, 0, 25);
-    wisp.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
-    wisp.setDepth(6);
-    
-    this.tweens.add({
-      targets: wisp,
-      alpha: { from: 0.3, to: 0.8 },
-      scaleX: { from: 0.8, to: 1.3 },
-      scaleY: { from: 0.8, to: 1.3 },
-      duration: 1500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    
-    this.enemySpecialEffects.push(wisp);
-  }
-
-  private createFloatingEffect() {
-    // Make Shadow Wisp float up and down
-    this.tweens.add({
-      targets: this.enemySprite,
-      y: this.currentEnemyConfig.position.y - 15,
-      duration: 3000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
   }
 
   private setupUI() {
-    // Setup UI frames
-    if (this.textures.exists('frame')) {
-      const playerFrame = this.add.image(120, 430, 'frame').setScale(1.5).setDepth(8);
-      const enemyFrame = this.add.image(680, 180, 'frame').setScale(1.5).setDepth(8);
-      playerFrame.setTint(0x88ccff);
-      enemyFrame.setTint(0xff8888);
-    }
-    
-    if (this.textures.exists('portrait')) {
-      this.add.image(70, 430, 'portrait').setScale(1.2).setDepth(9);
-    }
-    
+    // Enemy name
+    this.enemyNameText = this.add.text(
+      this.enemy.sprite.x,
+      this.enemy.sprite.y - 60,
+      this.enemy.name,
+      {
+        fontFamily: 'Arial',
+        fontSize: '18px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3,
+        align: 'center'
+      }
+    ).setOrigin(0.5).setDepth(10);
+
     // Setup health bars
     this.setupHealthBars();
     
     // Setup action buttons
     this.setupActionButtons();
     
-    // Setup text labels
-    this.setupTextLabels();
-    
     // Create message box
-    this.createMessageBox();
+    this.messageBox = this.add.text(400, 450, "", {
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
+      wordWrap: { width: 350 },
+      align: 'center'
+    }).setOrigin(0.5).setDepth(20);
   }
 
   private setupHealthBars() {
-    // Player health bar
-    if (this.textures.exists('playerHealthBar')) {
-      this.playerHealthBar = this.add.image(180, 400, 'playerHealthBar')
-        .setDepth(10).setOrigin(0, 0.5);
-      this.playerHealthFill = this.add.image(100, 400, 'playerHealthFill')
-        .setDepth(9).setOrigin(0, 0.5);
-    }
-    
-    // Player mana bar
-    if (this.textures.exists('playerManaBar')) {
-      this.playerManaBar = this.add.image(180, 430, 'playerManaBar')
-        .setDepth(10).setOrigin(0, 0.5);
-      this.playerManaFill = this.add.image(100, 430, 'playerManaFill')
-        .setDepth(9).setOrigin(0, 0.5);
-    }
-    
-    // Enemy health bar
-    if (this.textures.exists('enemyHealthBar')) {
-      this.enemyHealthBar = this.add.image(680, 140, 'enemyHealthBar')
-        .setDepth(10).setOrigin(0, 0.5);
-      this.enemyHealthFill = this.add.image(600, 140, 'enemyHealthFill')
-        .setDepth(9).setOrigin(0, 0.5);
-    }
-  }
+    // Player health bar background
+    this.playerHealthBar = this.add.graphics();
+    this.playerHealthBar.fillStyle(0x333333, 1);
+    this.playerHealthBar.fillRoundedRect(180, 400, 120, 12, 6);
+    this.playerHealthBar.setDepth(9);
 
-  private setupActionButtons() {
-    const buttonVariants = ['attack', 'magic', 'item', 'defend'];
-    const buttonPositions = [
-      { x: 350, y: 500 },
-      { x: 450, y: 500 },
-      { x: 350, y: 550 },
-      { x: 450, y: 550 }
-    ];
-    
-    buttonVariants.forEach((variant, i) => {
-      const textureKey = `button_${variant}_normal`;
-      if (!this.textures.exists(textureKey)) return;
-      
-      const pos = buttonPositions[i];
-      const button = this.add.image(pos.x, pos.y, textureKey);
-      button.setInteractive().setDepth(15);
-      
-      // Enhanced button interactions
-      button.on('pointerover', () => {
-        const hoverTexture = `button_${variant}_hover`;
-        if (this.textures.exists(hoverTexture)) {
-          button.setTexture(hoverTexture);
-          button.setScale(1.05);
-        }
-      });
-      
-      button.on('pointerout', () => {
-        button.setTexture(textureKey);
-        button.setScale(1.0);
-      });
-      
-      button.on('pointerdown', () => {
-        const pressedTexture = `button_${variant}_pressed`;
-        if (this.textures.exists(pressedTexture)) {
-          button.setTexture(pressedTexture);
-          button.setScale(0.95);
-        }
-      });
-      
-      button.on('pointerup', () => {
-        const hoverTexture = `button_${variant}_hover`;
-        if (this.textures.exists(hoverTexture)) {
-          button.setTexture(hoverTexture);
-          button.setScale(1.05);
-        }
-        this.handleButtonAction(variant);
-      });
-      
-      this.actionButtons[variant] = button;
-    });
-  }
+    // Player health fill
+    this.playerHealthFill = this.add.graphics();
+    this.playerHealthFill.setDepth(10);
 
-  private setupTextLabels() {
+    // Player mana bar background
+    this.playerManaBar = this.add.graphics();
+    this.playerManaBar.fillStyle(0x333333, 1);
+    this.playerManaBar.fillRoundedRect(180, 420, 120, 12, 6);
+    this.playerManaBar.setDepth(9);
+
+    // Player mana fill
+    this.playerManaFill = this.add.graphics();
+    this.playerManaFill.setDepth(10);
+
+    // Enemy health bar background
+    this.enemyHealthBar = this.add.graphics();
+    this.enemyHealthBar.fillStyle(0x333333, 1);
+    this.enemyHealthBar.fillRoundedRect(500, 140, 120, 12, 6);
+    this.enemyHealthBar.setDepth(9);
+
+    // Enemy health fill
+    this.enemyHealthFill = this.add.graphics();
+    this.enemyHealthFill.setDepth(10);
+
+    // Labels
     const hpTextStyle = {
-      fontFamily: 'monospace',
+      fontFamily: 'Arial',
       fontSize: '14px',
       color: '#ffffff',
       stroke: '#000',
-      strokeThickness: 2,
-      align: 'center'
+      strokeThickness: 2
     };
-    
-    this.add.text(90, 380, "HP", hpTextStyle).setOrigin(0.5).setDepth(11);
-    this.add.text(90, 430, "MP", hpTextStyle).setOrigin(0.5).setDepth(11);
-    this.add.text(600, 120, "HP", hpTextStyle).setOrigin(0.5).setDepth(11);
+
+    this.add.text(150, 406, "HP", hpTextStyle).setOrigin(0.5).setDepth(11);
+    this.add.text(150, 426, "MP", hpTextStyle).setOrigin(0.5).setDepth(11);
+    this.add.text(470, 146, "HP", hpTextStyle).setOrigin(0.5).setDepth(11);
+
+    // Update bars initially
+    this.updateHealthBars();
   }
 
-  private createAmbientParticles() {
-    if (this.textures.exists('frame')) {
-      const atmosphereColor = this.getEnemyAtmosphereColor();
-      const particles = this.add.particles(0, 0, 'frame', {
-        x: { min: 0, max: 800 },
-        y: { min: 0, max: 600 },
-        scale: { min: 0.01, max: 0.03 },
-        alpha: { min: 0.1, max: 0.3 },
-        lifespan: 10000,
-        frequency: 1000,
-        tint: atmosphereColor
+  private setupActionButtons() {
+    const buttonData = [
+      { id: 'attack', text: 'ATTACK', x: 350, y: 500 },
+      { id: 'magic', text: 'MAGIC', x: 450, y: 500 },
+      { id: 'item', text: 'ITEM', x: 350, y: 550 },
+      { id: 'defend', text: 'DEFEND', x: 450, y: 550 }
+    ];
+
+    buttonData.forEach(buttonInfo => {
+      // Create button background
+      const button = this.add.graphics();
+      button.setPosition(buttonInfo.x, buttonInfo.y);
+      button.setDepth(15);
+      button.setInteractive(new Phaser.Geom.Rectangle(-40, -15, 80, 30), Phaser.Geom.Rectangle.Contains);
+
+      // Create button text
+      const buttonText = this.add.text(buttonInfo.x, buttonInfo.y, buttonInfo.text, {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(16);
+
+      // Draw button in normal state
+      this.drawButton(button, false);
+
+      // Button interactions
+      button.on('pointerover', () => {
+        this.drawButton(button, true);
+        button.setScale(1.05);
+        buttonText.setScale(1.05);
       });
-      particles.setDepth(2);
-    }
+
+      button.on('pointerout', () => {
+        this.drawButton(button, false);
+        button.setScale(1.0);
+        buttonText.setScale(1.0);
+      });
+
+      button.on('pointerdown', () => {
+        button.setScale(0.95);
+        buttonText.setScale(0.95);
+      });
+
+      button.on('pointerup', () => {
+        button.setScale(1.05);
+        buttonText.setScale(1.05);
+        this.handleButtonAction(buttonInfo.id);
+      });
+
+      this.actionButtons[buttonInfo.id] = button;
+      this.buttonTexts[buttonInfo.id] = buttonText;
+    });
+
+    // Highlight first button
+    this.updateButtonHighlights();
   }
 
-  private createMessageBox() {
-    this.messageBox = this.add.text(250, 500, "", { 
-      fontFamily: 'monospace', 
-      fontSize: '18px',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 3,
-      wordWrap: { width: 350 },
-      align: 'center'
-    });
-    this.messageBox.setDepth(20);
+  private drawButton(button: Phaser.GameObjects.Graphics, isHover: boolean) {
+    button.clear();
+    const color = isHover ? 0x66aaff : 0x4488ff;
+    button.fillStyle(color, 1);
+    button.fillRoundedRect(-40, -15, 80, 30, 5);
+    button.lineStyle(2, 0xffffff, 1);
+    button.strokeRoundedRect(-40, -15, 80, 30, 5);
   }
 
   private setupInput() {
-    const keyboardEvents = [
-      { key: 'UP', action: 'up' },
-      { key: 'DOWN', action: 'down' },
-      { key: 'SPACE', action: 'select' },
-      { key: 'Z', action: 'select' },
-      { key: 'X', action: 'back' },
-      { key: 'ESC', action: 'menu' }
-    ];
-    
-    keyboardEvents.forEach(({ key, action }) => {
-      this.input.keyboard.on(`keydown-${key}`, () => {
-        this.handleInput(action);
-      });
-    });
-    
-    // Global control handler for touch/external controls
-    window.gameControlEvent = (action: string) => {
+    // Keyboard input
+    this.input.keyboard.on('keydown-UP', () => this.handleInput('up'));
+    this.input.keyboard.on('keydown-DOWN', () => this.handleInput('down'));
+    this.input.keyboard.on('keydown-SPACE', () => this.handleInput('select'));
+    this.input.keyboard.on('keydown-Z', () => this.handleInput('select'));
+    this.input.keyboard.on('keydown-X', () => this.handleInput('back'));
+    this.input.keyboard.on('keydown-ESC', () => this.handleInput('menu'));
+
+    // Global control handler for external controls
+    (window as any).gameControlEvent = (action: string) => {
       this.handleInput(action);
     };
   }
 
   private handleInput(action: string) {
+    if (this.isProcessingAction) return;
+
     if (this.currentState === GameState.PLAYER_TURN) {
       switch(action) {
         case 'up':
           this.deps.menuSystem.moveUp();
-          this.updateGameState();
           this.updateButtonHighlights();
           break;
         case 'down':
           this.deps.menuSystem.moveDown();
-          this.updateGameState();
           this.updateButtonHighlights();
           break;
         case 'select':
@@ -722,7 +532,6 @@ export class BattleScene extends Phaser.Scene {
           break;
         case 'back':
           this.deps.menuSystem.back();
-          this.updateGameState();
           this.updateButtonHighlights();
           break;
       }
@@ -737,617 +546,364 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private handleButtonAction(variant: string) {
-    if (this.currentState === GameState.PLAYER_TURN) {
-      const items = this.deps.menuSystem.getMenuItems();
-      const index = items.findIndex(item => item.id === variant);
-      if (index >= 0) {
-        this.deps.menuSystem.setSelectedIndex(index);
-        this.handleMenuSelection();
-      }
+  private handleButtonAction(buttonId: string) {
+    if (this.isProcessingAction) return;
+
+    const items = this.deps.menuSystem.getMenuItems();
+    const index = items.findIndex(item => item.id === buttonId);
+    if (index >= 0) {
+      this.deps.menuSystem.setSelectedIndex(index);
+      this.handleMenuSelection();
     }
   }
 
-  private handleMenuSelection() {
+  private async handleMenuSelection() {
+    if (this.isProcessingAction) return;
+
     const menu = this.deps.menuSystem.getCurrentMenu();
     const selectedIndex = this.deps.menuSystem.getSelectedIndex();
     const items = this.deps.menuSystem.getMenuItems();
-    
+
     if (items.length <= selectedIndex) return;
-    
+
     const selectedItem = items[selectedIndex];
-    
-    if (menu === 'main') {
-      switch (selectedItem.id) {
-        case 'attack':
-          this.battleSystem.playerAttack();
-          break;
-        case 'magic':
-          this.deps.menuSystem.select();
-          this.updateGameState();
-          this.updateButtonHighlights();
-          break;
-        case 'item':
-          this.deps.menuSystem.select();
-          this.updateGameState();
-          this.updateButtonHighlights();
-          break;
-        case 'defend':
-          this.messageBox.setText("You take a defensive stance!");
-          break;
-      }
-    } else if (menu === 'magic') {
-      if (selectedItem.id === 'back') {
-        this.deps.menuSystem.back();
-        this.updateButtonHighlights();
-      } else {
-        this.battleSystem.castSpell(selectedItem.id as any);
-      }
-      this.updateGameState();
-    } else if (menu === 'item') {
-      if (selectedItem.id === 'back') {
-        this.deps.menuSystem.back();
-        this.updateButtonHighlights();
-      } else {
-        this.battleSystem.useItem(selectedItem.id as any);
-      }
-      this.updateGameState();
-    }
-  }
+    this.isProcessingAction = true;
 
-  private handleBattleEvent(event: BattleEvent) {
-    if (!this.sceneInitialized) return;
-    
-    // Display event message with typing effect
-    this.displayMessageWithEffect(event.message);
-    
-    // Update current state
-    this.currentState = this.battleSystem.getState();
-    
-    // Update battle animations
-    this.updateBattleAnimations(event);
-    
-    // Update health bars for relevant events
-    if (['attack', 'magic', 'item', 'enemyAttack'].includes(event.type)) {
-      this.updateHealthBars();
-    }
-    
-    // Update game state
-    this.updateGameState();
-    this.updateButtonHighlights();
-    
-    // Add character-specific screen effects
-    this.addCharacterSpecificEffects(event);
-  }
-
-  private addCharacterSpecificEffects(event: BattleEvent) {
-    if (['attack', 'enemyAttack'].includes(event.type)) {
-      // Different shake intensities based on enemy type
-      const shakeIntensity = this.getShakeIntensityForEnemy();
-      this.cameras.main.shake(200, shakeIntensity);
-    }
-    
-    // Add character-specific visual effects
-    if (event.type === 'enemyAttack') {
-      this.addEnemyAttackEffect();
-    }
-  }
-
-  private getShakeIntensityForEnemy(): number {
-    const intensities = {
-      'STONE_GUARDIAN': 0.02,   // Heavy shake
-      'RUNE_CONSTRUCT': 0.015,  // Medium shake
-      'SHADOW_WISP': 0.008      // Light shake
-    };
-    
-    return intensities[this.currentEnemyType] || 0.01;
-  }
-
-  private addEnemyAttackEffect() {
-    switch (this.currentEnemyType) {
-      case 'STONE_GUARDIAN':
-        // Create stone impact effect
-        this.createStoneImpactEffect();
-        break;
-      case 'RUNE_CONSTRUCT':
-        // Create magical blast effect
-        this.createMagicalBlastEffect();
-        break;
-      case 'SHADOW_WISP':
-        // Create shadow energy effect
-        this.createShadowEnergyEffect();
-        break;
-    }
-  }
-
-  private createStoneImpactEffect() {
-    const impact = this.add.graphics();
-    impact.fillStyle(0x8b4513, 0.8);
-    impact.fillCircle(this.playerSprite.x, this.playerSprite.y, 5);
-    impact.setDepth(7);
-    
-    this.tweens.add({
-      targets: impact,
-      scaleX: 8,
-      scaleY: 8,
-      alpha: 0,
-      duration: 300,
-      onComplete: () => impact.destroy()
-    });
-  }
-
-  private createMagicalBlastEffect() {
-    const blast = this.add.graphics();
-    blast.fillStyle(0x4488ff, 0.7);
-    blast.fillCircle(this.playerSprite.x, this.playerSprite.y, 10);
-    blast.setDepth(7);
-    
-    this.tweens.add({
-      targets: blast,
-      scaleX: 6,
-      scaleY: 6,
-      alpha: 0,
-      duration: 400,
-      onComplete: () => blast.destroy()
-    });
-  }
-
-  private createShadowEnergyEffect() {
-    const energy = this.add.graphics();
-    energy.fillStyle(0x4b0082, 0.6);
-    energy.fillCircle(this.playerSprite.x, this.playerSprite.y, 8);
-    energy.setDepth(7);
-    
-    this.tweens.add({
-      targets: energy,
-      scaleX: 5,
-      scaleY: 5,
-      alpha: 0,
-      rotation: Math.PI * 2,
-      duration: 500,
-      onComplete: () => energy.destroy()
-    });
-  }
-
-  private displayMessageWithEffect(message: string) {
-    if (!this.messageBox) return;
-    
-    this.messageBox.setText('');
-    
-    let currentChar = 0;
-    const typewriterTimer = this.time.addEvent({
-      delay: 30,
-      callback: () => {
-        if (currentChar < message.length) {
-          this.messageBox.setText(message.substring(0, currentChar + 1));
-          currentChar++;
-        } else {
-          typewriterTimer.destroy();
+    try {
+      if (menu === 'main') {
+        switch (selectedItem.id) {
+          case 'attack':
+            await this.playerAttack();
+            break;
+          case 'magic':
+            await this.playerMagic();
+            break;
+          case 'item':
+            await this.playerItem();
+            break;
+          case 'defend':
+            await this.playerDefend();
+            break;
         }
-      },
-      loop: true
+      }
+    } finally {
+      this.isProcessingAction = false;
+    }
+  }
+
+  private async playerAttack() {
+    const damage = Math.floor(Math.random() * 15) + this.player.attack;
+    const actualDamage = this.enemy.takeDamage(damage);
+    
+    this.showMessage(`You attack for ${actualDamage} damage!`);
+    this.playAttackAnimation();
+    
+    await this.delay(1000);
+    this.updateHealthBars();
+    
+    if (this.enemy.isDead()) {
+      this.handleVictory();
+    } else {
+      await this.enemyTurn();
+    }
+  }
+
+  private async playerMagic() {
+    if (this.player.mp < 10) {
+      this.showMessage("Not enough MP!");
+      await this.delay(1000);
+      return;
+    }
+
+    this.player.mp -= 10;
+    const damage = Math.floor(Math.random() * 20) + 15;
+    const actualDamage = this.enemy.takeDamage(damage);
+    
+    this.showMessage(`You cast a spell for ${actualDamage} damage!`);
+    this.playMagicAnimation();
+    
+    await this.delay(1000);
+    this.updateHealthBars();
+    
+    if (this.enemy.isDead()) {
+      this.handleVictory();
+    } else {
+      await this.enemyTurn();
+    }
+  }
+
+  private async playerItem() {
+    const healAmount = this.player.heal(30);
+    this.showMessage(`You use a potion and heal for ${healAmount} HP!`);
+    
+    await this.delay(1000);
+    this.updateHealthBars();
+    
+    if (!this.enemy.isDead()) {
+      await this.enemyTurn();
+    }
+  }
+
+  private async playerDefend() {
+    this.showMessage("You take a defensive stance!");
+    
+    await this.delay(1000);
+    
+    if (!this.enemy.isDead()) {
+      await this.enemyTurn();
+    }
+  }
+
+  private async enemyTurn() {
+    await this.delay(500);
+    
+    const damage = Math.floor(Math.random() * 10) + this.enemy.attack;
+    const actualDamage = this.player.takeDamage(damage);
+    
+    this.showMessage(`${this.enemy.name} attacks for ${actualDamage} damage!`);
+    this.playEnemyAttackAnimation();
+    
+    await this.delay(1000);
+    this.updateHealthBars();
+    
+    if (this.player.isDead()) {
+      this.handleDefeat();
+    } else {
+      this.currentState = GameState.PLAYER_TURN;
+      this.updateGameState();
+    }
+  }
+
+  private playAttackAnimation() {
+    // Simple attack animation
+    this.tweens.add({
+      targets: this.player.sprite,
+      x: this.player.sprite.x + 50,
+      duration: 200,
+      yoyo: true,
+      ease: 'Power2'
+    });
+
+    // Enemy hit reaction
+    this.time.delayedCall(200, () => {
+      this.tweens.add({
+        targets: this.enemy.sprite,
+        x: this.enemy.sprite.x + 10,
+        duration: 100,
+        yoyo: true,
+        repeat: 1
+      });
+    });
+  }
+
+  private playMagicAnimation() {
+    // Magic glow effect
+    this.tweens.add({
+      targets: this.player.sprite,
+      alpha: 0.5,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 300,
+      yoyo: true,
+      ease: 'Power2'
+    });
+
+    // Create magic projectile
+    const projectile = this.add.graphics();
+    projectile.fillStyle(0x88ccff);
+    projectile.fillCircle(0, 0, 5);
+    projectile.setPosition(this.player.sprite.x, this.player.sprite.y);
+    projectile.setDepth(6);
+
+    this.tweens.add({
+      targets: projectile,
+      x: this.enemy.sprite.x,
+      y: this.enemy.sprite.y,
+      duration: 400,
+      onComplete: () => {
+        projectile.destroy();
+        // Enemy magic hit effect
+        this.tweens.add({
+          targets: this.enemy.sprite,
+          tint: 0x88ccff,
+          duration: 200,
+          yoyo: true
+        });
+      }
+    });
+  }
+
+  private playEnemyAttackAnimation() {
+    const originalX = this.enemy.sprite.x;
+    
+    this.tweens.add({
+      targets: this.enemy.sprite,
+      x: originalX - 50,
+      duration: 300,
+      ease: 'Power2',
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.enemy.sprite,
+          x: originalX,
+          duration: 200,
+          ease: 'Power2'
+        });
+      }
+    });
+
+    // Player hit reaction
+    this.time.delayedCall(250, () => {
+      this.tweens.add({
+        targets: this.player.sprite,
+        x: this.player.sprite.x - 10,
+        duration: 100,
+        yoyo: true,
+        repeat: 1
+      });
     });
   }
 
   private updateHealthBars() {
-    if (!this.sceneInitialized) return;
-    
-    const playerStats = this.player.getStats();
-    const enemyStats = this.battleSystem.getEnemy().getStats();
-    
-    // Animate health bar changes
-    if (this.playerHealthFill) {
-      const playerHealthPercent = playerStats.hp / playerStats.maxHp;
-      this.tweens.add({
-        targets: this.playerHealthFill,
-        scaleX: playerHealthPercent,
-        duration: 500,
-        ease: 'Power2'
-      });
-      
-      // Low health effect
-      if (playerHealthPercent <= 0.3 && playerStats.hp > 0) {
-        this.addLowHealthEffect('player');
-      }
-    }
-    
-    if (this.playerManaFill) {
-      const playerManaPercent = playerStats.mp / playerStats.maxMp;
-      this.tweens.add({
-        targets: this.playerManaFill,
-        scaleX: playerManaPercent,
-        duration: 500,
-        ease: 'Power2'
-      });
-    }
-    
-    if (this.enemyHealthFill) {
-      const enemyHealthPercent = enemyStats.hp / enemyStats.maxHp;
-      this.tweens.add({
-        targets: this.enemyHealthFill,
-        scaleX: enemyHealthPercent,
-        duration: 500,
-        ease: 'Power2'
-      });
-      
-      // Low health effect
-      if (enemyHealthPercent <= 0.3 && enemyStats.hp > 0) {
-        this.addLowHealthEffect('enemy');
-      }
-    }
-  }
+    // Player health bar
+    const playerHealthPercent = this.player.hp / this.player.maxHp;
+    this.playerHealthFill.clear();
+    this.playerHealthFill.fillStyle(0x44ff44, 1);
+    this.playerHealthFill.fillRoundedRect(180, 400, 120 * playerHealthPercent, 12, 6);
 
-  private addLowHealthEffect(type: 'player' | 'enemy') {
-    const target = type === 'player' ? this.playerSprite : this.enemySprite;
-    if (!target) return;
-    
-    this.tweens.add({
-      targets: target,
-      tint: 0xff6666,
-      duration: 300,
-      yoyo: true,
-      repeat: 3
-    });
-  }
+    // Player mana bar
+    const playerManaPercent = this.player.mp / this.player.maxMp;
+    this.playerManaFill.clear();
+    this.playerManaFill.fillStyle(0x4444ff, 1);
+    this.playerManaFill.fillRoundedRect(180, 420, 120 * playerManaPercent, 12, 6);
 
-  private updateBattleAnimations(event: BattleEvent) {
-    if (!this.sceneInitialized) return;
-    
-    const enemyTexturePrefix = this.currentEnemyConfig.texturePrefix;
-    
-    // Clear any existing animation tweens
-    this.clearAnimationTweens();
-    
-    if (event.type === 'attack') {
-      this.playPlayerAttackAnimation(enemyTexturePrefix);
-    } else if (event.type === 'magic') {
-      this.playPlayerMagicAnimation(enemyTexturePrefix);
-    } else if (event.type === 'enemyAttack') {
-      this.playEnemyAttackAnimation(enemyTexturePrefix);
-    }
-  }
-
-  private clearAnimationTweens() {
-    this.animationTweens.forEach(tween => {
-      if (tween && tween.isActive()) {
-        tween.destroy();
-      }
-    });
-    this.animationTweens = [];
-  }
-
-  private playPlayerAttackAnimation(enemyTexturePrefix: string) {
-    if (!this.playerSprite || !this.enemySprite) return;
-    
-    // Player attacks with enhanced animation
-    if (this.textures.exists('player_attack')) {
-      this.playerSprite.setTexture('player_attack');
-    }
-    
-    // Player rushes forward
-    const rushTween = this.tweens.add({
-      targets: this.playerSprite,
-      x: this.playerSprite.x + 100,
-      duration: 300,
-      ease: 'Power2'
-    });
-    this.animationTweens.push(rushTween);
-    
-    // Return and switch back
-    this.time.delayedCall(300, () => {
-      if (this.playerSprite) {
-        const returnTween = this.tweens.add({
-          targets: this.playerSprite,
-          x: 200,
-          duration: 200,
-          ease: 'Power2'
-        });
-        this.animationTweens.push(returnTween);
-        
-        this.time.delayedCall(200, () => {
-          if (this.playerSprite && this.textures.exists('player_default')) {
-            this.playerSprite.setTexture('player_default');
-          }
-        });
-      }
-    });
-    
-    // Enemy hit reaction
-    this.time.delayedCall(250, () => {
-      if (this.enemySprite) {
-        const hitTexture = `${enemyTexturePrefix}_hit`;
-        if (this.textures.exists(hitTexture)) {
-          this.enemySprite.setTexture(hitTexture);
-        }
-        
-        const hitTween = this.tweens.add({
-          targets: this.enemySprite,
-          x: this.enemySprite.x + 20,
-          duration: 100,
-          yoyo: true,
-          repeat: 1
-        });
-        this.animationTweens.push(hitTween);
-        
-        this.time.delayedCall(300, () => {
-          if (this.enemySprite) {
-            const defaultTexture = `${enemyTexturePrefix}_default`;
-            if (this.textures.exists(defaultTexture)) {
-              this.enemySprite.setTexture(defaultTexture);
-            }
-          }
-        });
-      }
-    });
-  }
-
-  private playPlayerMagicAnimation(enemyTexturePrefix: string) {
-    if (!this.playerSprite || !this.enemySprite) return;
-    
-    // Player casts magic
-    if (this.textures.exists('player_cast')) {
-      this.playerSprite.setTexture('player_cast');
-    }
-    
-    // Add magical glow effect
-    const glowTween = this.tweens.add({
-      targets: this.playerSprite,
-      alpha: 0.7,
-      scaleX: 1.6,
-      scaleY: 1.6,
-      duration: 400,
-      yoyo: true,
-      repeat: 1
-    });
-    this.animationTweens.push(glowTween);
-    
-    // Create magic projectile
-    this.createMagicProjectile();
-    
-    this.time.delayedCall(800, () => {
-      if (this.playerSprite && this.textures.exists('player_default')) {
-        this.playerSprite.setTexture('player_default');
-      }
-    });
-    
-    // Enemy hit by magic
-    this.time.delayedCall(600, () => {
-      if (this.enemySprite) {
-        const hitTexture = `${enemyTexturePrefix}_hit`;
-        if (this.textures.exists(hitTexture)) {
-          this.enemySprite.setTexture(hitTexture);
-        }
-        
-        const magicHitTween = this.tweens.add({
-          targets: this.enemySprite,
-          tint: 0x88ccff,
-          duration: 200,
-          yoyo: true,
-          repeat: 2
-        });
-        this.animationTweens.push(magicHitTween);
-        
-        this.time.delayedCall(400, () => {
-          if (this.enemySprite) {
-            const defaultTexture = `${enemyTexturePrefix}_default`;
-            if (this.textures.exists(defaultTexture)) {
-              this.enemySprite.setTexture(defaultTexture);
-            }
-          }
-        });
-      }
-    });
-  }
-
-  private playEnemyAttackAnimation(enemyTexturePrefix: string) {
-    if (!this.playerSprite || !this.enemySprite) return;
-    
-    // Enemy attacks
-    const attackTexture = `${enemyTexturePrefix}_attack`;
-    if (this.textures.exists(attackTexture)) {
-      this.enemySprite.setTexture(attackTexture);
-    }
-    
-    // Character-specific attack animation
-    const config = this.currentEnemyConfig;
-    const attackDistance = this.getEnemyAttackDistance();
-    
-    const lungeTween = this.tweens.add({
-      targets: this.enemySprite,
-      x: this.enemySprite.x - attackDistance,
-      scaleX: config.scale + 0.2,
-      scaleY: config.scale + 0.2,
-      duration: 400,
-      ease: 'Power2'
-    });
-    this.animationTweens.push(lungeTween);
-    
-    this.time.delayedCall(400, () => {
-      if (this.enemySprite) {
-        const returnTween = this.tweens.add({
-          targets: this.enemySprite,
-          x: config.position.x,
-          scaleX: config.scale,
-          scaleY: config.scale,
-          duration: 300,
-          ease: 'Power2'
-        });
-        this.animationTweens.push(returnTween);
-        
-        this.time.delayedCall(100, () => {
-          if (this.enemySprite) {
-            const defaultTexture = `${enemyTexturePrefix}_default`;
-            if (this.textures.exists(defaultTexture)) {
-              this.enemySprite.setTexture(defaultTexture);
-            }
-          }
-        });
-      }
-    });
-    
-    // Player hit reaction
-    this.time.delayedCall(350, () => {
-      if (this.playerSprite) {
-        if (this.textures.exists('player_hit')) {
-          this.playerSprite.setTexture('player_hit');
-        }
-        
-        const playerHitTween = this.tweens.add({
-          targets: this.playerSprite,
-          x: this.playerSprite.x - 15,
-          duration: 100,
-          yoyo: true,
-          repeat: 1
-        });
-        this.animationTweens.push(playerHitTween);
-        
-        this.time.delayedCall(300, () => {
-          if (this.playerSprite && this.textures.exists('player_default')) {
-            this.playerSprite.setTexture('player_default');
-          }
-        });
-      }
-    });
-  }
-
-  private getEnemyAttackDistance(): number {
-    const distances = {
-      'STONE_GUARDIAN': 100,  // Heavy, slow movement
-      'RUNE_CONSTRUCT': 80,   // Moderate movement
-      'SHADOW_WISP': 60       // Quick, agile movement
-    };
-    
-    return distances[this.currentEnemyType] || 80;
-  }
-
-  private createMagicProjectile() {
-    const projectile = this.add.graphics();
-    projectile.fillStyle(0x88ccff);
-    projectile.fillCircle(0, 0, 8);
-    projectile.setPosition(250, 320);
-    projectile.setDepth(6);
-    
-    const projectileTween = this.tweens.add({
-      targets: projectile,
-      x: 550,
-      y: 200,
-      scaleX: 0.5,
-      scaleY: 0.5,
-      alpha: 0,
-      duration: 400,
-      onComplete: () => {
-        projectile.destroy();
-      }
-    });
-    this.animationTweens.push(projectileTween);
+    // Enemy health bar
+    const enemyHealthPercent = this.enemy.hp / this.enemy.maxHp;
+    this.enemyHealthFill.clear();
+    this.enemyHealthFill.fillStyle(0xff4444, 1);
+    this.enemyHealthFill.fillRoundedRect(500, 140, 120 * enemyHealthPercent, 12, 6);
   }
 
   private updateButtonHighlights() {
     if (!this.sceneInitialized) return;
-    
+
     if (this.deps.menuSystem.getCurrentMenu() === 'main') {
       const selectedIndex = this.deps.menuSystem.getSelectedIndex();
       const items = this.deps.menuSystem.getMenuItems();
-      
+
       // Reset all buttons
-      Object.keys(this.actionButtons).forEach(key => {
-        const button = this.actionButtons[key];
-        const normalTexture = `button_${key}_normal`;
-        if (this.textures.exists(normalTexture)) {
-          button.setTexture(normalTexture);
-          button.setScale(1.0);
-        }
+      Object.values(this.actionButtons).forEach(button => {
+        this.drawButton(button, false);
+        button.setScale(1.0);
       });
-      
+
+      Object.values(this.buttonTexts).forEach(text => {
+        text.setScale(1.0);
+      });
+
       // Highlight selected button
       if (items[selectedIndex]) {
         const selectedId = items[selectedIndex].id;
         if (this.actionButtons[selectedId]) {
-          const button = this.actionButtons[selectedId];
-          const hoverTexture = `button_${selectedId}_hover`;
-          if (this.textures.exists(hoverTexture)) {
-            button.setTexture(hoverTexture);
-            button.setScale(1.05);
-          }
+          this.drawButton(this.actionButtons[selectedId], true);
+          this.actionButtons[selectedId].setScale(1.05);
+          this.buttonTexts[selectedId].setScale(1.05);
         }
       }
     }
   }
 
-  private nextLevel(): void {
-    const enemyTypes = Object.keys(ENEMY_CONFIGS);
-    const nextEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+  private handleVictory() {
+    this.currentState = GameState.VICTORY;
+    this.showMessage("Victory! You have defeated the enemy!");
     
-    this.currentEnemyType = nextEnemyType;
-    this.currentEnemyConfig = ENEMY_CONFIGS[nextEnemyType];
+    // Victory animation
+    this.tweens.add({
+      targets: this.enemy.sprite,
+      alpha: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      duration: 1000,
+      ease: 'Power2'
+    });
+
+    this.updateGameState();
+  }
+
+  private handleDefeat() {
+    this.currentState = GameState.DEFEAT;
+    this.showMessage("Defeat! You have been overcome...");
+    
+    // Defeat animation
+    this.tweens.add({
+      targets: this.player.sprite,
+      alpha: 0.5,
+      duration: 1000,
+      ease: 'Power2'
+    });
+
+    this.updateGameState();
+  }
+
+  private nextLevel() {
+    // Select new random enemy
+    const enemies: EnemyType[] = ['RUNE_CONSTRUCT', 'STONE_GUARDIAN', 'SHADOW_WISP', 'SLIME', 'BAT', 'SKELETON'];
+    this.currentEnemyType = enemies[Math.floor(Math.random() * enemies.length)];
     
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Clean up old enemy effects
-      this.cleanupEnemyEffects();
-      
-      this.battleSystem.resetBattle(nextEnemyType as EnemyType);
-      
-      // Update enemy sprite and setup new effects
-      if (this.enemySprite) {
-        const enemyTextureKey = `${this.currentEnemyConfig.texturePrefix}_default`;
-        if (this.textures.exists(enemyTextureKey)) {
-          this.enemySprite.setTexture(enemyTextureKey);
-          this.enemySprite.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y);
-          this.enemySprite.setScale(this.currentEnemyConfig.scale);
-        }
-      }
-      
-      // Update enemy name
-      if (this.enemyNameText) {
-        this.enemyNameText.setText(this.currentEnemyConfig.displayName);
-        this.enemyNameText.setPosition(this.currentEnemyConfig.position.x, this.currentEnemyConfig.position.y - 80);
-      }
-      
-      // Create new enemy effects
-      this.createEnemySpecialEffects();
-      
-      this.player.heal(1000);
-      this.updateHealthBars();
-      this.updateGameState();
-      
-      const progressMessage = `You venture deeper into the ruins and encounter ${this.currentEnemyConfig.displayName}!`;
-      this.messageBox.setText(progressMessage);
+      // Reset for new battle
+      this.resetBattle();
       this.cameras.main.fadeIn(500, 0, 0, 0);
     });
   }
 
-  private cleanupEnemyEffects() {
-    this.enemySpecialEffects.forEach(effect => {
-      if (effect && effect.destroy) {
-        effect.destroy();
-      }
-    });
-    this.enemySpecialEffects = [];
-  }
-
-  private retry(): void {
+  private retry() {
     this.cameras.main.fadeOut(300, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.battleSystem.resetBattle(this.currentEnemyType as EnemyType);
-      this.player.heal(1000);
-      
-      this.updateHealthBars();
-      this.updateGameState();
-      
-      this.messageBox.setText("You steel yourself for another attempt...");
+      this.resetBattle();
       this.cameras.main.fadeIn(500, 0, 0, 0);
     });
+  }
+
+  private resetBattle() {
+    // Reset player
+    this.player.hp = this.player.maxHp;
+    this.player.mp = this.player.maxMp;
+    this.player.sprite.setAlpha(1);
+    this.player.sprite.setPosition(200, 320);
+
+    // Create new enemy
+    if (this.enemy && this.enemy.sprite) {
+      this.enemy.sprite.destroy();
+    }
+    this.enemy = new Enemy(this, this.currentEnemyType);
+
+    // Update enemy name
+    this.enemyNameText.setText(this.enemy.name);
+    this.enemyNameText.setPosition(this.enemy.sprite.x, this.enemy.sprite.y - 60);
+
+    // Reset state
+    this.currentState = GameState.PLAYER_TURN;
+    this.isProcessingAction = false;
+
+    // Update UI
+    this.updateHealthBars();
+    this.updateGameState();
+    this.showMessage(this.getEnemyFlavorText());
+  }
+
+  private showMessage(text: string) {
+    this.messageBox.setText(text);
   }
 
   private updateGameState() {
     if (!this.sceneInitialized) return;
-    
+
     const playerStats = this.player.getStats();
-    const enemyStats = this.battleSystem.getEnemy().getStats();
-    
+    const enemyStats = this.enemy.getStats();
+
     this.deps.updateGameState({
       playerHP: playerStats.hp,
       maxPlayerHP: playerStats.maxHp,
@@ -1362,104 +918,71 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  private getEnemyTexturePrefix() {
-    return this.currentEnemyConfig.texturePrefix;
-  }
-
   private showErrorState() {
     const errorBg = this.add.graphics();
     errorBg.fillStyle(0x000000, 0.9);
     errorBg.fillRect(0, 0, 800, 600);
-    
-    const errorText = this.add.text(400, 300, `Scene Error: ${this.loadingError || 'Unknown error'}`, {
+
+    const errorText = this.add.text(400, 300, 'Scene Error: Failed to initialize battle', {
       fontFamily: 'Arial',
       fontSize: '24px',
       color: '#ff0000',
       align: 'center',
       wordWrap: { width: 600 }
     }).setOrigin(0.5);
-    
+
     const restartText = this.add.text(400, 400, 'Click to restart scene', {
       fontFamily: 'Arial',
       fontSize: '18px',
       color: '#ffffff',
       align: 'center'
     }).setOrigin(0.5).setInteractive();
-    
+
     restartText.on('pointerdown', () => {
-      this.retryLoading();
+      this.scene.restart();
     });
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => this.time.delayedCall(ms, resolve));
   }
 
   // Public getters for external loading screen integration
   getLoadingProgress(): number {
-    return this.loadingProgress;
+    return 100;
   }
 
   getCurrentLoadingTask(): string {
-    return this.currentLoadingTask;
+    return 'Battle ready!';
   }
 
   getLoadingError(): string | null {
-    return this.loadingError;
+    return null;
   }
 
   isCurrentlyLoading(): boolean {
-    return this.isLoading;
-  }
-
-  retryLoading() {
-    console.log('Retrying asset loading...');
-    this.loadingManager.reset();
-    this.isLoading = true;
-    this.loadingError = null;
-    
-    const tasks = LoadingManager.createBattleSceneTasks();
-    tasks.forEach(task => this.loadingManager.addTask(task));
-    
-    this.scene.restart();
+    return false;
   }
 
   destroy() {
     console.log('BattleScene cleanup started');
-    
-    // Clean up animation tweens
-    this.clearAnimationTweens();
-    
-    // Clean up enemy special effects
-    this.cleanupEnemyEffects();
-    
-    // Stop and clean up audio
-    if (this.battleMusic && this.battleMusic.isPlaying) {
-      this.battleMusic.stop();
-    }
-    
-    Object.values(this.soundEffects).forEach(sound => {
-      if (sound && sound.isPlaying) {
-        sound.stop();
-      }
-    });
-    
+
     // Clean up global references
-    delete window.gameControlEvent;
-    
-    // Clean up visual effects
-    this.battleEffects.forEach(effect => {
-      if (effect && effect.destroy) {
-        effect.destroy();
-      }
-    });
-    
-    // Clean up particles
-    if (this.backgroundParticles) {
-      this.backgroundParticles.destroy();
-    }
-    
-    // Reset loading manager
-    this.loadingManager.reset();
-    
+    delete (window as any).gameControlEvent;
+
     console.log('BattleScene destroyed and cleaned up');
-    
     super.destroy();
   }
 }
+
+// Export the factory function to match the pattern used in other scenes
+export function createBattleScene(Phaser: any, dependencies: BattleSceneDependencies) {
+  return class extends BattleScene {
+    constructor() {
+      super(dependencies);
+    }
+  };
+}
+
+// Also export the class directly for backward compatibility
+export { BattleScene };

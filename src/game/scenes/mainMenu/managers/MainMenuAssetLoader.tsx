@@ -1,8 +1,8 @@
-import { LoadingManager } from './LoadingManager';
-import { generateTextureFromReactComponent } from './textureGenerator';
-import { Button } from '../assets/ui/Button';
-import { TemplateRuins } from '../../assets/images/backgrounds/TemplateRuins';
-import { MENU_CONFIG } from '../scenes/mainMenu/config/MenuConfig';
+import { LoadingManager } from '../../../utils/LoadingManager';
+import { generateTextureFromReactComponent } from '../../../utils/textureGenerator';
+import { Button } from '../../../assets/ui/Button';
+import { TemplateRuins } from '../../../../assets/images/backgrounds/TemplateRuins';
+import { MENU_CONFIG } from '../config/MenuConfig';
 
 export class MainMenuAssetLoader {
   private scene: Phaser.Scene;
@@ -148,12 +148,9 @@ export class MainMenuAssetLoader {
   // Fallback creation methods
   private createFallbackBackground() {
     const graphics = this.scene.add.graphics();
-    
-    // Create a gradient background
     graphics.fillGradientStyle(0x0a0a1a, 0x0a0a1a, 0x1a1a3a, 0x2a2a5a, 1);
     graphics.fillRect(0, 0, 800, 600);
     
-    // Add some stars
     for (let i = 0; i < 50; i++) {
       const x = Math.random() * 800;
       const y = Math.random() * 600;
@@ -169,7 +166,6 @@ export class MainMenuAssetLoader {
   private createFallbackButton(key: string, variant: string, state: string) {
     const graphics = this.scene.add.graphics();
     
-    // Button colors based on variant and state
     let bgColor = 0x4a5568;
     let borderColor = 0x718096;
     
@@ -181,14 +177,10 @@ export class MainMenuAssetLoader {
       borderColor = 0xfc8181;
     }
     
-    // Draw button background
     graphics.fillStyle(bgColor);
     graphics.fillRoundedRect(0, 0, 220, 50, 8);
-    
-    // Draw button border
     graphics.lineStyle(2, borderColor);
     graphics.strokeRoundedRect(0, 0, 220, 50, 8);
-    
     graphics.generateTexture(key, 220, 50);
     graphics.destroy();
   }
@@ -203,20 +195,14 @@ export class MainMenuAssetLoader {
 
   private createFallbackLogo() {
     const graphics = this.scene.add.graphics();
-    
-    // Create a simple mystical logo
     graphics.fillStyle(0x88ccff);
     graphics.fillCircle(64, 64, 30);
-    
     graphics.lineStyle(3, 0xffffff);
     graphics.strokeCircle(64, 64, 30);
-    
-    // Add a rune-like symbol
     graphics.lineBetween(64 - 15, 64 - 15, 64 + 15, 64 + 15);
     graphics.lineBetween(64 - 15, 64 + 15, 64 + 15, 64 - 15);
     graphics.lineBetween(64, 64 - 20, 64, 64 + 20);
     graphics.lineBetween(64 - 20, 64, 64 + 20, 64);
-    
     graphics.generateTexture('logo', 128, 128);
     graphics.destroy();
   }

@@ -1,79 +1,98 @@
-export interface GameSettings {
-  sound: boolean;
-  music: boolean;
-  difficulty: 'easy' | 'normal' | 'hard';
-}
-
 export class SettingsSystem {
-  private settings: GameSettings;
-  private onSettingsChange?: (settings: GameSettings) => void;
+  private settings = {
+    sound: true,
+    music: true,
+    sfxVolume: 0.7,
+    musicVolume: 0.5,
+    difficulty: 'Normal' as 'Easy' | 'Normal' | 'Hard'
+  };
 
-  constructor() {
-    // Try to load from local storage, or use defaults
-    const savedSettings = localStorage.getItem('gameSettings');
-    if (savedSettings) {
-      try {
-        this.settings = JSON.parse(savedSettings);
-      } catch (e) {
-        this.resetToDefaults();
-      }
-    } else {
-      this.resetToDefaults();
-    }
+  // Basic getters
+  getSoundEnabled(): boolean {
+    return this.settings.sound;
   }
 
-  private resetToDefaults(): void {
-    this.settings = {
-      sound: true,
-      music: true,
-      difficulty: 'normal'
-    };
-    this.saveSettings();
+  setSoundEnabled(enabled: boolean): void {
+    this.settings.sound = enabled;
   }
 
-  public getSettings(): GameSettings {
-    return { ...this.settings };
+  getMusicEnabled(): boolean {
+    return this.settings.music;
   }
 
-  public toggleSound(): void {
-    this.settings.sound = !this.settings.sound;
-    this.saveSettings();
+  setMusicEnabled(enabled: boolean): void {
+    this.settings.music = enabled;
   }
 
-  public toggleMusic(): void {
-    this.settings.music = !this.settings.music;
-    this.saveSettings();
+  getSfxVolume(): number {
+    return this.settings.sfxVolume;
   }
 
-  public cycleDifficulty(): void {
-    const difficulties: Array<'easy' | 'normal' | 'hard'> = ['easy', 'normal', 'hard'];
-    const currentIndex = difficulties.indexOf(this.settings.difficulty);
-    const nextIndex = (currentIndex + 1) % difficulties.length;
-    this.settings.difficulty = difficulties[nextIndex];
-    this.saveSettings();
+  setSfxVolume(volume: number): void {
+    this.settings.sfxVolume = Math.max(0, Math.min(1, volume));
   }
 
-  public getSoundLabel(): string {
+  getMusicVolume(): number {
+    return this.settings.musicVolume;
+  }
+
+  setMusicVolume(volume: number): void {
+    this.settings.musicVolume = Math.max(0, Math.min(1, volume));
+  }
+
+  getDifficulty(): string {
+    return this.settings.difficulty;
+  }
+
+  setDifficulty(difficulty: 'Easy' | 'Normal' | 'Hard'): void {
+    this.settings.difficulty = difficulty;
+  }
+
+  // Methods that SettingsPanel expects
+  getSoundLabel(): string {
     return `Sound: ${this.settings.sound ? 'ON' : 'OFF'}`;
   }
 
-  public getMusicLabel(): string {
+  getMusicLabel(): string {
     return `Music: ${this.settings.music ? 'ON' : 'OFF'}`;
   }
 
-  public getDifficultyLabel(): string {
-    return `Difficulty: ${this.settings.difficulty.charAt(0).toUpperCase() + this.settings.difficulty.slice(1)}`;
+  getDifficultyLabel(): string {
+    return `Difficulty: ${this.settings.difficulty}`;
   }
 
-  public setOnSettingsChange(callback: (settings: GameSettings) => void): void {
-    this.onSettingsChange = callback;
+  // Toggle methods
+  toggleSound(): void {
+    this.settings.sound = !this.settings.sound;
   }
 
-  private saveSettings(): void {
-    localStorage.setItem('gameSettings', JSON.stringify(this.settings));
-    
-    if (this.onSettingsChange) {
-      this.onSettingsChange(this.getSettings());
-    }
+  toggleMusic(): void {
+    this.settings.music = !this.settings.music;
+  }
+
+  cycleDifficulty(): void {
+    const difficulties: ('Easy' | 'Normal' | 'Hard')[] = ['Easy', 'Normal', 'Hard'];
+    const currentIndex = difficulties.indexOf(this.settings.difficulty);
+    const nextIndex = (currentIndex + 1) % difficulties.length;
+    this.settings.difficulty = difficulties[nextIndex];
+  }
+
+  // Get all settings
+  getSettings() {
+    return { ...this.settings };
+  }
+
+  getAllSettings() {
+    return { ...this.settings };
+  }
+
+  resetToDefaults(): void {
+    this.settings = {
+      sound: true,
+      music: true,
+      sfxVolume: 0.7,
+      musicVolume: 0.5,
+      difficulty: 'Normal'
+    };
   }
 }

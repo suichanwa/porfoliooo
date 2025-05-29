@@ -25,7 +25,8 @@ class SettingsAssetLoader {
       console.log('SettingsAssetLoader: All assets loaded successfully');
     } catch (error) {
       console.error('SettingsAssetLoader: Asset loading failed:', error);
-      throw error;
+      // Don't throw error, just create fallbacks
+      this.createAllFallbacks();
     }
   }
 
@@ -33,64 +34,34 @@ class SettingsAssetLoader {
     this.loadingManager.setCurrentTask('buttons');
     console.log('SettingsAssetLoader: Loading button assets');
     
-    const buttonTypes = [
-      { id: 'sound', variant: 'secondary' },
-      { id: 'music', variant: 'secondary' },
-      { id: 'difficulty', variant: 'danger' },
-      { id: 'back', variant: 'primary' },
-      { id: 'apply', variant: 'success' }
+    const buttonConfigs = [
+      { id: 'apply', text: 'Apply & Save', variant: 'primary' },
+      { id: 'back', text: 'Back to Menu', variant: 'secondary' },
+      { id: 'reset', text: 'Reset to Default', variant: 'danger' }
     ];
 
-    for (const button of buttonTypes) {
-      try {
-        // Normal state
-        await generateTextureFromReactComponent(
-          Button,
-          { 
-            width: 300, 
-            height: 50, 
-            text: button.id.charAt(0).toUpperCase() + button.id.slice(1), 
-            variant: button.variant as any, 
-            state: 'normal' 
-          },
-          `settings_button_${button.id}_normal`,
-          this.scene
-        );
-        
-        // Hover state
-        await generateTextureFromReactComponent(
-          Button,
-          { 
-            width: 300, 
-            height: 50, 
-            text: button.id.charAt(0).toUpperCase() + button.id.slice(1), 
-            variant: button.variant as any, 
-            state: 'hover' 
-          },
-          `settings_button_${button.id}_hover`,
-          this.scene
-        );
-        
-        // Selected state
-        await generateTextureFromReactComponent(
-          Button,
-          { 
-            width: 300, 
-            height: 50, 
-            text: button.id.charAt(0).toUpperCase() + button.id.slice(1), 
-            variant: button.variant as any, 
-            state: 'pressed' 
-          },
-          `settings_button_${button.id}_selected`,
-          this.scene
-        );
-      } catch (error) {
-        console.warn(`SettingsAssetLoader: Failed to load button ${button.id}, creating fallbacks:`, error);
-        this.createFallbackButton(button.id, button.variant);
+    for (const config of buttonConfigs) {
+      for (const state of ['normal', 'hover', 'pressed']) {
+        try {
+          await generateTextureFromReactComponent(
+            Button,
+            { 
+              width: 180, 
+              height: 45, 
+              text: config.text,
+              variant: config.variant as any,
+              state: state as any
+            },
+            `settings_${config.id}_${state}`,
+            this.scene
+          );
+        } catch (error) {
+          console.warn(`Failed to load ${config.id}_${state}, creating fallback`);
+          this.createButtonFallback(config.id, config.variant, state);
+        }
       }
     }
     
-    console.log('SettingsAssetLoader: Button assets loaded');
     this.loadingManager.completeTask('buttons');
   }
 
@@ -98,86 +69,79 @@ class SettingsAssetLoader {
     this.loadingManager.setCurrentTask('ui');
     console.log('SettingsAssetLoader: Loading UI assets');
     
-    // Create slider components and other UI elements
-    try {
-      this.createSliderTextures();
-      this.createPanelTextures();
-    } catch (error) {
-      console.warn('SettingsAssetLoader: Failed to create UI assets:', error);
-    }
+    this.createPanelTextures();
+    this.createToggleTextures();
     
-    console.log('SettingsAssetLoader: UI assets loaded');
     this.loadingManager.completeTask('ui');
   }
 
-  private createFallbackButton(buttonId: string, variant: string) {
-    const graphics = this.scene.add.graphics();
-    
-    // Button colors based on variant
-    let color = 0x666666;
-    if (variant === 'secondary') color = 0x6c757d;
-    else if (variant === 'danger') color = 0xdc3545;
-    else if (variant === 'primary') color = 0x4a9eff;
-    else if (variant === 'success') color = 0x28a745;
-    
-    const states = ['normal', 'hover', 'selected'];
-    states.forEach((state, index) => {
-      graphics.clear();
-      
-      let stateColor = color;
-      if (state === 'hover') stateColor = (color & 0xfefefe) >> 1 | 0x808080;
-      else if (state === 'selected') stateColor = (color & 0xfcfcfc) >> 2 | 0x404040;
-      
-      graphics.fillStyle(stateColor);
-      graphics.fillRoundedRect(0, 0, 300, 50, 8);
-      graphics.lineStyle(2, 0xffffff, 0.3);
-      graphics.strokeRoundedRect(0, 0, 300, 50, 8);
-      graphics.generateTexture(`settings_button_${buttonId}_${state}`, 300, 50);
-    });
-    
-    graphics.destroy();
-  }
+  private createButtonFallback(id: string, variant: string, state: string) {
+    if (this.scene.textures.exists(`settings_${id}_${state}`)) return;
 
-  private createSliderTextures() {
     const graphics = this.scene.add.graphics();
     
-    // Slider track
-    graphics.fillStyle(0x444444);
-    graphics.fillRoundedRect(0, 0, 200, 8, 4);
-    graphics.lineStyle(1, 0x666666);
-    graphics.strokeRoundedRect(0, 0, 200, 8, 4);
-    graphics.generateTexture('slider_track', 200, 8);
+    let baseColor = 0x4a5568; // default
+    if (variant === 'primary') baseColor = 0x3182ce;
+    else if (variant === 'secondary') baseColor = 0x6c757d;
+    else if (variant === 'danger') baseColor = 0xe53e3e;
     
-    // Slider handle
-    graphics.clear();
-    graphics.fillStyle(0x88ccff);
-    graphics.fillCircle(8, 8, 8);
-    graphics.lineStyle(2, 0xffffff, 0.8);
-    graphics.strokeCircle(8, 8, 8);
-    graphics.generateTexture('slider_handle', 16, 16);
+    let stateColor = baseColor;
+    if (state === 'hover') stateColor = Phaser.Display.Color.GetColor32(Phaser.Display.Color.IntegerToColor(baseColor).brighten(20));
+    else if (state === 'pressed') stateColor = Phaser.Display.Color.GetColor32(Phaser.Display.Color.IntegerToColor(baseColor).darken(20));
     
+    graphics.fillStyle(stateColor);
+    graphics.fillRoundedRect(0, 0, 180, 45, 8);
+    graphics.lineStyle(2, 0xffffff, 0.3);
+    graphics.strokeRoundedRect(0, 0, 180, 45, 8);
+    graphics.generateTexture(`settings_${id}_${state}`, 180, 45);
     graphics.destroy();
   }
 
   private createPanelTextures() {
+    if (!this.scene.textures.exists('settings_panel')) {
+      const graphics = this.scene.add.graphics();
+      
+      // Main panel
+      graphics.fillStyle(0x1a1a3a, 0.95);
+      graphics.fillRoundedRect(0, 0, 600, 450, 16);
+      graphics.lineStyle(3, 0x88ccff, 0.8);
+      graphics.strokeRoundedRect(0, 0, 600, 450, 16);
+      graphics.generateTexture('settings_panel', 600, 450);
+      
+      graphics.destroy();
+    }
+  }
+
+  private createToggleTextures() {
     const graphics = this.scene.add.graphics();
     
-    // Settings panel background
-    graphics.fillStyle(0x1a1a3a, 0.9);
-    graphics.fillRoundedRect(0, 0, 600, 500, 16);
-    graphics.lineStyle(2, 0x88ccff, 0.5);
-    graphics.strokeRoundedRect(0, 0, 600, 500, 16);
-    graphics.generateTexture('settings_panel', 600, 500);
+    // Toggle ON state
+    graphics.fillStyle(0x28a745);
+    graphics.fillRoundedRect(0, 0, 60, 30, 15);
+    graphics.fillStyle(0xffffff);
+    graphics.fillCircle(45, 15, 12);
+    graphics.generateTexture('toggle_on', 60, 30);
     
-    // Option panel background
+    // Toggle OFF state
     graphics.clear();
-    graphics.fillStyle(0x2a2a4a, 0.8);
-    graphics.fillRoundedRect(0, 0, 550, 60, 8);
-    graphics.lineStyle(1, 0x6a6a8a, 0.5);
-    graphics.strokeRoundedRect(0, 0, 550, 60, 8);
-    graphics.generateTexture('option_panel', 550, 60);
+    graphics.fillStyle(0x6c757d);
+    graphics.fillRoundedRect(0, 0, 60, 30, 15);
+    graphics.fillStyle(0xffffff);
+    graphics.fillCircle(15, 15, 12);
+    graphics.generateTexture('toggle_off', 60, 30);
     
     graphics.destroy();
+  }
+
+  private createAllFallbacks() {
+    this.createButtonFallback('apply', 'primary', 'normal');
+    this.createButtonFallback('apply', 'primary', 'hover');
+    this.createButtonFallback('back', 'secondary', 'normal');
+    this.createButtonFallback('back', 'secondary', 'hover');
+    this.createButtonFallback('reset', 'danger', 'normal');
+    this.createButtonFallback('reset', 'danger', 'hover');
+    this.createPanelTextures();
+    this.createToggleTextures();
   }
 }
 
@@ -186,9 +150,8 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
     private settingsSystem: SettingsSystem;
     private selectedIndex = 0;
     private settingsOptions: any[] = [];
-    private optionContainers: Phaser.GameObjects.Container[] = [];
-    private backButton!: Phaser.GameObjects.Image;
-    private applyButton!: Phaser.GameObjects.Image;
+    private optionElements: Phaser.GameObjects.GameObject[] = [];
+    private buttons: { [key: string]: Phaser.GameObjects.Image } = {};
     private titleText!: Phaser.GameObjects.Text;
     private animating = false;
     
@@ -221,7 +184,7 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
     init() {
       // Setup loading tasks
       const tasks = [
-        { id: 'buttons', name: 'Loading settings controls...', weight: 4 },
+        { id: 'buttons', name: 'Loading settings controls...', weight: 3 },
         { id: 'ui', name: 'Creating interface elements...', weight: 2 },
         { id: 'finalize', name: 'Finalizing settings...', weight: 1 }
       ];
@@ -276,14 +239,17 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
     }
 
     private setupScene() {
-      // Add background (reuse main menu background or create new one)
+      // Create background
       this.createBackground();
       
-      // Add settings panel
-      this.createSettingsPanel();
+      // Create main panel
+      this.createMainPanel();
       
       // Setup settings options
       this.setupSettingsOptions();
+      
+      // Create action buttons
+      this.createActionButtons();
       
       // Setup input handlers
       this.setupInput();
@@ -296,55 +262,58 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
     }
 
     private createBackground() {
-      // Create a darker version of the main menu background
-      const graphics = this.add.graphics();
-      graphics.fillGradientStyle(0x0a0a2a, 0x0a0a2a, 0x1a1a3a, 0x1a1a3a, 1);
-      graphics.fillRect(0, 0, 800, 600);
-      
-      // Add mystical particles
-      graphics.fillStyle(0x6a6a9a, 0.2);
-      for (let i = 0; i < 50; i++) {
-        const x = Math.random() * 800;
-        const y = Math.random() * 600;
-        const size = Math.random() * 2 + 0.5;
-        graphics.fillCircle(x, y, size);
+      // Reuse main menu background if it exists, otherwise create fallback
+      if (this.textures.exists('menuBg')) {
+        const bg = this.add.image(400, 300, 'menuBg').setDepth(0);
+        
+        // Add darker overlay for settings
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.7);
+        overlay.fillRect(0, 0, 800, 600);
+        overlay.setDepth(1);
+      } else {
+        // Fallback background
+        const graphics = this.add.graphics();
+        graphics.fillGradientStyle(0x0a0a2a, 0x0a0a2a, 0x1a1a3a, 0x1a1a3a, 1);
+        graphics.fillRect(0, 0, 800, 600);
+        
+        // Add mystical particles
+        graphics.fillStyle(0x6a6a9a, 0.2);
+        for (let i = 0; i < 50; i++) {
+          const x = Math.random() * 800;
+          const y = Math.random() * 600;
+          const size = Math.random() * 2 + 0.5;
+          graphics.fillCircle(x, y, size);
+        }
       }
     }
 
-    private createSettingsPanel() {
+    private createMainPanel() {
       // Main panel background
-      const panelBg = this.add.image(400, 300, 'settings_panel');
-      if (!this.textures.exists('settings_panel')) {
-        // Fallback panel
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0x1a1a3a, 0.9);
-        graphics.fillRoundedRect(100, 50, 600, 500, 16);
-        graphics.lineStyle(2, 0x88ccff, 0.5);
-        graphics.strokeRoundedRect(100, 50, 600, 500, 16);
-      }
+      const panel = this.add.image(400, 300, 'settings_panel').setDepth(10);
       
       // Title
-      this.titleText = this.add.text(400, 120, 'Game Settings', {
+      this.titleText = this.add.text(400, 150, 'Game Settings', {
         fontFamily: 'serif',
-        fontSize: '32px',
+        fontSize: '36px',
         color: '#ffffff',
         stroke: '#2a2a4a',
         strokeThickness: 4,
         align: 'center'
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setDepth(11);
       
       // Subtitle
-      this.add.text(400, 160, 'Configure your game experience', {
+      this.add.text(400, 190, 'Configure your game experience', {
         fontFamily: 'serif',
-        fontSize: '16px',
+        fontSize: '18px',
         color: '#aaccff',
         align: 'center'
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setDepth(11);
     }
 
     private setupSettingsOptions() {
-      const startY = 220;
-      const spacing = 80;
+      const startY = 250;
+      const spacing = 60;
       
       this.settingsOptions = [
         {
@@ -373,103 +342,60 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
 
       this.settingsOptions.forEach((option, index) => {
         const y = startY + (index * spacing);
-        const container = this.createOptionContainer(option, y);
-        this.optionContainers.push(container);
+        this.createSettingOption(option, y, index);
       });
-
-      // Add action buttons
-      this.createActionButtons();
     }
 
-    private createOptionContainer(option: any, y: number): Phaser.GameObjects.Container {
-      const container = this.add.container(400, y);
-      
-      // Option background panel
-      const bg = this.add.image(0, 0, 'option_panel');
-      if (!this.textures.exists('option_panel')) {
-        // Fallback
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0x2a2a4a, 0.8);
-        graphics.fillRoundedRect(-275, -30, 550, 60, 8);
-        bg.setTexture('__DEFAULT');
-      }
-      
-      // Label text
-      const label = this.add.text(-200, 0, option.label, {
+    private createSettingOption(option: any, y: number, index: number) {
+      // Option label
+      const label = this.add.text(200, y, option.label, {
         fontFamily: 'serif',
-        fontSize: '20px',
+        fontSize: '22px',
         color: '#ffffff'
-      }).setOrigin(0, 0.5);
+      }).setOrigin(0, 0.5).setDepth(11);
       
-      // Value control based on type
-      let valueControl: Phaser.GameObjects.GameObject;
-      
+      // Option value/control
       if (option.type === 'toggle') {
-        valueControl = this.createToggleControl(option);
+        const toggle = this.createToggleControl(option, 550, y);
+        this.optionElements.push(toggle);
       } else if (option.type === 'cycle') {
-        valueControl = this.createCycleControl(option);
-      } else {
-        valueControl = this.add.text(150, 0, 'Unknown', {
-          fontFamily: 'serif',
-          fontSize: '18px',
-          color: '#ffcc00'
-        }).setOrigin(0, 0.5);
+        const cycle = this.createCycleControl(option, 550, y);
+        this.optionElements.push(cycle.container);
       }
       
-      container.add([bg, label, valueControl]);
-      container.setData('option', option);
-      container.setData('valueControl', valueControl);
-      
-      return container;
+      // Store label as selectable element
+      this.optionElements.push(label);
     }
 
-    private createToggleControl(option: any): Phaser.GameObjects.Container {
-      const toggleContainer = this.add.container(150, 0);
-      
-      // Toggle background
-      const toggleBg = this.add.graphics();
+    private createToggleControl(option: any, x: number, y: number): Phaser.GameObjects.Image {
       const isOn = option.getValue();
+      const toggle = this.add.image(x, y, isOn ? 'toggle_on' : 'toggle_off')
+        .setDepth(11)
+        .setInteractive();
       
-      toggleBg.fillStyle(isOn ? 0x28a745 : 0x6c757d);
-      toggleBg.fillRoundedRect(-30, -12, 60, 24, 12);
-      
-      // Toggle handle
-      const handle = this.add.graphics();
-      handle.fillStyle(0xffffff);
-      handle.fillCircle(isOn ? 18 : -18, 0, 10);
-      
-      // Toggle text
-      const text = this.add.text(80, 0, isOn ? 'ON' : 'OFF', {
-        fontFamily: 'serif',
-        fontSize: '18px',
-        color: isOn ? '#28a745' : '#6c757d',
-        fontStyle: 'bold'
-      }).setOrigin(0, 0.5);
-      
-      toggleContainer.add([toggleBg, handle, text]);
-      toggleContainer.setData('updateToggle', (newValue: boolean) => {
-        toggleBg.clear();
-        toggleBg.fillStyle(newValue ? 0x28a745 : 0x6c757d);
-        toggleBg.fillRoundedRect(-30, -12, 60, 24, 12);
-        
-        handle.clear();
-        handle.fillStyle(0xffffff);
-        handle.fillCircle(newValue ? 18 : -18, 0, 10);
-        
-        text.setText(newValue ? 'ON' : 'OFF');
-        text.setColor(newValue ? '#28a745' : '#6c757d');
+      toggle.on('pointerdown', () => {
+        const newValue = !option.getValue();
+        option.setValue(newValue);
+        toggle.setTexture(newValue ? 'toggle_on' : 'toggle_off');
       });
       
-      return toggleContainer;
+      // Store update function for keyboard control
+      (toggle as any).updateValue = () => {
+        const newValue = !option.getValue();
+        option.setValue(newValue);
+        toggle.setTexture(newValue ? 'toggle_on' : 'toggle_off');
+      };
+      
+      return toggle;
     }
 
-    private createCycleControl(option: any): Phaser.GameObjects.Container {
-      const cycleContainer = this.add.container(150, 0);
+    private createCycleControl(option: any, x: number, y: number) {
+      const container = this.add.container(x, y).setDepth(11);
       
       // Previous button
-      const prevBtn = this.add.text(-50, 0, '◀', {
+      const prevBtn = this.add.text(-60, 0, '◀', {
         fontFamily: 'serif',
-        fontSize: '20px',
+        fontSize: '24px',
         color: '#88ccff'
       }).setOrigin(0.5).setInteractive();
       
@@ -477,126 +403,83 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
       const currentValue = option.getValue();
       const valueText = this.add.text(0, 0, currentValue.charAt(0).toUpperCase() + currentValue.slice(1), {
         fontFamily: 'serif',
-        fontSize: '18px',
+        fontSize: '20px',
         color: '#ffcc00',
         fontStyle: 'bold'
       }).setOrigin(0.5);
       
       // Next button
-      const nextBtn = this.add.text(50, 0, '▶', {
+      const nextBtn = this.add.text(60, 0, '▶', {
         fontFamily: 'serif',
-        fontSize: '20px',
+        fontSize: '24px',
         color: '#88ccff'
       }).setOrigin(0.5).setInteractive();
       
       // Button interactions
-      prevBtn.on('pointerdown', () => {
+      const updateValue = (direction: number) => {
         const currentIndex = option.options.indexOf(option.getValue());
-        const newIndex = (currentIndex - 1 + option.options.length) % option.options.length;
+        const newIndex = (currentIndex + direction + option.options.length) % option.options.length;
         const newValue = option.options[newIndex];
         option.setValue(newValue);
         valueText.setText(newValue.charAt(0).toUpperCase() + newValue.slice(1));
-      });
+      };
       
-      nextBtn.on('pointerdown', () => {
-        const currentIndex = option.options.indexOf(option.getValue());
-        const newIndex = (currentIndex + 1) % option.options.length;
-        const newValue = option.options[newIndex];
-        option.setValue(newValue);
-        valueText.setText(newValue.charAt(0).toUpperCase() + newValue.slice(1));
-      });
+      prevBtn.on('pointerdown', () => updateValue(-1));
+      nextBtn.on('pointerdown', () => updateValue(1));
       
-      cycleContainer.add([prevBtn, valueText, nextBtn]);
-      cycleContainer.setData('updateCycle', (newValue: string) => {
-        valueText.setText(newValue.charAt(0).toUpperCase() + newValue.slice(1));
-      });
+      container.add([prevBtn, valueText, nextBtn]);
       
-      return cycleContainer;
+      // Store update function for keyboard control
+      (container as any).updateValue = () => updateValue(1);
+      
+      return { container, valueText };
     }
 
     private createActionButtons() {
+      const buttonY = 450;
+      const buttonSpacing = 200;
+      
       // Apply button
-      const applyKey = 'settings_button_apply_normal';
-      if (!this.textures.exists(applyKey)) {
-        this.createFallbackActionButton('apply', 0x28a745);
-      }
+      this.buttons.apply = this.add.image(300, buttonY, 'settings_apply_normal')
+        .setDepth(11)
+        .setInteractive();
       
-      this.applyButton = this.add.image(300, 480, applyKey)
-        .setInteractive()
-        .setDepth(10);
-      
-      this.applyButton.on('pointerover', () => {
-        const hoverKey = 'settings_button_apply_hover';
-        if (this.textures.exists(hoverKey)) {
-          this.applyButton.setTexture(hoverKey);
+      this.buttons.apply.on('pointerover', () => {
+        if (this.textures.exists('settings_apply_hover')) {
+          this.buttons.apply.setTexture('settings_apply_hover');
         }
       });
       
-      this.applyButton.on('pointerout', () => {
-        this.applyButton.setTexture(applyKey);
+      this.buttons.apply.on('pointerout', () => {
+        this.buttons.apply.setTexture('settings_apply_normal');
       });
       
-      this.applyButton.on('pointerdown', () => {
+      this.buttons.apply.on('pointerdown', () => {
         this.applySettings();
       });
       
       // Back button
-      const backKey = 'settings_button_back_normal';
-      if (!this.textures.exists(backKey)) {
-        this.createFallbackActionButton('back', 0x4a9eff);
-      }
+      this.buttons.back = this.add.image(500, buttonY, 'settings_back_normal')
+        .setDepth(11)
+        .setInteractive();
       
-      this.backButton = this.add.image(500, 480, backKey)
-        .setInteractive()
-        .setDepth(10);
-      
-      this.backButton.on('pointerover', () => {
-        const hoverKey = 'settings_button_back_hover';
-        if (this.textures.exists(hoverKey)) {
-          this.backButton.setTexture(hoverKey);
+      this.buttons.back.on('pointerover', () => {
+        if (this.textures.exists('settings_back_hover')) {
+          this.buttons.back.setTexture('settings_back_hover');
         }
       });
       
-      this.backButton.on('pointerout', () => {
-        this.backButton.setTexture(backKey);
+      this.buttons.back.on('pointerout', () => {
+        this.buttons.back.setTexture('settings_back_normal');
       });
       
-      this.backButton.on('pointerdown', () => {
+      this.buttons.back.on('pointerdown', () => {
         this.goBack();
       });
       
-      // Add button labels
-      this.add.text(300, 480, 'Apply & Save', {
-        fontFamily: 'serif',
-        fontSize: '16px',
-        color: '#ffffff'
-      }).setOrigin(0.5);
-      
-      this.add.text(500, 480, 'Back', {
-        fontFamily: 'serif',
-        fontSize: '16px',
-        color: '#ffffff'
-      }).setOrigin(0.5);
-    }
-
-    private createFallbackActionButton(type: string, color: number) {
-      const graphics = this.add.graphics();
-      
-      const states = ['normal', 'hover'];
-      states.forEach(state => {
-        graphics.clear();
-        
-        let stateColor = color;
-        if (state === 'hover') stateColor = (color & 0xfefefe) >> 1 | 0x808080;
-        
-        graphics.fillStyle(stateColor);
-        graphics.fillRoundedRect(0, 0, 100, 40, 8);
-        graphics.lineStyle(2, 0xffffff, 0.3);
-        graphics.strokeRoundedRect(0, 0, 100, 40, 8);
-        graphics.generateTexture(`settings_button_${type}_${state}`, 100, 40);
-      });
-      
-      graphics.destroy();
+      // Add buttons to selectable elements
+      this.optionElements.push(this.buttons.apply);
+      this.optionElements.push(this.buttons.back);
     }
 
     private setupInput() {
@@ -628,14 +511,11 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
       this.input.keyboard.on('keydown-ESC', () => {
         this.goBack();
       });
-      
-      this.input.keyboard.on('keydown-A', () => {
-        this.applySettings();
-      });
     }
 
     private moveSelection(direction: number) {
-      const totalOptions = this.settingsOptions.length + 2; // +2 for action buttons
+      // Move between settings options + apply + back buttons
+      const totalOptions = this.settingsOptions.length + 2;
       this.selectedIndex = (this.selectedIndex + direction + totalOptions) % totalOptions;
       this.updateSelection();
     }
@@ -644,15 +524,12 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
       if (this.selectedIndex >= this.settingsOptions.length) return;
       
       const option = this.settingsOptions[this.selectedIndex];
+      const element = this.optionElements[this.selectedIndex];
       
-      if (option.type === 'toggle') {
-        option.setValue(!option.getValue());
-        this.updateOptionDisplay(this.selectedIndex);
-      } else if (option.type === 'cycle') {
-        const currentIndex = option.options.indexOf(option.getValue());
-        const newIndex = (currentIndex + direction + option.options.length) % option.options.length;
-        option.setValue(option.options[newIndex]);
-        this.updateOptionDisplay(this.selectedIndex);
+      if (option.type === 'toggle' && (element as any).updateValue) {
+        (element as any).updateValue();
+      } else if (option.type === 'cycle' && (element as any).updateValue) {
+        (element as any).updateValue();
       }
     }
 
@@ -664,49 +541,42 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
         // Back button selected
         this.goBack();
       } else {
-        // Toggle/cycle option
+        // Adjust the selected option
         this.adjustSelectedOption(1);
       }
     }
 
     private updateSelection() {
       // Reset all highlights
-      this.optionContainers.forEach((container, index) => {
-        const bg = container.getFirst() as Phaser.GameObjects.Image;
-        if (bg) {
-          bg.setTint(index === this.selectedIndex ? 0xffff88 : 0xffffff);
-          bg.setAlpha(index === this.selectedIndex ? 1 : 0.8);
+      this.optionElements.forEach((element, index) => {
+        if (element && element.clearTint) {
+          element.clearTint();
+          element.setAlpha(0.8);
         }
       });
       
-      // Highlight action buttons
-      if (this.selectedIndex === this.settingsOptions.length) {
-        this.applyButton.setTint(0xffff88);
-        this.backButton.clearTint();
-      } else if (this.selectedIndex === this.settingsOptions.length + 1) {
-        this.backButton.setTint(0xffff88);
-        this.applyButton.clearTint();
-      } else {
-        this.applyButton.clearTint();
-        this.backButton.clearTint();
-      }
-    }
-
-    private updateOptionDisplay(index: number) {
-      const container = this.optionContainers[index];
-      const option = this.settingsOptions[index];
-      const valueControl = container.getData('valueControl');
+      // Reset button highlights
+      Object.values(this.buttons).forEach(button => {
+        button.clearTint();
+        button.setAlpha(0.8);
+      });
       
-      if (option.type === 'toggle') {
-        const updateToggle = valueControl.getData('updateToggle');
-        if (updateToggle) {
-          updateToggle(option.getValue());
+      // Highlight selected element
+      if (this.selectedIndex < this.settingsOptions.length) {
+        // Highlight settings option
+        const selectedElement = this.optionElements[this.selectedIndex];
+        if (selectedElement && selectedElement.setTint) {
+          selectedElement.setTint(0xffff88);
+          selectedElement.setAlpha(1);
         }
-      } else if (option.type === 'cycle') {
-        const updateCycle = valueControl.getData('updateCycle');
-        if (updateCycle) {
-          updateCycle(option.getValue());
-        }
+      } else if (this.selectedIndex === this.settingsOptions.length) {
+        // Highlight apply button
+        this.buttons.apply.setTint(0xffff88);
+        this.buttons.apply.setAlpha(1);
+      } else if (this.selectedIndex === this.settingsOptions.length + 1) {
+        // Highlight back button
+        this.buttons.back.setTint(0xffff88);
+        this.buttons.back.setAlpha(1);
       }
     }
 
@@ -716,15 +586,14 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
       
       // Apply all temporary settings to the settings system
       Object.keys(this.tempSettings).forEach(key => {
-        if (key === 'sound') {
-          if (this.settingsSystem.getSettings().sound !== this.tempSettings.sound) {
-            this.settingsSystem.toggleSound();
-          }
-        } else if (key === 'music') {
-          if (this.settingsSystem.getSettings().music !== this.tempSettings.music) {
-            this.settingsSystem.toggleMusic();
-          }
-        } else if (key === 'difficulty') {
+        const currentSettings = this.settingsSystem.getSettings();
+        
+        if (key === 'sound' && currentSettings.sound !== this.tempSettings.sound) {
+          this.settingsSystem.toggleSound();
+        } else if (key === 'music' && currentSettings.music !== this.tempSettings.music) {
+          this.settingsSystem.toggleMusic();
+        } else if (key === 'difficulty' && currentSettings.difficulty !== this.tempSettings.difficulty) {
+          // Cycle through difficulty until we reach the desired setting
           while (this.settingsSystem.getSettings().difficulty !== this.tempSettings.difficulty) {
             this.settingsSystem.cycleDifficulty();
           }
@@ -736,7 +605,7 @@ export function createSettingsScene(Phaser: any, settingsSystem: SettingsSystem)
       this.titleText.setColor('#28a745');
       
       // Return to main menu after delay
-      this.time.delayedCall(1000, () => {
+      this.time.delayedCall(1500, () => {
         this.goBack();
       });
     }

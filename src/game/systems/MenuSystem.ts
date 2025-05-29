@@ -1,194 +1,95 @@
-import { BattleAction, MagicType, ItemType, MENU_CONFIG } from '../constants.ts';
+export interface MenuItem {
+  id: string;
+  text: string;
+  color?: string;
+  enabled?: boolean;
+}
 
 export type MenuType = 'main' | 'magic' | 'item' | 'settings';
 
-export interface MenuItem {
-  id: string;
-  label: string;
-  color: string;
-  icon?: string;
-  action?: () => void;
-  disabled?: boolean;
-}
-
 export class MenuSystem {
   private currentMenu: MenuType = 'main';
-  private selectedIndex = 0;
-  private menuItems: Record<MenuType, MenuItem[]> = {
-    main: [],
-    magic: [],
-    item: [],
-    settings: []
+  private selectedIndex: number = 0;
+  private menus: Record<MenuType, MenuItem[]> = {
+    main: [
+      { id: 'attack', text: 'Attack', color: '#ffffff' },
+      { id: 'magic', text: 'Magic', color: '#00ffff' },
+      { id: 'item', text: 'Item', color: '#ffff00' },
+      { id: 'defend', text: 'Defend', color: '#ffffff' }
+    ],
+    magic: [
+      { id: 'fire', text: 'Fire Spell', color: '#ff4444' },
+      { id: 'ice', text: 'Ice Spell', color: '#44aaff' },
+      { id: 'heal', text: 'Heal', color: '#44ff44' },
+      { id: 'back', text: 'Back', color: '#ff9999' }
+    ],
+    item: [
+      { id: 'potion', text: 'Health Potion', color: '#ff4444' },
+      { id: 'ether', text: 'Mana Potion', color: '#4444ff' },
+      { id: 'back', text: 'Back', color: '#ff9999' }
+    ],
+    settings: [
+      { id: 'sound', text: 'Sound: ON', color: '#ffffff' },
+      { id: 'music', text: 'Music: ON', color: '#ffffff' },
+      { id: 'difficulty', text: 'Difficulty: Normal', color: '#ffffff' },
+      { id: 'back', text: 'Back', color: '#ff9999' }
+    ]
   };
-  private onSelectionChange?: (index: number) => void;
-  private onMenuChange?: (menu: MenuType) => void;
 
-  constructor() {
-    // Initialize with default menu items
-    this.menuItems.main = MENU_CONFIG.MAIN_ACTIONS.map(item => ({
-      id: item.id,
-      label: item.label,
-      color: item.color,
-      icon: item.id // Used for icon lookup
-    }));
-
-    this.menuItems.magic = MENU_CONFIG.MAGIC_ACTIONS.map(item => ({
-      id: item.id,
-      label: item.label,
-      color: item.color,
-      icon: item.id
-    }));
-
-    this.menuItems.item = MENU_CONFIG.ITEM_ACTIONS.map(item => ({
-      id: item.id,
-      label: item.label,
-      color: item.color,
-      icon: item.id
-    }));
-
-    // Add back option to submenu
-    this.menuItems.magic.push({
-      id: 'back',
-      label: 'Back',
-      color: '#ff9999',
-      icon: 'back'
-    });
-
-    this.menuItems.item.push({
-      id: 'back',
-      label: 'Back',
-      color: '#ff9999',
-      icon: 'back'
-    });
-
-    // Settings menu
-    this.menuItems.settings = [
-      { id: 'sound', label: 'Sound: ON', color: '#ffffff', icon: 'sound' },
-      { id: 'music', label: 'Music: ON', color: '#ffffff', icon: 'music' },
-      { id: 'difficulty', label: 'Difficulty: Normal', color: '#ffffff', icon: 'difficulty' },
-      { id: 'back', label: 'Back', color: '#ff9999', icon: 'back' }
-    ];
-  }
-
-  public setOnSelectionChange(callback: (index: number) => void): void {
-    this.onSelectionChange = callback;
-  }
-
-  public setOnMenuChange(callback: (menu: MenuType) => void): void {
-    this.onMenuChange = callback;
-  }
-
-  public getCurrentMenu(): MenuType {
+  getCurrentMenu(): MenuType {
     return this.currentMenu;
   }
 
-  public getSelectedIndex(): number {
+  getSelectedIndex(): number {
     return this.selectedIndex;
   }
 
-  // Add the missing method to set the selected index
-  public setSelectedIndex(index: number): void {
-    if (index >= 0 && index < this.menuItems[this.currentMenu].length) {
-      this.selectedIndex = index;
-      
-      // Trigger the selection change callback if defined
-      if (this.onSelectionChange) {
-        this.onSelectionChange(this.selectedIndex);
-      }
-    }
+  getMenuItems(): MenuItem[] {
+    return this.menus[this.currentMenu];
   }
 
-  public getMenuItems(): MenuItem[] {
-    return this.menuItems[this.currentMenu];
+  getCurrentMenuItems(): MenuItem[] {
+    return this.getMenuItems();
   }
 
-  public moveUp(): void {
-    if (this.selectedIndex > 0) {
-      this.selectedIndex--;
-      if (this.onSelectionChange) {
-        this.onSelectionChange(this.selectedIndex);
-      }
-    }
+  setSelectedIndex(index: number): void {
+    const items = this.getMenuItems();
+    this.selectedIndex = Math.max(0, Math.min(index, items.length - 1));
   }
 
-  public moveDown(): void {
-    if (this.selectedIndex < this.menuItems[this.currentMenu].length - 1) {
-      this.selectedIndex++;
-      if (this.onSelectionChange) {
-        this.onSelectionChange(this.selectedIndex);
-      }
-    }
+  moveUp(): void {
+    const items = this.getMenuItems();
+    this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : items.length - 1;
   }
 
-  public select(): void {
-    const selectedItem = this.menuItems[this.currentMenu][this.selectedIndex];
+  moveDown(): void {
+    const items = this.getMenuItems();
+    this.selectedIndex = this.selectedIndex < items.length - 1 ? this.selectedIndex + 1 : 0;
+  }
+
+  select(): void {
+    const selectedItem = this.getMenuItems()[this.selectedIndex];
     
-    if (selectedItem.disabled) {
-      return;
-    }
-
-    if (selectedItem.action) {
-      selectedItem.action();
-      return;
-    }
-
-    // Handle navigation between menus
-    if (this.currentMenu === 'main') {
-      switch (selectedItem.id) {
-        case BattleAction.MAGIC:
-          this.changeMenu('magic');
-          break;
-        case BattleAction.ITEM:
-          this.changeMenu('item');
-          break;
-        case BattleAction.DEFEND:
-          // Open settings menu when defend is selected
-          this.changeMenu('settings');
-          break;
-      }
+    if (selectedItem.id === 'magic' && this.currentMenu === 'main') {
+      this.currentMenu = 'magic';
+      this.selectedIndex = 0;
+    } else if (selectedItem.id === 'item' && this.currentMenu === 'main') {
+      this.currentMenu = 'item';
+      this.selectedIndex = 0;
     } else if (selectedItem.id === 'back') {
-      // Back item selected, return to main menu
-      this.changeMenu('main');
+      this.back();
     }
   }
 
-  public back(): void {
+  back(): void {
     if (this.currentMenu !== 'main') {
-      this.changeMenu('main');
+      this.currentMenu = 'main';
+      this.selectedIndex = 0;
     }
   }
 
-  private changeMenu(menu: MenuType): void {
-    this.currentMenu = menu;
+  reset(): void {
+    this.currentMenu = 'main';
     this.selectedIndex = 0;
-    
-    if (this.onMenuChange) {
-      this.onMenuChange(menu);
-    }
-    
-    if (this.onSelectionChange) {
-      this.onSelectionChange(0);
-    }
-  }
-
-  public setItemAction(menu: MenuType, itemId: string, action: () => void): void {
-    const itemIndex = this.menuItems[menu].findIndex(item => item.id === itemId);
-    if (itemIndex !== -1) {
-      this.menuItems[menu][itemIndex].action = action;
-    }
-  }
-
-  public disableItem(menu: MenuType, itemId: string, disabled = true): void {
-    const itemIndex = this.menuItems[menu].findIndex(item => item.id === itemId);
-    if (itemIndex !== -1) {
-      this.menuItems[menu][itemIndex].disabled = disabled;
-    }
-  }
-
-  public updateItemLabel(menu: MenuType, itemId: string, newLabel: string): void {
-    const itemIndex = this.menuItems[menu].findIndex(item => item.id === itemId);
-    if (itemIndex !== -1) {
-      this.menuItems[menu][itemIndex].label = newLabel;
-    }
   }
 }
