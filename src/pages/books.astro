@@ -2,57 +2,21 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
 import BookCard from "../components/BookCard.tsx";
+import { getBooks, type Book } from "../utils/firebaseConfig";
 
-// Define your book collection
-const books = [
-  {
-    id: "clean-code",
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    coverImage: "/images/books/clean-code.jpg", // You'll need to add book covers
-    pdfUrl: "/pdfs/clean-code.pdf", // You'll need to add PDFs to public/pdfs/
-    description: "A handbook of agile software craftsmanship",
-    genre: "Programming",
-    year: 2008,
-    pages: 464,
-    myThoughts: `
-      This book completely changed how I think about writing code. Martin's emphasis on 
-      readability and maintainability resonates deeply with me. The examples are practical 
-      and the principles are timeless.
-      
-      Key takeaways:
-      - Code should be readable like prose
-      - Functions should be small and do one thing
-      - Comments should explain why, not what
-      
-      Would definitely recommend to any developer looking to level up their craft.
-    `,
-    rating: 5,
-    dateRead: "2024-03-15",
-    tags: ["programming", "best-practices", "software-engineering"]
-  },
-  {
-    id: "design-patterns",
-    title: "Design Patterns",
-    author: "Gang of Four",
-    coverImage: "/images/books/design-patterns.jpg",
-    pdfUrl: "/pdfs/design-patterns.pdf",
-    description: "Elements of Reusable Object-Oriented Software",
-    genre: "Programming",
-    year: 1994,
-    pages: 395,
-    myThoughts: `
-      A classic that every developer should read at least once. While some patterns 
-      feel dated in modern JavaScript/TypeScript, the core concepts are invaluable.
-      
-      The Observer and Factory patterns have been particularly useful in my React projects.
-      Sometimes I catch myself overengineering though - not every problem needs a pattern!
-    `,
-    rating: 4,
-    dateRead: "2024-01-20",
-    tags: ["programming", "design-patterns", "oop"]
-  }
-];
+// Get books from Firebase instead of scanning files
+let books: Book[] = [];
+let isLoading = true;
+let errorMessage = "";
+
+try {
+  books = await getBooks();
+  isLoading = false;
+} catch (error) {
+  console.error("Error fetching books:", error);
+  errorMessage = "Failed to load books. Please try again later.";
+  isLoading = false;
+}
 ---
 
 <BaseLayout title="My Book Collection | My Portfolio">
@@ -70,36 +34,94 @@ const books = [
       <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
       
       <p class="text-center mb-12 max-w-2xl mx-auto text-base-content/70">
-        Books that shaped my thinking as a developer. Each one comes with my personal thoughts and takeaways.
+        Books that shaped my thinking as a developer. Each one comes with my personal thoughts, 
+        and you can read them right here with your reading progress automatically saved to the cloud!
       </p>
-    </div>
-
-    <!-- Books Grid -->
-    <div data-scroll data-scroll-delay="0.1" class="opacity-0">
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {books.map((book, i) => (
-          <div 
-            data-scroll 
-            data-scroll-delay={i * 0.1} 
-            class="opacity-0"
-          >
-            <BookCard book={book} client:load />
-          </div>
-        ))}
-      </div>
       
-      {books.length === 0 && (
-        <div class="text-center p-12 bg-base-200 rounded-xl">
-          <div class="text-5xl mb-4">📚</div>
-          <p class="text-lg text-base-content/70">No books added yet</p>
-          <p class="text-sm text-base-content/50 mt-2">Check back soon for my reading collection!</p>
+      {books.length > 0 && (
+        <div class="text-center mb-8">
+          <span class="badge badge-lg badge-outline">
+            📚 {books.length} books in collection
+          </span>
         </div>
       )}
     </div>
+
+    <!-- Error State -->
+    {errorMessage && (
+      <div class="text-center p-12 bg-error/10 rounded-xl">
+        <div class="text-6xl mb-4">😕</div>
+        <h3 class="text-xl font-bold mb-2 text-error">Oops!</h3>
+        <p class="text-base-content/70">{errorMessage}</p>
+      </div>
+    )}
+
+    <!-- Books Grid -->
+    {!errorMessage && (
+      <div data-scroll data-scroll-delay="0.1" class="opacity-0">
+        {books.length > 0 ? (
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {books.map((book, i) => (
+              <div 
+                data-scroll 
+                data-scroll-delay={i * 0.1} 
+                class="opacity-0"
+              >
+                <BookCard book={book} client:load />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="text-center p-12 bg-base-200 rounded-xl">
+            <div class="text-6xl mb-4">📚</div>
+            <h3 class="text-xl font-bold mb-2 text-base-content">No books found</h3>
+            <p class="text-base-content/70 mb-6">
+              Books will be loaded from Firebase. Add some books to see them here!
+            </p>
+          </div>
+        )}
+      </div>
+    )}
+
+    <!-- Firebase Features Info -->
+    <div data-scroll data-scroll-delay="0.3" class="opacity-0 mt-16 bg-base-200 p-6 rounded-xl">
+      <h3 class="text-lg font-bold mb-4 text-center" style="color: var(--primary-accent)">
+        ☁️ Cloud-Powered Features
+      </h3>
+      <div class="grid md:grid-cols-3 gap-6 text-sm">
+        <div>
+          <h4 class="font-medium mb-2">🔥 Firebase Storage:</h4>
+          <ul class="list-disc list-inside space-y-1 text-base-content/70">
+            <li>Books stored in Firestore database</li>
+            <li>PDFs hosted on Firebase Storage</li>
+            <li>Automatic cover generation</li>
+            <li>Real-time synchronization</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-medium mb-2">📖 Smart Reading:</h4>
+          <ul class="list-disc list-inside space-y-1 text-base-content/70">
+            <li>Cloud-saved reading progress</li>
+            <li>Cross-device synchronization</li>
+            <li>Dedicated reading pages</li>
+            <li>Auto-bookmark system</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-medium mb-2">🚀 Production Ready:</h4>
+          <ul class="list-disc list-inside space-y-1 text-base-content/70">
+            <li>Deployed on Firebase Hosting</li>
+            <li>CDN-delivered content</li>
+            <li>Scalable architecture</li>
+            <li>Global availability</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </section>
 
+  <!-- Scroll animations script -->
   <script>
-    // Scroll animations
     document.addEventListener('DOMContentLoaded', () => {
       const scrollElements = document.querySelectorAll('[data-scroll]');
       

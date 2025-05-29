@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Book {
@@ -23,8 +23,8 @@ interface BookCardProps {
 
 export default function BookCard({ book }: BookCardProps) {
   const [showModal, setShowModal] = useState(false);
-  const [showPdfReader, setShowPdfReader] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pdfCoverGenerated, setPdfCoverGenerated] = useState(false);
+  const [generatedCover, setGeneratedCover] = useState<string>('');
 
   // Cookie helpers
   const getPageFromCookie = () => {
@@ -50,10 +50,58 @@ export default function BookCard({ book }: BookCardProps) {
     }
   };
 
+  // Generate PDF cover from first page
+  const generatePdfCover = async (pdfUrl: string) => {
+    try {
+      // Create a canvas to render the first page of the PDF
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Use PDF.js to render the first page (if available)
+      if (typeof window !== 'undefined' && (window as any).pdfjsLib) {
+        const pdf = await (window as any).pdfjsLib.getDocument(pdfUrl).promise;
+        const page = await pdf.getPage(1);
+        
+        const viewport = page.getViewport({ scale: 0.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        await page.render({
+          canvasContext: ctx,
+          viewport: viewport
+        }).promise;
+        
+        const coverDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setGeneratedCover(coverDataUrl);
+        setPdfCoverGenerated(true);
+        
+        // Save to localStorage for future use
+        localStorage.setItem(`pdf_cover_${book.id}`, coverDataUrl);
+      }
+    } catch (error) {
+      console.log('Could not generate PDF cover:', error);
+      setPdfCoverGenerated(false);
+    }
+  };
+
+  // Load saved PDF cover or generate new one
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if we have a saved cover
+      const savedCover = localStorage.getItem(`pdf_cover_${book.id}`);
+      if (savedCover) {
+        setGeneratedCover(savedCover);
+        setPdfCoverGenerated(true);
+      } else if (book.coverImage.includes('data:image/svg+xml')) {
+        // Only generate cover if current cover is placeholder
+        generatePdfCover(book.pdfUrl);
+      }
+    }
+  }, [book.id, book.pdfUrl, book.coverImage]);
+
+  // Update the handleReadBook function to navigate to the reading page
   const handleReadBook = () => {
-    const savedPage = getPageFromCookie();
-    setCurrentPage(savedPage);
-    setShowPdfReader(true);
+    window.location.href = `/read/${book.id}`;
   };
 
   const handleViewThoughts = () => {
@@ -81,34 +129,59 @@ export default function BookCard({ book }: BookCardProps) {
     ));
   };
 
+  // Determine which cover image to use
+  const coverToUse = pdfCoverGenerated && generatedCover ? generatedCover : book.coverImage;
+
   return (
     <>
+      {/* Load PDF.js library if not already loaded */}
+      {typeof window !== 'undefined' && !(window as any).pdfjsLib && (
+        <script
+          src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+          onLoad={() => {
+            if ((window as any).pdfjsLib) {
+              (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = 
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+          }}
+        />
+      )}
+
       <motion.div 
-        className="bg-base-200 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+        className="bg-base-200 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
         whileHover={{ y: -5 }}
         transition={{ duration: 0.2 }}
+        onClick={handleReadBook}
       >
         {/* Book Cover */}
         <div className="aspect-[3/4] relative overflow-hidden bg-base-300">
           <img 
-            src={book.coverImage} 
+            src={coverToUse} 
             alt={`${book.title} cover`}
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.src = `data:image/svg+xml;charset=UTF-8,%3Csvg width='240' height='320' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23374151'/%3E%3Ctext x='50%25' y='50%25' font-size='16' fill='%23ffffff' text-anchor='middle' dy='.3em'%3E${encodeURIComponent(book.title)}%3C/text%3E%3C/svg%3E`;
+              e.currentTarget.src = `data:image/svg+xml;charset=UTF-8,%3Csvg width='240' height='320' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%23374151'/%3E%3Ctext x='50%25' y='40%25' font-size='16' fill='%23ffffff' text-anchor='middle' dy='.3em'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-size='12' fill='%23ffffff' text-anchor='middle' dy='.3em'%3E${encodeURIComponent(book.title)}%3C/text%3E%3C/svg%3E`;
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
-            <div className="absolute bottom-4 left-4 right-4">
+          
+          {/* Hover overlay with action buttons */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end">
+            <div className="p-4 w-full">
               <div className="flex gap-2">
                 <button
-                  onClick={handleReadBook}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReadBook();
+                  }}
                   className="btn btn-primary btn-sm flex-1"
                 >
                   📖 Read
                 </button>
                 <button
-                  onClick={handleViewThoughts}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewThoughts();
+                  }}
                   className="btn btn-secondary btn-sm flex-1"
                 >
                   💭 Thoughts
@@ -116,6 +189,13 @@ export default function BookCard({ book }: BookCardProps) {
               </div>
             </div>
           </div>
+
+          {/* PDF cover generation indicator */}
+          {!pdfCoverGenerated && book.coverImage.includes('data:image/svg+xml') && (
+            <div className="absolute top-2 right-2 bg-primary-accent text-primary-content text-xs px-2 py-1 rounded-full">
+              Generating cover...
+            </div>
+          )}
         </div>
 
         {/* Book Info */}
@@ -149,156 +229,17 @@ export default function BookCard({ book }: BookCardProps) {
             )}
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleReadBook}
-              className="btn btn-primary btn-sm flex-1"
-            >
-              📖 Read
-            </button>
-            <button
-              onClick={handleViewThoughts}
-              className="btn btn-outline btn-sm flex-1"
-            >
-              💭 Thoughts
-            </button>
-          </div>
-
           {/* Show last read page if exists */}
           {(() => {
             const savedPage = getPageFromCookie();
             return savedPage > 1 && (
-              <div className="mt-2 text-xs text-base-content/60 text-center">
-                Last read: Page {savedPage}
+              <div className="mt-2 text-xs text-base-content/60 text-center p-2 bg-base-300 rounded">
+                📖 Continue from page {savedPage}
               </div>
             );
           })()}
         </div>
       </motion.div>
-
-      {/* PDF Reader Modal - Using iframe for better compatibility */}
-      <AnimatePresence>
-        {showPdfReader && (
-          <motion.div 
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="bg-base-100 rounded-xl w-full h-full max-w-6xl max-h-[95vh] flex flex-col"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              {/* PDF Reader Header */}
-              <div className="p-4 border-b border-base-300 flex items-center justify-between bg-base-200 rounded-t-xl">
-                <div>
-                  <h2 className="text-lg font-bold" style={{ color: 'var(--primary-accent)' }}>
-                    {book.title}
-                  </h2>
-                  <p className="text-sm text-base-content/70">by {book.author}</p>
-                </div>
-                
-                {/* PDF Controls */}
-                <div className="flex items-center gap-3">
-                  {/* Page Navigation */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const newPage = Math.max(1, currentPage - 1);
-                        handlePageChange(newPage);
-                      }}
-                      disabled={currentPage <= 1}
-                      className="btn btn-ghost btn-sm"
-                    >
-                      ← Prev
-                    </button>
-                    
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={currentPage}
-                        onChange={(e) => {
-                          const page = parseInt(e.target.value) || 1;
-                          handlePageChange(page);
-                        }}
-                        className="input input-bordered input-xs w-16 text-center"
-                        min="1"
-                      />
-                      <span className="text-sm">/ {book.pages}</span>
-                    </div>
-                    
-                    <button
-                      onClick={() => {
-                        const newPage = Math.min(book.pages, currentPage + 1);
-                        handlePageChange(newPage);
-                      }}
-                      disabled={currentPage >= book.pages}
-                      className="btn btn-ghost btn-sm"
-                    >
-                      Next →
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => window.open(book.pdfUrl, '_blank')}
-                    className="btn btn-outline btn-sm"
-                  >
-                    Open in New Tab
-                  </button>
-
-                  <button 
-                    onClick={() => setShowPdfReader(false)}
-                    className="btn btn-ghost btn-circle"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              {/* PDF Viewer - Using iframe */}
-              <div className="flex-1 overflow-hidden">
-                <iframe
-                  src={`${book.pdfUrl}#page=${currentPage}&toolbar=1&navpanes=0&scrollbar=1`}
-                  className="w-full h-full border-0"
-                  title={`${book.title} - Page ${currentPage}`}
-                  onLoad={() => {
-                    // Save current page when PDF loads
-                    savePageToCookie(currentPage);
-                  }}
-                />
-              </div>
-
-              {/* Bottom Navigation Bar */}
-              <div className="p-3 border-t border-base-300 bg-base-200 rounded-b-xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-base-content/70">
-                      Page {currentPage} of {book.pages}
-                    </span>
-                    <div className="w-32 bg-base-300 rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(currentPage / book.pages) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleViewThoughts}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      💭 My Thoughts
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Thoughts Modal */}
       <AnimatePresence>

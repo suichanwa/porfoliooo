@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -14,10 +15,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only once (singleton pattern)
-// Check if any Firebase apps are already initialized
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Diary entries collection reference
 const diaryEntriesRef = collection(db, "diaryEntries");
@@ -65,20 +66,18 @@ const lettersRef = collection(db, "letters");
 // Interface for letters
 export interface Letter {
   id?: string;
-  name?: string;
+  name: string;
   message: string;
-  date: string | Date;
+  date: any;
 }
 
 // Add a letter
 export async function addLetter(letter: Omit<Letter, "id" | "date">) {
   try {
-    console.log("Attempting to add letter:", letter);
     const docRef = await addDoc(lettersRef, {
       ...letter,
       date: serverTimestamp()
     });
-    console.log("Letter added successfully with ID:", docRef.id);
     return docRef.id;
   } catch (error) {
     console.error("Error adding letter:", error);
@@ -104,4 +103,146 @@ export async function getLetters() {
   }
 }
 
-export { db, auth };
+// Books collection reference
+const booksRef = collection(db, "books");
+
+// Interface for books
+export interface Book {
+  id?: string;
+  title: string;
+  author: string;
+  coverImage: string;
+  pdfUrl: string;
+  description: string;
+  genre: string;
+  year: number;
+  pages: number;
+  myThoughts: string;
+  rating: number;
+  dateRead: string;
+  tags: string[];
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// Add a book
+export async function addBook(book: Omit<Book, "id" | "createdAt" | "updatedAt">) {
+  try {
+    const docRef = await addDoc(booksRef, {
+      ...book,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error adding book:", error);
+    throw error;
+  }
+}
+
+// Get all books
+export async function getBooks() {
+  try {
+    console.log("Fetching books from Firestore...");
+    const q = query(booksRef, orderBy("rating", "desc"), orderBy("dateRead", "desc"));
+    const snapshot = await getDocs(q);
+    const books = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Book[];
+    console.log("Retrieved books:", books.length);
+    return books;
+  } catch (error) {
+    console.error("Error getting books:", error);
+    throw error;
+  }
+}
+
+// Update a book
+export async function updateBook(bookId: string, updates: Partial<Book>) {
+  try {
+    const bookDoc = doc(db, "books", bookId);
+    await updateDoc(bookDoc, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+    return bookId;
+  } catch (error) {
+    console.error("Error updating book:", error);
+    throw error;
+  }
+}
+
+// Delete a book
+export async function deleteBook(bookId: string) {
+  try {
+    const bookDoc = doc(db, "books", bookId);
+    await deleteDoc(bookDoc);
+    return bookId;
+  } catch (error) {
+    console.error("Error deleting book:", error);
+    throw error;
+  }
+}
+
+// Upload file to Firebase Storage
+export async function uploadFile(file: File, path: string) {
+  try {
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+}
+
+// Reading progress collection reference
+const readingProgressRef = collection(db, "readingProgress");
+
+// Interface for reading progress
+export interface ReadingProgress {
+  id?: string;
+  bookId: string;
+  currentPage: number;
+  totalPages: number;
+  lastReadAt: any;
+  userId?: string; // For future user authentication
+}
+
+// Save reading progress
+export async function saveReadingProgress(progress: Omit<ReadingProgress, "id" | "lastReadAt">) {
+  try {
+    const docRef = await addDoc(readingProgressRef, {
+      ...progress,
+      lastReadAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error saving reading progress:", error);
+    throw error;
+  }
+}
+
+// Get reading progress for a book
+export async function getReadingProgress(bookId: string) {
+  try {
+    const q = query(readingProgressRef, orderBy("lastReadAt", "desc"));
+    const snapshot = await getDocs(q);
+    const progress = snapshot.docs.find(doc => doc.data().bookId === bookId);
+    
+    if (progress) {
+      return {
+        id: progress.id,
+        ...progress.data()
+      } as ReadingProgress;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting reading progress:", error);
+    return null;
+  }
+}
+
+export { db, auth, storage };

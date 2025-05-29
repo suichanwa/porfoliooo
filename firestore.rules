@@ -10,14 +10,24 @@ service cloud.firestore {
     // Allow anyone to add a letter and read letters
     match /letters/{letterId} {
       allow create: if true;
-      allow read: if true;  // Add this line to allow reading letters
+      allow read: if true;
     }
     
-    // Allow anyone to read diary entries, but only you can create/edit them
+    // Allow anyone to read diary entries
     match /diaryEntries/{entryId} {
       allow read: if true;
-      // You can update this to allow yourself to write diary entries
+    }
+    
+    // Allow anyone to read books and reading progress
+    match /books/{bookId} {
+      allow read: if true;
+      // You can add write permissions for yourself later
       // allow write: if request.auth != null && request.auth.uid == "YOUR_AUTH_UID";
+    }
+    
+    // Allow reading progress to be saved and read
+    match /readingProgress/{progressId} {
+      allow read, write: if true;
     }
   }
 }

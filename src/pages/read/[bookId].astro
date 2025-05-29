@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getBooks, type Book } from "../../utils/firebaseConfig";
+
+export async function getStaticPaths() {
+  const books = await getBooks();
+  
+  return books.map((book) => ({
+    params: { bookId: book.id },
+    props: { book },
+  }));
+}
+
+interface Props {
+  book: Book;
+}
+
+const { book } = Astro.props;
+---
+
+<BaseLayout title={`Reading ${book.title} | My Portfolio`}>
+  <div id="reading-app" class="min-h-screen bg-base-100">
+    <!-- Loading placeholder -->
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="loading loading-dots loading-lg text-primary-accent"></div>
+    </div>
+  </div>
+
+  <!-- Pass book data to the React component -->
+  <script define:vars={{ book }}>
+    window.bookData = book;
+  </script>
+
+  <script>
+    import BookReader from "../../components/BookReader.tsx";
+    import { createRoot } from 'react-dom/client';
+    import React from 'react';
+
+    // Mount the React component
+    const container = document.getElementById('reading-app');
+    if (container && window.bookData) {
+      const root = createRoot(container);
+      root.render(React.createElement(BookReader, { book: window.bookData }));
+    }
+  </script>
+</BaseLayout>
