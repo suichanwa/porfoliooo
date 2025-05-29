@@ -18,9 +18,11 @@ service cloud.firestore {
       allow read: if true;
     }
     
-    // Allow anyone to read books and reading progress
+    // Allow anyone to read books and create books (for testing)
     match /books/{bookId} {
       allow read: if true;
+      allow create: if true; // Added this for testing
+      allow update: if true; // Added this for testing
       // You can add write permissions for yourself later
       // allow write: if request.auth != null && request.auth.uid == "YOUR_AUTH_UID";
     }
