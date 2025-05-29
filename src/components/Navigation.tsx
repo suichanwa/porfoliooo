@@ -24,6 +24,7 @@ export default function Navigation() {
     { name: "Home", path: "/" },
     { name: "About", path: "/about" },
     { name: "Diary", path: "/diary" },
+    { name: 'Books', path: '/books' }, 
     { name: "Game", path: "/game" }
   ];
 
