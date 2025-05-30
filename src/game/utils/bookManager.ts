@@ -1,4 +1,4 @@
-import { addBook, uploadFile, type Book } from './firebaseConfig';
+import { addBook, uploadFile, type Book } from './firebaseConfig'; // Fixed import path
 
 export async function addBookToFirebase(bookData: {
   title: string;

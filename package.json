@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "add-sample-books": "node src/scripts/addSampleBooks.js"
   },
   "dependencies": {
     "@astrojs/react": "^3.0.0",

@@ -140,20 +140,34 @@ export async function addBook(book: Omit<Book, "id" | "createdAt" | "updatedAt">
   }
 }
 
-// Get all books
+// Get all books - SIMPLIFIED VERSION for quick fix
 export async function getBooks() {
   try {
     console.log("Fetching books from Firestore...");
-    const q = query(booksRef, orderBy("rating", "desc"), orderBy("dateRead", "desc"));
+    
+    // Use simple query without multiple orderBy (no index needed)
+    const q = query(booksRef, orderBy("createdAt", "desc"));
+    
     const snapshot = await getDocs(q);
     const books = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Book[];
+    
+    // Sort in JavaScript instead of Firestore
+    books.sort((a, b) => {
+      if (a.rating !== b.rating) {
+        return b.rating - a.rating; // Sort by rating desc
+      }
+      return new Date(b.dateRead).getTime() - new Date(a.dateRead).getTime(); // Then by date desc
+    });
+    
     console.log("Retrieved books:", books.length);
     return books;
   } catch (error) {
     console.error("Error getting books:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
     throw error;
   }
 }
