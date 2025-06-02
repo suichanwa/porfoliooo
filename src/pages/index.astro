@@ -5,6 +5,7 @@ import ProfileCard from "../components/Profile/ProfileCard.tsx";
 import ProjectCard from "../components/ProjectCard.tsx";
 import SkillBadge from "../components/SkillBadge.tsx";
 import TypeWriter from "../components/TypeWriter.tsx";
+import StarryBackground from "../components/StarryBackground.tsx";
 
 // Fetch real GitHub projects
 let featuredProjects = [];
@@ -22,31 +23,26 @@ try {
       .slice(0, 4) // Get top 4
       .map(repo => ({
         id: repo.id.toString(),
-        title: repo.name,
-        description: repo.description || "A cool project worth checking out!",
-        technologies: [repo.language].filter(Boolean), // Add the main language
+        title: repo.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: repo.description || "A cool project I've been working on",
+        technologies: repo.topics || ['JavaScript', 'Web Development'],
         githubUrl: repo.html_url,
-        liveUrl: repo.homepage || "",
-        // Use stargazers count to highlight popular repos
-        starCount: repo.stargazers_count
+        liveUrl: repo.homepage || null,
+        stars: repo.stargazers_count,
+        forks: repo.forks_count
       }));
-  } else {
-    console.error("Failed to fetch repositories:", response.status);
   }
 } catch (error) {
-  console.error("Error fetching GitHub repositories:", error);
-}
-
-// Fallback if GitHub API fails
-if (featuredProjects.length === 0) {
+  console.error('Error fetching GitHub projects:', error);
+  
+  // Fallback projects if GitHub API fails
   featuredProjects = [
     {
       id: "1",
       title: "Portfolio Website",
-      description: "A modern portfolio site built with Astro and React",
+      description: "A modern portfolio built with Astro and React",
       technologies: ["Astro", "React", "TypeScript", "Tailwind CSS"],
       githubUrl: "https://github.com/suichanwa/portfolio",
-      liveUrl: "https://porfoliooo.web.app"
     },
     {
       id: "2",
@@ -58,192 +54,184 @@ if (featuredProjects.length === 0) {
   ];
 }
 
-// Sample skills data
-const skills = [
-  { name: "JavaScript", iconUrl: "/images/icons/javascript.svg", level: 90 },
-  { name: "TypeScript", iconUrl: "/images/icons/typescript.svg", level: 85 },
-  { name: "React", iconUrl: "/images/icons/react.svg", level: 88 },
-  { name: "Astro", iconUrl: "/images/icons/astro.svg", level: 80 },
-  { name: "Tailwind CSS", iconUrl: "/images/icons/tailwind.svg", level: 92 },
-  { name: "Three.js", iconUrl: "/images/icons/threejs.svg", level: 75 },
-];
-
-// Sample blog posts for preview
-const recentPosts = [
-  {
-    id: "1",
-    title: "Building a Portfolio with Astro",
-    excerpt: "Learn how to create a fast, modern portfolio site",
-    date: "June 15, 2024",
-    tags: ["astro", "web-dev", "portfolio"],
-    readTime: "5 min read"
+// Updated stats - Only years coding and projects built with icons
+const stats = [
+  { 
+    label: "Years Coding", 
+    value: "6", 
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>` 
   },
-  {
-    id: "2",
-    title: "Why I Love Tailwind CSS",
-    excerpt: "My journey with utility-first CSS",
-    date: "May 28, 2024",
-    tags: ["css", "tailwind", "design"],
-    readTime: "4 min read"
+  { 
+    label: "Projects Built", 
+    value: "50+", 
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+    </svg>` 
   }
 ];
-
-// Button animation variants
-const buttonVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i) => ({ 
-    opacity: 1, 
-    y: 0,
-    transition: { 
-      delay: 1.5 + (i * 0.2),
-      duration: 0.5
-    }
-  })
-};
 ---
 
 <BaseLayout title="Home | My Portfolio">
+  <!-- Starry Background Component -->
+  <StarryBackground client:load />
+
   <!-- Hero Section with Starry Theme -->
-  <section class="py-24 bg-primary-bg min-h-[80vh] flex items-center">
-    <div class="container max-w-6xl mx-auto px-4">
+  <section id="hero-section" class="py-24 bg-primary-bg min-h-[90vh] flex items-center relative overflow-hidden gui-element">
+    <div class="container max-w-6xl mx-auto px-4 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between">
-        <div class="md:w-1/2 text-center md:text-left mb-12 md:mb-0">
-          <h1 class="text-4xl md:text-5xl font-bold mb-4 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
+        <div class="md:w-2/3 text-center md:text-left mb-12 md:mb-0">
+          <h1 class="text-4xl md:text-6xl font-bold mb-6 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
             <TypeWriter 
               client:load 
-              text="ayo ima a fullstack code monkey" 
+              text="a fullstack code monkey" 
               speed={80} 
               delay={500}
-              className="block"
+              className="block bg-gradient-to-r from-primary-accent to-secondary-accent bg-clip-text text-transparent"
             />
             <TypeWriter 
               client:load 
-              text="just vibin & making things happen" 
+              text="vibing n making things happen ✨" 
               speed={60}
               delay={2500}
-              className="block text-xl mt-4 text-secondary-accent"
+              className="block text-xl md:text-2xl mt-4 text-secondary-accent"
             />
           </h1>
           
-          <div class="flex flex-wrap gap-3 justify-center md:justify-start mt-12">
-            <div data-index={0} class="hidden">
-              <a 
-                href="/diary" 
-                class="px-6 py-3 bg-primary-accent text-primary-bg font-medium rounded-lg hover:bg-primary-accent/90 transition"
-              >
-                My Diary
-              </a>
-            </div>
-            
-            <div data-index={1} class="hidden">
-              <a 
-                href="/write-letter" 
-                class="px-6 py-3 border border-secondary-accent text-secondary-accent font-medium rounded-lg hover:bg-secondary-accent/10 transition"
-              >
-                Write me a letter
-              </a>
-            </div>
+          <!-- Quick Stats - Only 2 badges now with icons -->
+          <div data-stats class="hidden flex flex-wrap justify-center md:justify-start gap-6 mb-8 opacity-0">
+            {stats.map((stat, i) => (
+              <div class="flex items-center gap-3 p-4 bg-base-100/10 backdrop-blur-sm rounded-lg border border-white/10 min-w-[140px]">
+                <div class="text-primary-accent" set:html={stat.iconSvg}></div>
+                <div class="text-center">
+                  <div class="text-lg font-bold text-primary-accent">{stat.value}</div>
+                  <div class="text-xs text-base-content/70">{stat.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          <script>
-            // Animation for buttons
-            setTimeout(() => {
-              document.querySelectorAll('[data-index]').forEach((el, i) => {
-                el.classList.remove('hidden');
-                el.animate(
-                  [
-                    { opacity: 0, transform: 'translateY(20px)' },
-                    { opacity: 1, transform: 'translateY(0)' },
-                  ],
-                  {
-                    duration: 500,
-                    delay: 3500 + (i * 200),
-                    fill: 'forwards',
-                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                  }
-                );
-              });
-            }, 100);
-          </script>
         </div>
-        
+
         <div class="md:w-1/3 flex flex-col items-center">
-          <div class="mb-4 p-1 rounded-full border-2 border-primary-accent">
+          <div class="mb-6 p-2 rounded-full border-4 border-primary-accent shadow-2xl bg-gradient-to-br from-primary-accent/20 to-secondary-accent/20 backdrop-blur-sm">
             <Avatar client:load />
           </div>
+          
+          <!-- Write me a letter button -->
+          <a 
+            href="/write-letter"
+            class="group relative px-6 py-3 border-2 border-secondary-accent text-secondary-accent font-bold rounded-xl hover:bg-secondary-accent hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+          >
+            <span class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+              Write me a letter
+            </span>
+          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Projects Section with Light Cosmic Theme -->
-  <section id="projects" class="py-16 bg-secondary-bg">
+  <!-- Projects Section -->
+  <section id="projects" class="py-16 bg-base-100/50 gui-element">
     <div class="container max-w-6xl mx-auto px-4">
-      <h2 class="text-3xl font-bold text-text-light-bg text-center mb-12">
-        Featured GitHub Projects
-      </h2>
-      <div class="grid md:grid-cols-2 gap-8">
-        {featuredProjects.map((project, i) => (
-          <div 
-            data-scroll 
-            data-scroll-delay={i * 0.1} 
-            class="opacity-0 translate-y-8"
-          >
-            <ProjectCard project={project} client:load />
+      <div data-scroll class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold text-text-dark-bg mb-4">Featured Projects</h2>
+        <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
+          Here are some of my recent projects that showcase my skills and passion for development.
+        </p>
+      </div>
+      
+      <div data-scroll class="grid md:grid-cols-2 gap-8">
+        {featuredProjects.map((project, index) => (
+          <div class="project-card">
+            <ProjectCard 
+              client:visible
+              title={project.title}
+              description={project.description}
+              technologies={project.technologies}
+              githubUrl={project.githubUrl}
+              liveUrl={project.liveUrl}
+              stars={project.stars}
+              forks={project.forks}
+            />
           </div>
         ))}
       </div>
-      <div data-scroll class="text-center mt-10 opacity-0">
-        <a 
-          href="https://github.com/suichanwa"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="px-6 py-3 border border-primary-accent text-primary-accent font-medium rounded-lg hover:bg-primary-accent/10 transition"
-        >
-          View All Projects on GitHub
-        </a>
+    </div>
+  </section>
+
+  <!-- Skills Section -->
+  <section id="skills" class="py-16 bg-primary-bg gui-element">
+    <div class="container max-w-6xl mx-auto px-4">
+      <div data-scroll class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold text-text-dark-bg mb-4">Skills & Technologies</h2>
+        <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
+          Technologies I work with to bring ideas to life.
+        </p>
+      </div>
+      
+      <div data-scroll class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {[
+          "React", "TypeScript", "Node.js", "Python", "JavaScript", "HTML/CSS",
+          "Astro", "Tailwind CSS", "Git", "MongoDB", "PostgreSQL", "Docker"
+        ].map((skill) => (
+          <SkillBadge client:visible skill={skill} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-16 bg-base-100/50 gui-element">
+    <div class="container max-w-6xl mx-auto px-4">
+      <div data-scroll class="max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-text-dark-bg mb-8">About Me</h2>
+        <ProfileCard client:visible />
       </div>
     </div>
   </section>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Elements to observe for scroll animation
       const scrollElements = document.querySelectorAll('[data-scroll]');
       
-      const elementInView = (el, scrollOffset = 0) => {
+      const elementInView = (el: Element, dividend = 1) => {
         const elementTop = el.getBoundingClientRect().top;
         return (
           elementTop <= 
-          (window.innerHeight || document.documentElement.clientHeight) * 0.8
+          (window.innerHeight || document.documentElement.clientHeight) / dividend
         );
       };
       
-      const displayScrollElement = (element) => {
-        const delay = element.dataset.scrollDelay || 0;
-        setTimeout(() => {
-          element.classList.add('motion-safe:animate-fadeIn');
-          element.style.opacity = 1;
-          element.style.transform = 'translateY(0)';
-        }, delay * 1000);
+      const displayScrollElement = (element: HTMLElement) => {
+        element.style.opacity = '1';
+        element.style.transform = 'translateY(0)';
       };
       
-      const hideScrollElement = (element) => {
-        element.style.opacity = 0;
+      const hideScrollElement = (element: HTMLElement) => {
+        element.style.opacity = '0';
         element.style.transform = 'translateY(20px)';
       };
       
       const handleScrollAnimation = () => {
         scrollElements.forEach((el) => {
-          if (elementInView(el, 100)) {
-            displayScrollElement(el);
+          const htmlEl = el as HTMLElement;
+          if (elementInView(el, 1.25)) {
+            displayScrollElement(htmlEl);
           } else {
-            hideScrollElement(el);
+            hideScrollElement(htmlEl);
           }
         });
       };
       
       scrollElements.forEach(el => {
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
       });
       
       window.addEventListener('scroll', () => {
@@ -260,5 +248,33 @@ const buttonVariants = {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .gui-element {
+    transition: opacity 0.5s ease, transform 0.5s ease, pointer-events 0s ease 0.5s;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Add some cosmic floating animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+
+  /* Gradient text animation */
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 </style>
