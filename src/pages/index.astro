@@ -5,7 +5,6 @@ import ProfileCard from "../components/Profile/ProfileCard.tsx";
 import ProjectCard from "../components/ProjectCard.tsx";
 import SkillBadge from "../components/SkillBadge.tsx";
 import TypeWriter from "../components/TypeWriter.tsx";
-import StarryBackground from "../components/StarryBackground.tsx";
 
 // Fetch real GitHub projects
 let featuredProjects = [];
@@ -74,9 +73,6 @@ const stats = [
 ---
 
 <BaseLayout title="Home | My Portfolio">
-  <!-- Starry Background Component -->
-  <StarryBackground client:load />
-
   <!-- Hero Section with Starry Theme -->
   <section id="hero-section" class="py-24 bg-primary-bg min-h-[90vh] flex items-center relative overflow-hidden gui-element">
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
@@ -100,7 +96,7 @@ const stats = [
           </h1>
           
           <!-- Quick Stats - Only 2 badges now with icons -->
-          <div data-stats class="hidden flex flex-wrap justify-center md:justify-start gap-6 mb-8 opacity-0">
+          <div data-scroll class="flex flex-wrap justify-center md:justify-start gap-6 mb-8 opacity-0">
             {stats.map((stat, i) => (
               <div class="flex items-center gap-3 p-4 bg-base-100/10 backdrop-blur-sm rounded-lg border border-white/10 min-w-[140px]">
                 <div class="text-primary-accent" set:html={stat.iconSvg}></div>
