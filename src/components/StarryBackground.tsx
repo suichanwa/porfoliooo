@@ -1,98 +1,39 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Star {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  opacity: number;
-  speed: number;
-  color: string;
-  twinkleSpeed: number;
-  angle: number;
-  stellarClass: string;
-  temperature: number;
-  brightness: number;
-  distance: number;
-  isVariable: boolean;
-  pulsePeriod?: number;
-  constellation?: string;
-}
-
-interface ShootingStar {
-  id: number;
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  length: number;
-  duration: number;
-  opacity: number;
-  size: number;
-  type: 'meteor' | 'fireball';
-  color: string;
-  sparkles: boolean;
-}
-
-interface Constellation {
-  name: string;
-  stars: { x: number; y: number; brightness: number }[];
-  connections: { from: number; to: number }[];
-}
-
-// Optimized stellar classes
-const STELLAR_CLASSES = {
-  'O': { temp: 30000, color: '#9bb0ff', rarity: 0.02, size: 8 },
-  'A': { temp: 8500, color: '#cad7ff', rarity: 0.15, size: 2 },
-  'G': { temp: 5500, color: '#fff4ea', rarity: 0.25, size: 1 },
-  'M': { temp: 3000, color: '#ffad51', rarity: 0.58, size: 0.8 }
-} as const;
-
-// Pre-computed constellations
-const CONSTELLATIONS: Constellation[] = [
-  {
-    name: 'Big Dipper',
-    stars: [
-      { x: 0.2, y: 0.3, brightness: 0.8 },
-      { x: 0.25, y: 0.25, brightness: 0.9 },
-      { x: 0.3, y: 0.2, brightness: 0.7 },
-      { x: 0.35, y: 0.22, brightness: 0.8 },
-      { x: 0.4, y: 0.28, brightness: 0.6 },
-      { x: 0.42, y: 0.35, brightness: 0.7 },
-      { x: 0.38, y: 0.4, brightness: 0.8 }
-    ],
-    connections: [
-      { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
-      { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 6 }
-    ]
-  }
-];
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+import type { Engine } from "@tsparticles/engine";
 
 interface StarryBackgroundProps {
   onHideGUI?: (hidden: boolean) => void;
 }
 
 export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
-  const [stars, setStars] = useState<Star[]>([]);
-  const [shootingStars, setShootingStars] = useState<ShootingStar[]>([]);
-  const [constellations, setConstellations] = useState<Constellation[]>([]);
   const [showConstellations, setShowConstellations] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [init, setInit] = useState(false);
+  const [galaxyRotation, setGalaxyRotation] = useState(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
-  const lastUpdateRef = useRef<number>(0);
-  const shootingStarTimerRef = useRef<number | null>(null);
-  const frameCountRef = useRef<number>(0);
   
-  // Check if we're on the client side
+  // Check if we're on the client side and initialize particles
   useEffect(() => {
     setIsClient(true);
+    
+    // Initialize particles engine with loadSlim for better performance
+    const initEngine = async () => {
+      await initParticlesEngine(async (engine: Engine) => {
+        // Use loadSlim instead of loadFull for better performance
+        await loadSlim(engine);
+      });
+      
+      setInit(true);
+    };
+    
+    initEngine();
   }, []);
   
   // Memoized device detection - only on client side
@@ -113,19 +54,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     };
   }, [isClient]);
 
-  // Visibility API optimization - only on client
-  useEffect(() => {
-    if (!isClient) return;
-    
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isClient]);
-
-  // Throttled resize handler with debouncing - only on client
+  // Handle window resize
   const handleResize = useCallback(() => {
     if (typeof window !== 'undefined') {
       setIsMobile(window.innerWidth < 768);
@@ -149,240 +78,17 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       clearTimeout(resizeTimeout);
     };
   }, [handleResize, deviceInfo.isMobile, isClient]);
-
-  // Optimized star color with pre-computed values
-  const getStarColor = useCallback((temperature: number): string => {
-    // Use binary search-like approach for better performance
-    if (temperature >= 20000) return '#9bb0ff';
-    if (temperature >= 7000) return '#cad7ff';
-    if (temperature >= 5000) return '#fff4ea';
-    return '#ffad51';
-  }, []);
-
-  // Optimized star generation with object pooling
-  const generateStar = useCallback((id: number, x: number, y: number): Star => {
-    const rand = Math.random();
-    let stellarClass: keyof typeof STELLAR_CLASSES = 'M';
-    let cumulative = 0;
-    
-    // Optimized class selection
-    for (const [type, props] of Object.entries(STELLAR_CLASSES)) {
-      cumulative += props.rarity;
-      if (rand <= cumulative) {
-        stellarClass = type as keyof typeof STELLAR_CLASSES;
-        break;
-      }
-    }
-    
-    const classProps = STELLAR_CLASSES[stellarClass];
-    const temperature = classProps.temp + ((Math.random() - 0.5) * 1000);
-    const brightness = Math.random() * 0.5 + 0.5;
-    
-    return {
-      id,
-      x,
-      y,
-      size: classProps.size * (Math.random() * 0.3 + 0.8),
-      opacity: brightness,
-      speed: Math.random() * 0.02 + 0.005,
-      color: getStarColor(temperature),
-      twinkleSpeed: Math.random() * 2 + 2,
-      angle: (Math.random() - 0.5) * 0.02,
-      stellarClass,
-      temperature,
-      brightness,
-      distance: Math.random() * 500 + 50,
-      isVariable: Math.random() < (deviceInfo.isLowEnd ? 0.02 : 0.05),
-      pulsePeriod: Math.random() * 3 + 3
-    };
-  }, [getStarColor, deviceInfo.isLowEnd]);
-
-  // Optimized star initialization with adaptive quality - only on client
+  
+  // Add galaxy rotation animation
   useEffect(() => {
-    if (!isClient || typeof window === 'undefined') return;
+    if (!isClient) return;
     
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const galaxyAnimationInterval = setInterval(() => {
+      setGalaxyRotation(prev => (prev + 0.05) % 360); // Very slow rotation
+    }, 100);
     
-    // Adaptive star count based on device performance
-    const getStarCount = () => {
-      const baseCount = Math.floor((width * height) / 15000);
-      if (deviceInfo.isLowEnd) return Math.min(30, baseCount);
-      if (deviceInfo.isMobile) return Math.min(60, baseCount);
-      return Math.min(120, baseCount);
-    };
-    
-    const starCount = getStarCount();
-    
-    // Pre-allocate arrays for better performance
-    const constellationStars: Star[] = [];
-    const backgroundStars: Star[] = [];
-    
-    // Create constellation stars
-    const scaledConstellations = CONSTELLATIONS.map(constellation => ({
-      ...constellation,
-      stars: constellation.stars.map((star) => {
-        const starX = star.x * width;
-        const starY = star.y * height;
-        const realisticStar = generateStar(1000 + constellationStars.length, starX, starY);
-        
-        realisticStar.size *= 1.2;
-        realisticStar.opacity = star.brightness;
-        realisticStar.constellation = constellation.name;
-        
-        constellationStars.push(realisticStar);
-        return { ...star, x: starX, y: starY };
-      })
-    }));
-    
-    setConstellations(scaledConstellations);
-    
-    // Create background stars with spatial optimization
-    const gridSize = 100;
-    const occupiedCells = new Set<string>();
-    
-    // Mark constellation areas as occupied
-    constellationStars.forEach(cStar => {
-      const cellX = Math.floor(cStar.x / gridSize);
-      const cellY = Math.floor(cStar.y / gridSize);
-      occupiedCells.add(`${cellX},${cellY}`);
-    });
-    
-    for (let i = 0; i < starCount; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      const cellX = Math.floor(x / gridSize);
-      const cellY = Math.floor(y / gridSize);
-      
-      if (!occupiedCells.has(`${cellX},${cellY}`)) {
-        backgroundStars.push(generateStar(i, x, y));
-        occupiedCells.add(`${cellX},${cellY}`);
-      }
-    }
-    
-    setStars([...constellationStars, ...backgroundStars]);
-    
-    // Adaptive shooting star frequency
-    const shootingStarInterval = deviceInfo.isLowEnd ? 12000 : 
-                                 deviceInfo.isMobile ? 10000 : 8000;
-    
-    shootingStarTimerRef.current = window.setInterval(() => {
-      if (isVisible && Math.random() > 0.85) {
-        createShootingStar();
-      }
-    }, shootingStarInterval);
-    
-    return () => {
-      if (shootingStarTimerRef.current) {
-        clearInterval(shootingStarTimerRef.current);
-      }
-    };
-  }, [deviceInfo, generateStar, isVisible, isClient]);
-
-  // Fixed shooting star creation with proper 90s-style diagonal motion
-  const createShootingStar = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    
-    const type = Math.random() > 0.7 ? 'fireball' : 'meteor';
-    
-    // Classic diagonal falling motion from top-right to bottom-left
-    const startX = width * (0.6 + Math.random() * 0.4); // Start from right side
-    const startY = height * (Math.random() * 0.3); // Start from upper area
-    const endX = width * (Math.random() * 0.4); // End on left side
-    const endY = height * (0.7 + Math.random() * 0.3); // End in lower area
-    
-    // Calculate the trail length based on the diagonal distance
-    const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-    const trailLength = Math.min(distance * 0.3, type === 'fireball' ? 150 : 100);
-    
-    const shootingStar: ShootingStar = {
-      id: Date.now() + Math.random(),
-      startX,
-      startY,
-      endX,
-      endY,
-      length: trailLength,
-      duration: type === 'fireball' ? 2.5 : 1.5, // Slightly longer for classic feel
-      opacity: type === 'fireball' ? 0.9 : 0.8,
-      size: type === 'fireball' ? 4 : 3,
-      type,
-      color: type === 'fireball' ? '#ff6b35' : '#ffffff',
-      sparkles: type === 'fireball'
-    };
-    
-    setShootingStars(prev => [...prev, shootingStar]);
-    
-    const cleanupDelay = shootingStar.duration * 1000 + 500;
-    setTimeout(() => {
-      setShootingStars(prev => prev.filter(s => s.id !== shootingStar.id));
-    }, cleanupDelay);
-  }, []);
-
-  // Highly optimized animation loop with adaptive FPS
-  const animate = useCallback((currentTime: number) => {
-    if (!isVisible || typeof window === 'undefined') {
-      if (typeof window !== 'undefined') {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-      return;
-    }
-    
-    frameCountRef.current++;
-    
-    // Adaptive frame rate based on performance
-    const targetFrameInterval = deviceInfo.isLowEnd ? 66 : // 15 FPS
-                                deviceInfo.isMobile ? 50 : // 20 FPS  
-                                33; // 30 FPS
-    
-    if (currentTime - lastUpdateRef.current < targetFrameInterval) {
-      animationRef.current = requestAnimationFrame(animate);
-      return;
-    }
-    
-    lastUpdateRef.current = currentTime;
-    
-    // Only update stars every few frames on low-end devices
-    const shouldUpdateStars = !deviceInfo.isLowEnd || frameCountRef.current % 2 === 0;
-    
-    if (shouldUpdateStars) {
-      setStars(prevStars => {
-        const height = window.innerHeight;
-        const width = window.innerWidth;
-        
-        return prevStars.map(star => {
-          if (star.constellation) return star;
-          
-          // Simplified movement calculation
-          const newX = star.x + Math.sin(star.angle) * star.speed;
-          const newY = star.y + star.speed * 0.5;
-          
-          // Efficient boundary check
-          if (newY > height + 50 || newX < -50 || newX > width + 50) {
-            return generateStar(star.id, Math.random() * width, -20);
-          }
-          
-          return { ...star, x: newX, y: newY };
-        });
-      });
-    }
-    
-    animationRef.current = requestAnimationFrame(animate);
-  }, [isVisible, deviceInfo, generateStar]);
-
-  useEffect(() => {
-    if (isVisible && isClient && typeof window !== 'undefined') {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [animate, isVisible, isClient]);
+    return () => clearInterval(galaxyAnimationInterval);
+  }, [isClient]);
 
   // Optimized GUI hiding with direct DOM manipulation
   const handleHideGUI = useCallback(() => {
@@ -411,57 +117,159 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     onHideGUI?.(newHideState);
   }, [hideGUI, onHideGUI]);
 
-  // Memoized constellation lines to prevent re-renders
-  const constellationLines = useMemo(() => {
-    if (!showConstellations) return null;
-    
-    return (
-      <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1, pointerEvents: 'none' }}>
-        {constellations.map((constellation, constellationIndex) => 
-          constellation.connections.map((connection, connectionIndex) => {
-            const fromStar = constellation.stars[connection.from];
-            const toStar = constellation.stars[connection.to];
-            
-            return (
-              <line
-                key={`${constellationIndex}-${connectionIndex}`}
-                x1={fromStar.x}
-                y1={fromStar.y}
-                x2={toStar.x}
-                y2={toStar.y}
-                stroke="rgba(255, 255, 255, 0.2)"
-                strokeWidth="0.5"
-                opacity={0.3}
-              />
-            );
-          })
-        )}
-      </svg>
-    );
-  }, [showConstellations, constellations]);
+  // Background stars particles config - Fixed for @tsparticles/slim
+  const starsParticlesOptions = useMemo(() => ({
+    background: {
+      color: {
+        value: "transparent",
+      },
+    },
+    fpsLimit: 60,
+    particles: {
+      number: {
+        value: deviceInfo.isLowEnd ? 30 : deviceInfo.isMobile ? 60 : 100,
+        density: {
+          enable: true,
+          area: 800, // Fixed: changed from value_area to area
+        },
+      },
+      color: {
+        value: ["#ffffff", "#cad7ff", "#fff4ea", "#ffad51"],
+      },
+      size: {
+        value: { min: 0.5, max: 3 },
+      },
+      opacity: {
+        value: { min: 0.3, max: 0.8 },
+      },
+      move: {
+        enable: true,
+        direction: "top",
+        speed: { min: 0.05, max: 0.3 },
+        straight: true,
+        outModes: {
+          default: "out",
+          top: "destroy",
+          bottom: "none",
+        },
+      },
+      life: {
+        count: 1,
+        duration: {
+          value: 20,
+        },
+      },
+    },
+    detectRetina: true,
+    emitters: {
+      position: {
+        x: 50,
+        y: 100,
+      },
+      rate: {
+        delay: 0.2,
+        quantity: 2,
+      },
+      size: {
+        width: 100,
+        height: 0,
+      },
+    },
+  }), [deviceInfo.isLowEnd, deviceInfo.isMobile]);
 
-  // Memoized star rendering for better performance
-  const starElements = useMemo(() => {
-    return stars.map(star => (
-      <div
-        key={star.id}
-        className="absolute rounded-full"
-        style={{
-          width: `${star.size}px`,
-          height: `${star.size}px`,
-          left: `${star.x}px`,
-          top: `${star.y}px`,
-          backgroundColor: star.color,
-          opacity: star.opacity,
-          boxShadow: deviceInfo.isLowEnd ? 'none' : `0 0 ${star.size * 2}px ${star.color}`,
-          transform: star.isVariable ? 'scale(1.1)' : 'scale(1)',
-          transition: star.isVariable && !deviceInfo.prefersReducedMotion ? 
-            `transform ${star.pulsePeriod}s ease-in-out infinite alternate` : 'none',
-          willChange: star.isVariable ? 'transform' : 'auto'
-        }}
-      />
-    ));
-  }, [stars, deviceInfo]);
+  // Shooting stars particles config - Simplified for better compatibility
+  const shootingStarsOptions = useMemo(() => ({
+    fullScreen: {
+      enable: false,
+    },
+    background: {
+      color: {
+        value: "transparent",
+      },
+    },
+    particles: {
+      number: {
+        value: 0,
+      },
+      color: {
+        value: "#ffffff",
+      },
+      move: {
+        enable: true,
+        speed: { min: 30, max: 70 },
+        direction: "bottom-left",
+        straight: true,
+        outModes: {
+          default: "out",
+        },
+      },
+      size: {
+        value: { min: 1, max: 3 },
+      },
+      life: {
+        count: 1,
+        duration: {
+          value: { min: 1, max: 3 },
+        },
+      },
+      shape: {
+        type: "circle", // Changed from "line" to "circle" for better compatibility
+      },
+    },
+    emitters: [
+      {
+        direction: "bottom-left",
+        rate: {
+          delay: deviceInfo.isLowEnd ? 12 : 8,
+          quantity: 1,
+        },
+        position: {
+          x: 80,
+          y: 0,
+        },
+        life: {
+          count: 0,
+          duration: 3,
+          delay: deviceInfo.isLowEnd ? 12 : 8,
+        },
+        particles: {
+          move: {
+            speed: { min: 40, max: 60 },
+          },
+          size: {
+            value: { min: 1, max: 3 },
+          },
+        },
+      },
+      {
+        direction: "bottom-left",
+        rate: {
+          delay: deviceInfo.isLowEnd ? 22 : 15,
+          quantity: 1,
+        },
+        position: {
+          x: 100,
+          y: 0,
+        },
+        life: {
+          count: 0,
+          duration: 3,
+          delay: deviceInfo.isLowEnd ? 22 : 15,
+        },
+        particles: {
+          move: {
+            speed: { min: 35, max: 50 },
+          },
+          color: {
+            value: "#ff6b35",
+          },
+          size: {
+            value: { min: 2, max: 4 },
+          },
+        },
+      },
+    ],
+  }), [deviceInfo.isLowEnd]);
 
   // Don't render anything on the server
   if (!isClient) {
@@ -557,7 +365,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         )}
       </AnimatePresence>
 
-      {/* Starry Background */}
+      {/* Starry Background with Galaxy */}
       <div 
         ref={containerRef}
         className="fixed inset-0 z-0 overflow-hidden"
@@ -568,129 +376,259 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
           willChange: 'auto'
         }}
       >
-        {/* Constellation lines - Memoized */}
-        {constellationLines}
-
-        {/* Stars - Memoized rendering */}
+        {/* Animated Galaxy Background */}
         <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-          {starElements}
+          {/* Main Galaxy Spiral */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `
+                radial-gradient(ellipse 40% 60% at 50% 50%, 
+                  rgba(100, 150, 255, 0.03) 0%, 
+                  rgba(200, 180, 255, 0.02) 30%,
+                  rgba(255, 200, 150, 0.01) 60%,
+                  transparent 80%
+                ),
+                radial-gradient(ellipse 60% 40% at 50% 50%, 
+                  rgba(255, 150, 100, 0.02) 0%, 
+                  rgba(150, 100, 255, 0.015) 40%,
+                  transparent 70%
+                )
+              `,
+              transform: `rotate(${galaxyRotation}deg) scale(1.2)`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.1s linear',
+              opacity: deviceInfo.isLowEnd ? 0.3 : 0.6
+            }}
+          />
           
-          {/* Classic 90s-style shooting stars */}
-          {shootingStars.map(star => {
-            // Calculate the angle for proper diagonal motion
-            const angle = Math.atan2(star.endY - star.startY, star.endX - star.startX);
-            
-            return (
-              <motion.div
-                key={star.id}
+          {/* Secondary Galaxy Arms */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `
+                radial-gradient(ellipse 80% 30% at 50% 50%, 
+                  transparent 0%, 
+                  rgba(180, 200, 255, 0.015) 20%,
+                  rgba(255, 180, 200, 0.01) 50%,
+                  transparent 70%
+                )
+              `,
+              transform: `rotate(${galaxyRotation * -0.7}deg) scale(1.5)`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.1s linear',
+              opacity: deviceInfo.isLowEnd ? 0.2 : 0.4
+            }}
+          />
+          
+          {/* Galaxy Core */}
+          <div 
+            className="absolute top-1/2 left-1/2"
+            style={{
+              width: '200px',
+              height: '200px',
+              marginLeft: '-100px',
+              marginTop: '-100px',
+              background: `
+                radial-gradient(circle at center, 
+                  rgba(255, 255, 255, 0.08) 0%, 
+                  rgba(200, 180, 255, 0.04) 20%,
+                  rgba(255, 200, 150, 0.02) 40%,
+                  transparent 70%
+                )
+              `,
+              borderRadius: '50%',
+              transform: `rotate(${galaxyRotation * 0.3}deg) scale(${1 + Math.sin(galaxyRotation * 0.01) * 0.1})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.1s linear',
+              opacity: deviceInfo.isLowEnd ? 0.4 : 0.7
+            }}
+          />
+          
+          {/* Floating Galaxy Dust Particles */}
+          {!deviceInfo.isLowEnd && (
+            <>
+              {Array.from({ length: 8 }, (_, i) => (
+                <div
+                  key={`dust-${i}`}
+                  className="absolute"
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '50%',
+                    left: `${20 + (i * 8)}%`,
+                    top: `${30 + Math.sin(i) * 20}%`,
+                    transform: `
+                      rotate(${galaxyRotation + i * 45}deg) 
+                      translateX(${50 + Math.cos(galaxyRotation * 0.01 + i) * 30}px)
+                      translateY(${Math.sin(galaxyRotation * 0.008 + i) * 20}px)
+                    `,
+                    transformOrigin: '50vw 50vh',
+                    transition: 'transform 0.1s linear',
+                    boxShadow: '0 0 8px rgba(255, 255, 255, 0.2)',
+                    opacity: 0.3 + Math.sin(galaxyRotation * 0.02 + i) * 0.2
+                  }}
+                />
+              ))}
+            </>
+          )}
+          
+          {/* Nebula Clouds */}
+          {!deviceInfo.isLowEnd && (
+            <>
+              <div 
                 className="absolute"
                 style={{
-                  width: `${star.size}px`,
-                  height: `${star.length}px`,
-                  left: star.startX,
-                  top: star.startY,
-                  transformOrigin: 'top center',
-                  // Classic gradient trail - bright head fading to transparent tail
-                  background: star.type === 'fireball' 
-                    ? `linear-gradient(to bottom, 
-                        ${star.color} 0%, 
-                        #ffaa44 20%, 
-                        #ffffff 40%, 
-                        rgba(255, 170, 68, 0.6) 70%, 
-                        transparent 100%)`
-                    : `linear-gradient(to bottom, 
-                        #ffffff 0%, 
-                        #aaccff 30%, 
-                        rgba(255, 255, 255, 0.4) 60%, 
-                        transparent 100%)`,
-                  borderRadius: `${star.size}px ${star.size}px 0 0`,
-                  boxShadow: deviceInfo.isLowEnd ? 'none' : 
-                    star.type === 'fireball' 
-                      ? `0 0 ${star.size * 3}px ${star.color}, 0 0 ${star.size * 6}px rgba(255, 107, 53, 0.4)`
-                      : `0 0 ${star.size * 2}px #ffffff, 0 0 ${star.size * 4}px rgba(255, 255, 255, 0.3)`,
-                  willChange: 'transform, opacity',
-                  // Rotate to align with the diagonal path
-                  transform: `rotate(${angle + Math.PI/2}rad)`
-                }}
-                initial={{ 
-                  x: 0, 
-                  y: 0, 
-                  opacity: 0,
-                  scale: 0.3
-                }}
-                animate={{
-                  x: star.endX - star.startX,
-                  y: star.endY - star.startY,
-                  opacity: [0, star.opacity, star.opacity * 0.8, 0],
-                  scale: [0.3, 1, 1, 0.8]
-                }}
-                transition={{
-                  duration: star.duration,
-                  ease: [0.25, 0.46, 0.45, 0.94], // Classic easing curve
-                  times: [0, 0.1, 0.7, 1]
+                  width: '300px',
+                  height: '150px',
+                  background: `
+                    radial-gradient(ellipse at center, 
+                      rgba(255, 100, 150, 0.03) 0%, 
+                      rgba(100, 150, 255, 0.02) 50%,
+                      transparent 80%
+                    )
+                  `,
+                  left: '20%',
+                  top: '20%',
+                  borderRadius: '50%',
+                  transform: `
+                    rotate(${galaxyRotation * 0.5}deg) 
+                    scale(${1 + Math.sin(galaxyRotation * 0.005) * 0.2})
+                  `,
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.1s linear',
+                  opacity: 0.6
                 }}
               />
-            );
-          })}
-          
-          {/* Add sparkle effects for fireballs */}
-          {shootingStars
-            .filter(star => star.type === 'fireball')
-            .map(star => {
-              const sparkleCount = 3;
-              const sparkles = [];
               
-              for (let i = 0; i < sparkleCount; i++) {
-                const delay = i * 0.2;
-                const sparkleX = star.startX + (star.endX - star.startX) * (0.2 + i * 0.3);
-                const sparkleY = star.startY + (star.endY - star.startY) * (0.2 + i * 0.3);
-                
-                sparkles.push(
-                  <motion.div
-                    key={`sparkle-${star.id}-${i}`}
-                    className="absolute"
-                    style={{
-                      width: '3px',
-                      height: '3px',
-                      left: sparkleX,
-                      top: sparkleY,
-                      background: '#ffaa44',
-                      borderRadius: '50%',
-                      boxShadow: deviceInfo.isLowEnd ? 'none' : '0 0 6px #ff6b35',
-                      pointerEvents: 'none'
-                    }}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ 
-                      opacity: [0, 1, 0],
-                      scale: [0, 1.5, 0],
-                      x: [(Math.random() - 0.5) * 20, (Math.random() - 0.5) * 40],
-                      y: [(Math.random() - 0.5) * 20, (Math.random() - 0.5) * 40]
-                    }}
-                    transition={{
-                      duration: 1,
-                      delay: delay,
-                      ease: "easeOut"
-                    }}
-                  />
-                );
-              }
-              
-              return sparkles;
-            })}
-          
-          {/* Milky Way effect - Only on non-low-end devices */}
-          {!deviceInfo.isLowEnd && (
-            <div 
-              className="absolute inset-0"
-              style={{
-                background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%)',
-                transform: 'rotate(-15deg) translateY(-20%)',
-                opacity: 0.3,
-                pointerEvents: 'none'
-              }}
-            />
+              <div 
+                className="absolute"
+                style={{
+                  width: '250px',
+                  height: '200px',
+                  background: `
+                    radial-gradient(ellipse at center, 
+                      rgba(150, 255, 100, 0.025) 0%, 
+                      rgba(255, 200, 100, 0.015) 50%,
+                      transparent 80%
+                    )
+                  `,
+                  right: '15%',
+                  bottom: '25%',
+                  borderRadius: '50%',
+                  transform: `
+                    rotate(${galaxyRotation * -0.4}deg) 
+                    scale(${1 + Math.cos(galaxyRotation * 0.007) * 0.15})
+                  `,
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.1s linear',
+                  opacity: 0.5
+                }}
+              />
+            </>
           )}
         </div>
+        
+        {/* Constellation lines */}
+        {showConstellations && (
+          <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1, pointerEvents: 'none' }}>
+            <line
+              x1="20%"
+              y1="30%"
+              x2="25%"
+              y2="25%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+            <line
+              x1="25%"
+              y1="25%"
+              x2="30%"
+              y2="20%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+            <line
+              x1="30%"
+              y1="20%"
+              x2="35%"
+              y2="22%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+            <line
+              x1="35%"
+              y1="22%"
+              x2="40%"
+              y2="28%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+            <line
+              x1="40%"
+              y1="28%"
+              x2="42%"
+              y2="35%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+            <line
+              x1="42%"
+              y1="35%"
+              x2="38%"
+              y2="40%"
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth="0.5"
+              opacity={0.3}
+            />
+          </svg>
+        )}
+
+        {/* Milky Way effect - Only on non-low-end devices */}
+        {!deviceInfo.isLowEnd && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%)',
+              transform: `rotate(${-15 + galaxyRotation * 0.1}deg) translateY(-20%)`,
+              opacity: 0.3 + Math.sin(galaxyRotation * 0.01) * 0.1,
+              pointerEvents: 'none',
+              transition: 'transform 0.1s linear, opacity 0.1s linear'
+            }}
+          />
+        )}
+        
+        {/* tsParticles stars - conditionally rendered after init */}
+        {init && (
+          <>
+            <Particles
+              id="stars"
+              options={starsParticlesOptions}
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+              }}
+            />
+            
+            {/* tsParticles shooting stars */}
+            <Particles
+              id="shootingStars"
+              options={shootingStarsOptions}
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+              }}
+            />
+          </>
+        )}
       </div>
     </>
   );
