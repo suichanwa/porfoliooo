@@ -26,7 +26,6 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     // Initialize particles engine with loadSlim for better performance
     const initEngine = async () => {
       await initParticlesEngine(async (engine: Engine) => {
-        // Use loadSlim instead of loadFull for better performance
         await loadSlim(engine);
       });
       
@@ -79,16 +78,16 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     };
   }, [handleResize, deviceInfo.isMobile, isClient]);
   
-  // Add galaxy rotation animation
+  // FIXED: Much slower and smoother galaxy rotation
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || deviceInfo.prefersReducedMotion) return;
     
     const galaxyAnimationInterval = setInterval(() => {
-      setGalaxyRotation(prev => (prev + 0.05) % 360); // Very slow rotation
-    }, 100);
+      setGalaxyRotation(prev => (prev + 0.005) % 360); // Slightly faster but still very slow
+    }, 500); // More frequent updates for smoother rotation
     
     return () => clearInterval(galaxyAnimationInterval);
-  }, [isClient]);
+  }, [isClient, deviceInfo.prefersReducedMotion]);
 
   // Optimized GUI hiding with direct DOM manipulation
   const handleHideGUI = useCallback(() => {
@@ -117,67 +116,102 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     onHideGUI?.(newHideState);
   }, [hideGUI, onHideGUI]);
 
-  // Background stars particles config - Fixed for @tsparticles/slim
+  // FIXED: Beautiful smooth stars with proper animations
   const starsParticlesOptions = useMemo(() => ({
     background: {
       color: {
         value: "transparent",
       },
     },
-    fpsLimit: 60,
+    fpsLimit: 60, // Increased for smoother animations
     particles: {
       number: {
-        value: deviceInfo.isLowEnd ? 30 : deviceInfo.isMobile ? 60 : 100,
+        value: deviceInfo.isLowEnd ? 25 : deviceInfo.isMobile ? 40 : 60,
         density: {
           enable: true,
-          area: 800, // Fixed: changed from value_area to area
+          area: 2000, // Larger area for better spread
         },
       },
       color: {
-        value: ["#ffffff", "#cad7ff", "#fff4ea", "#ffad51"],
+        value: ["#ffffff", "#e6f3ff", "#fff9e6", "#f0f8ff"],
       },
       size: {
-        value: { min: 0.5, max: 3 },
+        value: { min: 1, max: 3 },
+        animation: {
+          enable: true,
+          speed: 0.5,
+          minimumValue: 0.5,
+          sync: false,
+          startValue: "min",
+          mode: "increase"
+        }
       },
       opacity: {
-        value: { min: 0.3, max: 0.8 },
+        value: { min: 0.1, max: 0.9 },
+        animation: {
+          enable: true,
+          speed: 0.8, // Smooth twinkling
+          minimumValue: 0.1,
+          sync: false,
+          mode: "auto"
+        }
       },
       move: {
         enable: true,
-        direction: "top",
-        speed: { min: 0.05, max: 0.3 },
-        straight: true,
+        speed: 0.1, // Very gentle movement
+        direction: "none",
+        random: true,
+        straight: false,
         outModes: {
-          default: "out",
-          top: "destroy",
-          bottom: "none",
+          default: "bounce", // Bounce instead of disappearing
         },
+        attract: {
+          enable: false,
+          rotateX: 600,
+          rotateY: 1200
+        },
+        bounce: false,
+        warp: false
       },
       life: {
         count: 1,
         duration: {
-          value: 20,
+          value: { min: 20, max: 40 }, // Much longer life
         },
+        delay: {
+          value: { min: 0, max: 5 }, // Staggered appearance
+        }
       },
+      // Add smooth spawning animation
+      destroy: {
+        mode: "none"
+      }
     },
     detectRetina: true,
-    emitters: {
-      position: {
-        x: 50,
-        y: 100,
+    smooth: true,
+    // Add interactivity for smooth feel
+    interactivity: {
+      detectsOn: "canvas",
+      events: {
+        onHover: {
+          enable: true,
+          mode: "bubble"
+        },
+        resize: true
       },
-      rate: {
-        delay: 0.2,
-        quantity: 2,
-      },
-      size: {
-        width: 100,
-        height: 0,
-      },
-    },
+      modes: {
+        bubble: {
+          distance: 100,
+          size: 5,
+          duration: 2,
+          opacity: 1,
+          speed: 3
+        }
+      }
+    }
   }), [deviceInfo.isLowEnd, deviceInfo.isMobile]);
 
-  // Shooting stars particles config - Simplified for better compatibility
+  // FIXED: Beautiful smooth shooting stars with trail effects
   const shootingStarsOptions = useMemo(() => ({
     fullScreen: {
       enable: false,
@@ -187,87 +221,140 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         value: "transparent",
       },
     },
+    fpsLimit: 30,
     particles: {
       number: {
-        value: 0,
+        value: 0, // We'll spawn them via emitters
       },
       color: {
-        value: "#ffffff",
+        value: ["#ffffff", "#e6f3ff", "#fff9e6"],
       },
       move: {
         enable: true,
-        speed: { min: 30, max: 70 },
-        direction: "bottom-left",
+        speed: { min: 2, max: 4 }, // Slower, more graceful
+        direction: "bottom-right",
         straight: true,
         outModes: {
-          default: "out",
+          default: "destroy",
         },
+        trail: {
+          enable: true,
+          length: 8,
+          fillColor: "#000000"
+        }
       },
       size: {
-        value: { min: 1, max: 3 },
+        value: { min: 1, max: 2.5 },
+        animation: {
+          enable: true,
+          speed: 2,
+          minimumValue: 0.5,
+          sync: false,
+          mode: "decrease"
+        }
       },
       life: {
         count: 1,
         duration: {
-          value: { min: 1, max: 3 },
+          value: { min: 3, max: 6 },
         },
+        delay: {
+          value: { min: 0, max: 2 },
+        }
       },
       shape: {
-        type: "circle", // Changed from "line" to "circle" for better compatibility
+        type: "circle",
       },
+      opacity: {
+        value: { min: 0.4, max: 1 },
+        animation: {
+          enable: true,
+          speed: 1.5,
+          minimumValue: 0,
+          sync: false,
+          mode: "decrease"
+        }
+      },
+      // Add glow effect
+      stroke: {
+        width: 0.5,
+        color: "#ffffff"
+      }
     },
     emitters: [
       {
-        direction: "bottom-left",
+        direction: "bottom-right",
         rate: {
-          delay: deviceInfo.isLowEnd ? 12 : 8,
+          delay: deviceInfo.isLowEnd ? 25 : 15, // Reasonable delays
           quantity: 1,
         },
         position: {
-          x: 80,
-          y: 0,
+          x: { min: 60, max: 95 },
+          y: { min: 0, max: 25 },
         },
         life: {
           count: 0,
-          duration: 3,
-          delay: deviceInfo.isLowEnd ? 12 : 8,
+          duration: 2,
+          delay: deviceInfo.isLowEnd ? 25 : 15,
         },
         particles: {
           move: {
-            speed: { min: 40, max: 60 },
+            speed: { min: 1.5, max: 3 },
           },
           size: {
-            value: { min: 1, max: 3 },
+            value: { min: 1, max: 2 },
           },
+          opacity: {
+            value: { min: 0.6, max: 1 },
+            animation: {
+              enable: true,
+              speed: 2,
+              minimumValue: 0,
+              sync: false,
+              mode: "decrease"
+            }
+          }
         },
       },
+      // Add a second emitter for variety
       {
         direction: "bottom-left",
         rate: {
-          delay: deviceInfo.isLowEnd ? 22 : 15,
+          delay: deviceInfo.isLowEnd ? 35 : 25,
           quantity: 1,
         },
         position: {
-          x: 100,
-          y: 0,
+          x: { min: 5, max: 40 },
+          y: { min: 0, max: 25 },
         },
         life: {
           count: 0,
-          duration: 3,
-          delay: deviceInfo.isLowEnd ? 22 : 15,
+          duration: 2,
+          delay: deviceInfo.isLowEnd ? 35 : 25,
         },
         particles: {
           move: {
-            speed: { min: 35, max: 50 },
-          },
-          color: {
-            value: "#ff6b35",
+            speed: { min: 1, max: 2.5 },
+            direction: "bottom-left"
           },
           size: {
-            value: { min: 2, max: 4 },
+            value: { min: 0.8, max: 1.8 },
           },
+          color: {
+            value: "#f0f8ff"
+          },
+          opacity: {
+            value: { min: 0.5, max: 0.9 },
+            animation: {
+              enable: true,
+              speed: 1.8,
+              minimumValue: 0,
+              sync: false,
+              mode: "decrease"
+            }
+          }
         },
-      },
+      }
     ],
   }), [deviceInfo.isLowEnd]);
 
@@ -371,58 +458,34 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         className="fixed inset-0 z-0 overflow-hidden"
         style={{ 
           backgroundColor: 'transparent',
-          background: 'radial-gradient(ellipse at center, rgba(25, 25, 60, 0.1) 0%, rgba(0, 0, 20, 0.3) 100%)',
+          background: 'radial-gradient(ellipse at center, rgba(25, 25, 60, 0.08) 0%, rgba(0, 0, 20, 0.25) 100%)',
           pointerEvents: 'none',
-          willChange: 'auto'
+          willChange: 'transform',
         }}
       >
-        {/* Animated Galaxy Background */}
+        {/* Enhanced galaxy background with smoother rotation */}
         <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
           {/* Main Galaxy Spiral */}
           <div 
             className="absolute inset-0"
             style={{
               background: `
-                radial-gradient(ellipse 40% 60% at 50% 50%, 
+                radial-gradient(ellipse 50% 70% at 50% 50%, 
                   rgba(100, 150, 255, 0.03) 0%, 
                   rgba(200, 180, 255, 0.02) 30%,
                   rgba(255, 200, 150, 0.01) 60%,
                   transparent 80%
-                ),
-                radial-gradient(ellipse 60% 40% at 50% 50%, 
-                  rgba(255, 150, 100, 0.02) 0%, 
-                  rgba(150, 100, 255, 0.015) 40%,
-                  transparent 70%
                 )
               `,
-              transform: `rotate(${galaxyRotation}deg) scale(1.2)`,
+              transform: `rotate(${galaxyRotation}deg)`,
               transformOrigin: 'center center',
-              transition: 'transform 0.1s linear',
-              opacity: deviceInfo.isLowEnd ? 0.3 : 0.6
+              transition: 'transform 0.5s linear',
+              opacity: deviceInfo.isLowEnd ? 0.3 : 0.5
             }}
           />
           
-          {/* Secondary Galaxy Arms */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: `
-                radial-gradient(ellipse 80% 30% at 50% 50%, 
-                  transparent 0%, 
-                  rgba(180, 200, 255, 0.015) 20%,
-                  rgba(255, 180, 200, 0.01) 50%,
-                  transparent 70%
-                )
-              `,
-              transform: `rotate(${galaxyRotation * -0.7}deg) scale(1.5)`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.1s linear',
-              opacity: deviceInfo.isLowEnd ? 0.2 : 0.4
-            }}
-          />
-          
-          {/* Galaxy Core */}
-          <div 
+          {/* Galaxy Core with gentle pulse */}
+          <motion.div 
             className="absolute top-1/2 left-1/2"
             style={{
               width: '200px',
@@ -431,182 +494,155 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
               marginTop: '-100px',
               background: `
                 radial-gradient(circle at center, 
-                  rgba(255, 255, 255, 0.08) 0%, 
-                  rgba(200, 180, 255, 0.04) 20%,
-                  rgba(255, 200, 150, 0.02) 40%,
+                  rgba(255, 255, 255, 0.06) 0%, 
+                  rgba(200, 180, 255, 0.03) 20%,
+                  rgba(255, 200, 150, 0.015) 40%,
                   transparent 70%
                 )
               `,
               borderRadius: '50%',
-              transform: `rotate(${galaxyRotation * 0.3}deg) scale(${1 + Math.sin(galaxyRotation * 0.01) * 0.1})`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.1s linear',
-              opacity: deviceInfo.isLowEnd ? 0.4 : 0.7
+              opacity: deviceInfo.isLowEnd ? 0.2 : 0.4
+            }}
+            animate={{
+              scale: [1, 1.05, 1],
+              opacity: deviceInfo.isLowEnd ? [0.2, 0.25, 0.2] : [0.4, 0.5, 0.4]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
           />
           
-          {/* Floating Galaxy Dust Particles */}
+          {/* Subtle spiral arms */}
           {!deviceInfo.isLowEnd && (
-            <>
-              {Array.from({ length: 8 }, (_, i) => (
-                <div
-                  key={`dust-${i}`}
-                  className="absolute"
-                  style={{
-                    width: '4px',
-                    height: '4px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50%',
-                    left: `${20 + (i * 8)}%`,
-                    top: `${30 + Math.sin(i) * 20}%`,
-                    transform: `
-                      rotate(${galaxyRotation + i * 45}deg) 
-                      translateX(${50 + Math.cos(galaxyRotation * 0.01 + i) * 30}px)
-                      translateY(${Math.sin(galaxyRotation * 0.008 + i) * 20}px)
-                    `,
-                    transformOrigin: '50vw 50vh',
-                    transition: 'transform 0.1s linear',
-                    boxShadow: '0 0 8px rgba(255, 255, 255, 0.2)',
-                    opacity: 0.3 + Math.sin(galaxyRotation * 0.02 + i) * 0.2
-                  }}
-                />
-              ))}
-            </>
-          )}
-          
-          {/* Nebula Clouds */}
-          {!deviceInfo.isLowEnd && (
-            <>
-              <div 
-                className="absolute"
-                style={{
-                  width: '300px',
-                  height: '150px',
-                  background: `
-                    radial-gradient(ellipse at center, 
-                      rgba(255, 100, 150, 0.03) 0%, 
-                      rgba(100, 150, 255, 0.02) 50%,
-                      transparent 80%
-                    )
-                  `,
-                  left: '20%',
-                  top: '20%',
-                  borderRadius: '50%',
-                  transform: `
-                    rotate(${galaxyRotation * 0.5}deg) 
-                    scale(${1 + Math.sin(galaxyRotation * 0.005) * 0.2})
-                  `,
-                  transformOrigin: 'center center',
-                  transition: 'transform 0.1s linear',
-                  opacity: 0.6
-                }}
-              />
-              
-              <div 
-                className="absolute"
-                style={{
-                  width: '250px',
-                  height: '200px',
-                  background: `
-                    radial-gradient(ellipse at center, 
-                      rgba(150, 255, 100, 0.025) 0%, 
-                      rgba(255, 200, 100, 0.015) 50%,
-                      transparent 80%
-                    )
-                  `,
-                  right: '15%',
-                  bottom: '25%',
-                  borderRadius: '50%',
-                  transform: `
-                    rotate(${galaxyRotation * -0.4}deg) 
-                    scale(${1 + Math.cos(galaxyRotation * 0.007) * 0.15})
-                  `,
-                  transformOrigin: 'center center',
-                  transition: 'transform 0.1s linear',
-                  opacity: 0.5
-                }}
-              />
-            </>
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: `
+                  radial-gradient(ellipse 80% 40% at 50% 50%, 
+                    transparent 0%, 
+                    rgba(180, 200, 255, 0.008) 20%,
+                    rgba(255, 180, 200, 0.005) 50%,
+                    transparent 70%
+                  )
+                `,
+                transform: `rotate(${galaxyRotation * -0.7}deg)`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.5s linear',
+                opacity: 0.6
+              }}
+            />
           )}
         </div>
         
-        {/* Constellation lines */}
+        {/* Enhanced constellation lines with animation */}
         {showConstellations && (
-          <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1, pointerEvents: 'none' }}>
-            <line
+          <motion.svg 
+            className="absolute inset-0 w-full h-full" 
+            style={{ zIndex: 1, pointerEvents: 'none' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.line
               x1="20%"
               y1="30%"
               x2="25%"
               y2="25%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0 }}
             />
-            <line
+            <motion.line
               x1="25%"
               y1="25%"
               x2="30%"
               y2="20%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
             />
-            <line
+            <motion.line
               x1="30%"
               y1="20%"
               x2="35%"
               y2="22%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.4 }}
             />
-            <line
+            <motion.line
               x1="35%"
               y1="22%"
               x2="40%"
               y2="28%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.6 }}
             />
-            <line
+            <motion.line
               x1="40%"
               y1="28%"
               x2="42%"
               y2="35%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 0.8 }}
             />
-            <line
+            <motion.line
               x1="42%"
               y1="35%"
               x2="38%"
               y2="40%"
               stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="0.5"
-              opacity={0.3}
+              strokeWidth="1"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: 1 }}
             />
-          </svg>
-        )}
-
-        {/* Milky Way effect - Only on non-low-end devices */}
-        {!deviceInfo.isLowEnd && (
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%)',
-              transform: `rotate(${-15 + galaxyRotation * 0.1}deg) translateY(-20%)`,
-              opacity: 0.3 + Math.sin(galaxyRotation * 0.01) * 0.1,
-              pointerEvents: 'none',
-              transition: 'transform 0.1s linear, opacity 0.1s linear'
-            }}
-          />
+            
+            {/* Add constellation stars */}
+            {['20%,30%', '25%,25%', '30%,20%', '35%,22%', '40%,28%', '42%,35%', '38%,40%'].map((pos, i) => {
+              const [x, y] = pos.split(',');
+              return (
+                <motion.circle
+                  key={i}
+                  cx={x}
+                  cy={y}
+                  r="2"
+                  fill="rgba(255, 255, 255, 0.8)"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: [0.4, 1, 0.4] }}
+                  transition={{ 
+                    scale: { duration: 0.5, delay: i * 0.2 },
+                    opacity: { duration: 2, repeat: Infinity, delay: i * 0.3 }
+                  }}
+                />
+              );
+            })}
+          </motion.svg>
         )}
         
-        {/* tsParticles stars - conditionally rendered after init */}
+        {/* tsParticles with smooth animations */}
         {init && (
-          <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2 }}
+            className="absolute inset-0"
+          >
             <Particles
               id="stars"
               options={starsParticlesOptions}
@@ -617,17 +653,19 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
               }}
             />
             
-            {/* tsParticles shooting stars */}
-            <Particles
-              id="shootingStars"
-              options={shootingStarsOptions}
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-              }}
-            />
-          </>
+            {/* Shooting stars with smooth entrance */}
+            {!deviceInfo.isLowEnd && !deviceInfo.prefersReducedMotion && (
+              <Particles
+                id="shootingStars"
+                options={shootingStarsOptions}
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                }}
+              />
+            )}
+          </motion.div>
         )}
       </div>
     </>
