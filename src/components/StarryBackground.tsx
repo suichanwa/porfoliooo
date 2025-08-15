@@ -1,48 +1,80 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Particles, { initParticlesEngine } from "@tsparticles/react";
-import { loadSlim } from "@tsparticles/slim";
-import type { Engine } from "@tsparticles/engine";
 
 interface StarryBackgroundProps {
   onHideGUI?: (hidden: boolean) => void;
+}
+
+interface Star {
+  id: number;
+  x: number;
+  y: number;
+  z: number; // Depth layer
+  size: number;
+  opacity: number;
+  baseOpacity: number;
+  twinkleSpeed: number;
+  twinkleOffset: number;
+  color: string;
+  temperature: number; // Star temperature class
+  rightAscension: number;
+  declination: number;
+  magnitude: number;
+  noiseOffset: number; // For smooth noise twinkling
+}
+
+interface ShootingStar {
+  id: number;
+  x: number;
+  y: number;
+  length: number;
+  angle: number;
+  speed: number;
+  opacity: number;
+  life: number;
+  maxLife: number;
+  trail: { x: number; y: number; opacity: number }[];
+}
+
+interface Nebula {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  opacity: number;
+  pulseSpeed: number;
+  pulseOffset: number;
+}
+
+interface ConstellationLine {
+  star1: number;
+  star2: number;
+  opacity: number;
+  fadeSpeed: number;
 }
 
 export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
   const [showConstellations, setShowConstellations] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [init, setInit] = useState(false);
-  const [galaxyRotation, setGalaxyRotation] = useState(0);
+  const [enableTrails, setEnableTrails] = useState(false);
+  const [enableNebulae, setEnableNebulae] = useState(true);
   
-  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>();
+  const starsRef = useRef<Star[]>([]);
+  const shootingStarsRef = useRef<ShootingStar[]>([]);
+  const nebulaeRef = useRef<Nebula[]>([]);
+  const constellationLinesRef = useRef<ConstellationLine[]>([]);
+  const timeRef = useRef(0);
+  const lastShootingStarRef = useRef(0);
+  const cameraOffsetRef = useRef({ x: 0, y: 0 });
   
-  // Check if we're on the client side and initialize particles
-  useEffect(() => {
-    setIsClient(true);
-    
-    // Initialize particles engine with loadSlim for better performance
-    const initEngine = async () => {
-      await initParticlesEngine(async (engine: Engine) => {
-        await loadSlim(engine);
-      });
-      
-      setInit(true);
-    };
-    
-    initEngine();
-  }, []);
-  
-  // Memoized device detection - only on client side
+  // Device detection
   const deviceInfo = useMemo(() => {
     if (!isClient || typeof window === 'undefined') {
-      return {
-        isMobile: false,
-        isLowEnd: false,
-        prefersReducedMotion: false
-      };
+      return { isMobile: false, isLowEnd: false, prefersReducedMotion: false };
     }
     
     return {
@@ -53,43 +85,430 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     };
   }, [isClient]);
 
-  // Handle window resize
-  const handleResize = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      setIsMobile(window.innerWidth < 768);
-    }
+  // Initialize client-side rendering
+  useEffect(() => {
+    setIsClient(true);
   }, []);
 
+  // Star temperature-based colors
+  const getStarColor = (temperature: number) => {
+    const colors = [
+      '#ff6b4a', // Red dwarf
+      '#ffaa77', // Orange
+      '#fff4e6', // Yellow (Sun-like)
+      '#ffffff', // White
+      '#e6f3ff', // Blue-white
+      '#aaccff', // Blue giant
+      '#8899ff'  // Blue supergiant
+    ];
+    return colors[Math.floor(temperature * colors.length)];
+  };
+
+  // FIXED: Much slower depth layers for parallax
+  const depthLayers = [
+    { speed: 0.005, size: 0.5, density: 0.4, zIndex: 1 }, // Far background - 10x slower
+    { speed: 0.01,  size: 0.8, density: 0.3, zIndex: 2 }, // Mid background - 10x slower
+    { speed: 0.02,  size: 1.2, density: 0.2, zIndex: 3 }, // Mid foreground - 10x slower
+    { speed: 0.04,  size: 1.8, density: 0.1, zIndex: 4 }  // Near foreground - 10x slower
+  ];
+
+  // Create initial stars with depth layers
+  const createStars = useCallback((width: number, height: number) => {
+    const totalStars = deviceInfo.isLowEnd ? 150 : deviceInfo.isMobile ? 250 : 400;
+    const stars: Star[] = [];
+
+    depthLayers.forEach((layer, layerIndex) => {
+      const layerStarCount = Math.floor(totalStars * layer.density);
+      
+      for (let i = 0; i < layerStarCount; i++) {
+        const temperature = Math.random();
+        const magnitude = Math.random() * 5 + 1;
+        const baseSize = (6 - magnitude) * layer.size;
+        
+        stars.push({
+          id: stars.length,
+          x: Math.random() * width * 1.2 - width * 0.1, // Extend beyond canvas
+          y: Math.random() * height * 1.2 - height * 0.1,
+          z: layerIndex + 1,
+          size: Math.max(0.5, baseSize),
+          opacity: Math.random() * 0.6 + 0.4,
+          baseOpacity: Math.random() * 0.6 + 0.4,
+          twinkleSpeed: Math.random() * 0.0005 + 0.0001,
+          twinkleOffset: Math.random() * Math.PI * 2,
+          color: getStarColor(temperature),
+          temperature,
+          rightAscension: Math.random() * 24,
+          declination: (Math.random() - 0.5) * 180,
+          magnitude,
+          noiseOffset: Math.random() * 1000
+        });
+      }
+    });
+
+    return stars;
+  }, [deviceInfo.isLowEnd, deviceInfo.isMobile]);
+
+  // Create nebulae
+  const createNebulae = useCallback((width: number, height: number) => {
+    const nebulae: Nebula[] = [];
+    const nebulaCount = deviceInfo.isLowEnd ? 2 : 4;
+    
+    for (let i = 0; i < nebulaCount; i++) {
+      nebulae.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 200 + 100,
+        color: ['#ff44aa', '#44aaff', '#aa44ff', '#44ffaa'][Math.floor(Math.random() * 4)],
+        opacity: Math.random() * 0.05 + 0.02,
+        pulseSpeed: Math.random() * 0.0003 + 0.0001,
+        pulseOffset: Math.random() * Math.PI * 2
+      });
+    }
+    
+    return nebulae;
+  }, [deviceInfo.isLowEnd]);
+
+  // Create dynamic constellation lines
+  const createConstellationLines = useCallback((stars: Star[]) => {
+    const lines: ConstellationLine[] = [];
+    const maxDistance = 150;
+    
+    stars.forEach((star, i) => {
+      if (star.z <= 2) return; // Only connect foreground stars
+      
+      const nearbyStars = stars
+        .filter((otherStar, j) => {
+          if (i === j || otherStar.z !== star.z) return false;
+          const dx = star.x - otherStar.x;
+          const dy = star.y - otherStar.y;
+          return Math.sqrt(dx * dx + dy * dy) < maxDistance;
+        })
+        .slice(0, 2); // Max 2 connections per star
+      
+      nearbyStars.forEach((nearStar) => {
+        if (Math.random() < 0.3) { // 30% chance to connect
+          lines.push({
+            star1: star.id,
+            star2: nearStar.id,
+            opacity: 0,
+            fadeSpeed: Math.random() * 0.02 + 0.01
+          });
+        }
+      });
+    });
+    
+    return lines;
+  }, []);
+
+  // Smooth noise function for twinkling
+  const smoothNoise = (x: number) => {
+    return (Math.sin(x) + Math.sin(x * 2.1) * 0.5 + Math.sin(x * 3.7) * 0.25) / 1.75;
+  };
+
+  // Create shooting star with trail
+  const createShootingStar = useCallback((width: number, height: number): ShootingStar => {
+    const fromRight = Math.random() > 0.5;
+    const startX = fromRight ? width + 50 : -50;
+    const startY = Math.random() * height * 0.5;
+    const angle = fromRight ? Math.PI * 0.75 : Math.PI * 0.25;
+    
+    return {
+      id: Date.now() + Math.random(),
+      x: startX,
+      y: startY,
+      length: Math.random() * 120 + 80,
+      angle,
+      speed: Math.random() * 4 + 3,
+      opacity: 1,
+      life: 0,
+      maxLife: Math.random() * 100 + 60,
+      trail: []
+    };
+  }, []);
+
+  // FIXED: Draw star without lens flare/cross effect
+  const drawStar = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    star: Star, 
+    time: number,
+    cameraOffset: { x: number; y: number }
+  ) => {
+    // Apply parallax based on depth
+    const parallaxFactor = (5 - star.z) * 0.3;
+    const x = star.x + cameraOffset.x * parallaxFactor;
+    const y = star.y + cameraOffset.y * parallaxFactor;
+    
+    // Skip if outside extended canvas area
+    if (x < -50 || x > ctx.canvas.width + 50 || y < -50 || y > ctx.canvas.height + 50) {
+      return;
+    }
+
+    // Smooth noise-based twinkling
+    const noiseValue = smoothNoise(time * star.twinkleSpeed + star.noiseOffset);
+    const twinkle = 0.7 + noiseValue * 0.3;
+    const currentOpacity = Math.max(0.1, star.baseOpacity * twinkle);
+    const currentSize = star.size * (0.9 + noiseValue * 0.2);
+
+    // REMOVED: Lens flare/cross effect completely removed
+
+    // Glow based on depth and temperature
+    const glowSize = currentSize * (6 - star.z) * 0.8;
+    const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
+    
+    glowGradient.addColorStop(0, `${star.color}${Math.floor(currentOpacity * 0.8 * 255).toString(16).padStart(2, '0')}`);
+    glowGradient.addColorStop(0.4, `${star.color}${Math.floor(currentOpacity * 0.3 * 255).toString(16).padStart(2, '0')}`);
+    glowGradient.addColorStop(1, `${star.color}00`);
+
+    ctx.fillStyle = glowGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, glowSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core star
+    const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize);
+    coreGradient.addColorStop(0, `${star.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`);
+    coreGradient.addColorStop(0.7, `${star.color}${Math.floor(currentOpacity * 0.6 * 255).toString(16).padStart(2, '0')}`);
+    coreGradient.addColorStop(1, `${star.color}00`);
+
+    ctx.fillStyle = coreGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, currentSize, 0, Math.PI * 2);
+    ctx.fill();
+  }, []);
+
+  // Draw nebula
+  const drawNebula = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    nebula: Nebula, 
+    time: number
+  ) => {
+    const pulse = Math.sin(time * nebula.pulseSpeed + nebula.pulseOffset) * 0.3 + 0.7;
+    const currentOpacity = nebula.opacity * pulse;
+    const currentRadius = nebula.radius * (0.9 + pulse * 0.2);
+
+    const gradient = ctx.createRadialGradient(
+      nebula.x, nebula.y, 0,
+      nebula.x, nebula.y, currentRadius
+    );
+    
+    gradient.addColorStop(0, `${nebula.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(0.3, `${nebula.color}${Math.floor(currentOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(1, `${nebula.color}00`);
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(nebula.x, nebula.y, currentRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }, []);
+
+  // Draw shooting star with enhanced trail
+  const drawShootingStar = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    shootingStar: ShootingStar
+  ) => {
+    const progress = shootingStar.life / shootingStar.maxLife;
+    let opacity = shootingStar.opacity;
+    
+    if (progress < 0.1) {
+      opacity *= progress / 0.1;
+    } else if (progress > 0.7) {
+      opacity *= Math.max(0, (1 - progress) / 0.3);
+    }
+
+    // Update trail
+    shootingStar.trail.push({ x: shootingStar.x, y: shootingStar.y, opacity });
+    if (shootingStar.trail.length > 20) {
+      shootingStar.trail.shift();
+    }
+
+    // Draw trail
+    shootingStar.trail.forEach((point, i) => {
+      const trailOpacity = point.opacity * (i / shootingStar.trail.length) * 0.5;
+      const size = (i / shootingStar.trail.length) * 3;
+      
+      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 2);
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${trailOpacity})`);
+      gradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Draw main meteor
+    const headGradient = ctx.createRadialGradient(
+      shootingStar.x, shootingStar.y, 0,
+      shootingStar.x, shootingStar.y, 15
+    );
+    headGradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
+    headGradient.addColorStop(0.3, `rgba(200, 220, 255, ${opacity * 0.7})`);
+    headGradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
+
+    ctx.fillStyle = headGradient;
+    ctx.beginPath();
+    ctx.arc(shootingStar.x, shootingStar.y, 15, 0, Math.PI * 2);
+    ctx.fill();
+  }, []);
+
+  // Draw dynamic constellation lines
+  const drawConstellationLines = useCallback((
+    ctx: CanvasRenderingContext2D,
+    stars: Star[],
+    lines: ConstellationLine[],
+    time: number
+  ) => {
+    lines.forEach(line => {
+      const star1 = stars.find(s => s.id === line.star1);
+      const star2 = stars.find(s => s.id === line.star2);
+      
+      if (!star1 || !star2) return;
+
+      // Animate line opacity
+      line.opacity += (Math.sin(time * line.fadeSpeed) > 0 ? 1 : -1) * 0.01;
+      line.opacity = Math.max(0, Math.min(0.3, line.opacity));
+
+      if (line.opacity > 0.05) {
+        ctx.strokeStyle = `rgba(100, 150, 255, ${line.opacity})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(star1.x, star1.y);
+        ctx.lineTo(star2.x, star2.y);
+        ctx.stroke();
+      }
+    });
+  }, []);
+
+  // FIXED: Much slower animation loop
+  const animate = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    timeRef.current += 16;
+
+    // FIXED: Much slower camera drift
+    cameraOffsetRef.current.x = Math.sin(timeRef.current * 0.000005) * 2; // 10x slower, smaller movement
+    cameraOffsetRef.current.y = Math.cos(timeRef.current * 0.000003) * 1; // 10x slower, smaller movement
+
+    // Star trails effect or full clear
+    if (enableTrails) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    // Draw nebulae first (background)
+    if (enableNebulae) {
+      nebulaeRef.current.forEach(nebula => {
+        drawNebula(ctx, nebula, timeRef.current);
+      });
+    }
+
+    // FIXED: Much slower stellar motion
+    depthLayers.forEach((layer, layerIndex) => {
+      const layerStars = starsRef.current.filter(star => star.z === layerIndex + 1);
+      
+      layerStars.forEach(star => {
+        // FIXED: Much slower stellar motion - reduced by 100x
+        const stellarMotion = timeRef.current * 0.00000001 * layer.speed; // Was 0.000001, now 0.00000001
+        star.x += Math.cos(star.rightAscension + stellarMotion) * layer.speed * 0.02; // Was layer.speed * 2, now * 0.02
+        star.y += Math.sin(star.declination * Math.PI / 180) * layer.speed * 0.01; // Added * 0.01 to slow down
+
+        // Wrap around screen
+        if (star.x < -width * 0.1) star.x = width * 1.1;
+        if (star.x > width * 1.1) star.x = -width * 0.1;
+        if (star.y < -height * 0.1) star.y = height * 1.1;
+        if (star.y > height * 1.1) star.y = -height * 0.1;
+
+        drawStar(ctx, star, timeRef.current, cameraOffsetRef.current);
+      });
+    });
+
+    // Draw dynamic constellation lines
+    if (showConstellations && constellationLinesRef.current.length > 0) {
+      drawConstellationLines(ctx, starsRef.current, constellationLinesRef.current, timeRef.current);
+    }
+
+    // Shooting stars
+    if (!deviceInfo.isLowEnd && !deviceInfo.prefersReducedMotion) {
+      const meteorInterval = deviceInfo.isMobile ? 15000 : 10000;
+      if (timeRef.current - lastShootingStarRef.current > meteorInterval) {
+        if (Math.random() < 0.6) {
+          shootingStarsRef.current.push(createShootingStar(width, height));
+          lastShootingStarRef.current = timeRef.current;
+        }
+      }
+    }
+
+    // Update meteors
+    shootingStarsRef.current.forEach((shootingStar, index) => {
+      shootingStar.life++;
+      shootingStar.x -= Math.cos(shootingStar.angle) * shootingStar.speed;
+      shootingStar.y += Math.sin(shootingStar.angle) * shootingStar.speed;
+
+      if (shootingStar.life >= shootingStar.maxLife || 
+          shootingStar.x < -200 || shootingStar.x > width + 200 ||
+          shootingStar.y > height + 200) {
+        shootingStarsRef.current.splice(index, 1);
+        return;
+      }
+
+      drawShootingStar(ctx, shootingStar);
+    });
+
+    animationRef.current = requestAnimationFrame(animate);
+  }, [deviceInfo, enableTrails, enableNebulae, showConstellations, drawStar, drawNebula, drawShootingStar, drawConstellationLines, createShootingStar]);
+
+  // Setup canvas and start animation
   useEffect(() => {
     if (!isClient) return;
-    
-    setIsMobile(deviceInfo.isMobile);
-    
-    let resizeTimeout: number;
-    const debouncedResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(handleResize, 150);
-    };
-    
-    window.addEventListener('resize', debouncedResize, { passive: true });
-    return () => {
-      window.removeEventListener('resize', debouncedResize);
-      clearTimeout(resizeTimeout);
-    };
-  }, [handleResize, deviceInfo.isMobile, isClient]);
-  
-  // FIXED: Much slower and smoother galaxy rotation
-  useEffect(() => {
-    if (!isClient || deviceInfo.prefersReducedMotion) return;
-    
-    const galaxyAnimationInterval = setInterval(() => {
-      setGalaxyRotation(prev => (prev + 0.005) % 360); // Slightly faster but still very slow
-    }, 500); // More frequent updates for smoother rotation
-    
-    return () => clearInterval(galaxyAnimationInterval);
-  }, [isClient, deviceInfo.prefersReducedMotion]);
 
-  // Optimized GUI hiding with direct DOM manipulation
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+      }
+
+      const canvasSize = { width: canvas.width / dpr, height: canvas.height / dpr };
+      starsRef.current = createStars(canvasSize.width, canvasSize.height);
+      nebulaeRef.current = createNebulae(canvasSize.width, canvasSize.height);
+      constellationLinesRef.current = createConstellationLines(starsRef.current);
+    };
+
+    resizeCanvas();
+
+    const resizeObserver = new ResizeObserver(resizeCanvas);
+    resizeObserver.observe(canvas);
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      resizeObserver.disconnect();
+    };
+  }, [isClient, animate, createStars, createNebulae, createConstellationLines]);
+
+  // GUI hiding functionality
   const handleHideGUI = useCallback(() => {
     const newHideState = !hideGUI;
     setHideGUI(newHideState);
@@ -98,7 +517,6 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       setIsPanelOpen(false);
     }
     
-    // Batch DOM operations - only on client
     if (typeof window !== 'undefined') {
       requestAnimationFrame(() => {
         const guiElements = document.querySelectorAll('.gui-element');
@@ -116,252 +534,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     onHideGUI?.(newHideState);
   }, [hideGUI, onHideGUI]);
 
-  // FIXED: Beautiful smooth stars with proper animations
-  const starsParticlesOptions = useMemo(() => ({
-    background: {
-      color: {
-        value: "transparent",
-      },
-    },
-    fpsLimit: 60, // Increased for smoother animations
-    particles: {
-      number: {
-        value: deviceInfo.isLowEnd ? 25 : deviceInfo.isMobile ? 40 : 60,
-        density: {
-          enable: true,
-          area: 2000, // Larger area for better spread
-        },
-      },
-      color: {
-        value: ["#ffffff", "#e6f3ff", "#fff9e6", "#f0f8ff"],
-      },
-      size: {
-        value: { min: 1, max: 3 },
-        animation: {
-          enable: true,
-          speed: 0.5,
-          minimumValue: 0.5,
-          sync: false,
-          startValue: "min",
-          mode: "increase"
-        }
-      },
-      opacity: {
-        value: { min: 0.1, max: 0.9 },
-        animation: {
-          enable: true,
-          speed: 0.8, // Smooth twinkling
-          minimumValue: 0.1,
-          sync: false,
-          mode: "auto"
-        }
-      },
-      move: {
-        enable: true,
-        speed: 0.1, // Very gentle movement
-        direction: "none",
-        random: true,
-        straight: false,
-        outModes: {
-          default: "bounce", // Bounce instead of disappearing
-        },
-        attract: {
-          enable: false,
-          rotateX: 600,
-          rotateY: 1200
-        },
-        bounce: false,
-        warp: false
-      },
-      life: {
-        count: 1,
-        duration: {
-          value: { min: 20, max: 40 }, // Much longer life
-        },
-        delay: {
-          value: { min: 0, max: 5 }, // Staggered appearance
-        }
-      },
-      // Add smooth spawning animation
-      destroy: {
-        mode: "none"
-      }
-    },
-    detectRetina: true,
-    smooth: true,
-    // Add interactivity for smooth feel
-    interactivity: {
-      detectsOn: "canvas",
-      events: {
-        onHover: {
-          enable: true,
-          mode: "bubble"
-        },
-        resize: true
-      },
-      modes: {
-        bubble: {
-          distance: 100,
-          size: 5,
-          duration: 2,
-          opacity: 1,
-          speed: 3
-        }
-      }
-    }
-  }), [deviceInfo.isLowEnd, deviceInfo.isMobile]);
-
-  // FIXED: Beautiful smooth shooting stars with trail effects
-  const shootingStarsOptions = useMemo(() => ({
-    fullScreen: {
-      enable: false,
-    },
-    background: {
-      color: {
-        value: "transparent",
-      },
-    },
-    fpsLimit: 30,
-    particles: {
-      number: {
-        value: 0, // We'll spawn them via emitters
-      },
-      color: {
-        value: ["#ffffff", "#e6f3ff", "#fff9e6"],
-      },
-      move: {
-        enable: true,
-        speed: { min: 2, max: 4 }, // Slower, more graceful
-        direction: "bottom-right",
-        straight: true,
-        outModes: {
-          default: "destroy",
-        },
-        trail: {
-          enable: true,
-          length: 8,
-          fillColor: "#000000"
-        }
-      },
-      size: {
-        value: { min: 1, max: 2.5 },
-        animation: {
-          enable: true,
-          speed: 2,
-          minimumValue: 0.5,
-          sync: false,
-          mode: "decrease"
-        }
-      },
-      life: {
-        count: 1,
-        duration: {
-          value: { min: 3, max: 6 },
-        },
-        delay: {
-          value: { min: 0, max: 2 },
-        }
-      },
-      shape: {
-        type: "circle",
-      },
-      opacity: {
-        value: { min: 0.4, max: 1 },
-        animation: {
-          enable: true,
-          speed: 1.5,
-          minimumValue: 0,
-          sync: false,
-          mode: "decrease"
-        }
-      },
-      // Add glow effect
-      stroke: {
-        width: 0.5,
-        color: "#ffffff"
-      }
-    },
-    emitters: [
-      {
-        direction: "bottom-right",
-        rate: {
-          delay: deviceInfo.isLowEnd ? 25 : 15, // Reasonable delays
-          quantity: 1,
-        },
-        position: {
-          x: { min: 60, max: 95 },
-          y: { min: 0, max: 25 },
-        },
-        life: {
-          count: 0,
-          duration: 2,
-          delay: deviceInfo.isLowEnd ? 25 : 15,
-        },
-        particles: {
-          move: {
-            speed: { min: 1.5, max: 3 },
-          },
-          size: {
-            value: { min: 1, max: 2 },
-          },
-          opacity: {
-            value: { min: 0.6, max: 1 },
-            animation: {
-              enable: true,
-              speed: 2,
-              minimumValue: 0,
-              sync: false,
-              mode: "decrease"
-            }
-          }
-        },
-      },
-      // Add a second emitter for variety
-      {
-        direction: "bottom-left",
-        rate: {
-          delay: deviceInfo.isLowEnd ? 35 : 25,
-          quantity: 1,
-        },
-        position: {
-          x: { min: 5, max: 40 },
-          y: { min: 0, max: 25 },
-        },
-        life: {
-          count: 0,
-          duration: 2,
-          delay: deviceInfo.isLowEnd ? 35 : 25,
-        },
-        particles: {
-          move: {
-            speed: { min: 1, max: 2.5 },
-            direction: "bottom-left"
-          },
-          size: {
-            value: { min: 0.8, max: 1.8 },
-          },
-          color: {
-            value: "#f0f8ff"
-          },
-          opacity: {
-            value: { min: 0.5, max: 0.9 },
-            animation: {
-              enable: true,
-              speed: 1.8,
-              minimumValue: 0,
-              sync: false,
-              mode: "decrease"
-            }
-          }
-        },
-      }
-    ],
-  }), [deviceInfo.isLowEnd]);
-
-  // Don't render anything on the server
-  if (!isClient) {
-    return null;
-  }
+  if (!isClient) return null;
 
   return (
     <>
@@ -394,7 +567,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         </svg>
       </motion.button>
 
-      {/* Control Panel */}
+      {/* Enhanced Control Panel */}
       <AnimatePresence>
         {isPanelOpen && (
           <>
@@ -412,12 +585,12 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -20 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed top-24 right-4 bg-black/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-[9999] w-64"
+              className="fixed top-24 right-4 bg-black/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-[9999] w-72"
               style={{ pointerEvents: 'auto' }}
             >
               <div className="p-4">
                 <div className="mb-4">
-                  <h3 className="text-white font-medium text-base">Star Controls</h3>
+                  <h3 className="text-white font-medium text-base">🌌 Cosmic Observatory</h3>
                   {hideGUI && (
                     <p className="text-white/60 text-xs mt-1">Interface is currently hidden</p>
                   )}
@@ -432,7 +605,29 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
                         : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
                     }`}
                   >
-                    {showConstellations ? 'Hide' : 'Show'} Constellations
+                    ⭐ {showConstellations ? 'Hide' : 'Show'} Dynamic Constellations
+                  </button>
+
+                  <button
+                    onClick={() => setEnableTrails(!enableTrails)}
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      enableTrails 
+                        ? 'bg-purple-500/30 text-purple-300 border border-purple-400/30' 
+                        : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
+                    }`}
+                  >
+                    ✨ {enableTrails ? 'Disable' : 'Enable'} Star Trails
+                  </button>
+
+                  <button
+                    onClick={() => setEnableNebulae(!enableNebulae)}
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      enableNebulae 
+                        ? 'bg-pink-500/30 text-pink-300 border border-pink-400/30' 
+                        : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
+                    }`}
+                  >
+                    🌌 {enableNebulae ? 'Hide' : 'Show'} Distant Nebulae
                   </button>
 
                   <button
@@ -443,8 +638,18 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
                         : 'bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30'
                     }`}
                   >
-                    {hideGUI ? 'Show' : 'Hide'} Interface
+                    🎛️ {hideGUI ? 'Show' : 'Hide'} Interface
                   </button>
+                </div>
+                
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <p className="text-xs text-white/60 text-center leading-relaxed">
+                    🌠 4-Layer Parallax Depth<br/>
+                    🎨 Temperature-Based Colors<br/>
+                    ⭐ No Lens Flare Spikes<br/>
+                    ☄️ Enhanced Meteor Trails<br/>
+                    📷 Gentle Camera Drift
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -452,221 +657,32 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         )}
       </AnimatePresence>
 
-      {/* Starry Background with Galaxy */}
-      <div 
-        ref={containerRef}
-        className="fixed inset-0 z-0 overflow-hidden"
-        style={{ 
-          backgroundColor: 'transparent',
-          background: 'radial-gradient(ellipse at center, rgba(25, 25, 60, 0.08) 0%, rgba(0, 0, 20, 0.25) 100%)',
-          pointerEvents: 'none',
-          willChange: 'transform',
-        }}
-      >
-        {/* Enhanced galaxy background with smoother rotation */}
-        <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-          {/* Main Galaxy Spiral */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: `
-                radial-gradient(ellipse 50% 70% at 50% 50%, 
-                  rgba(100, 150, 255, 0.03) 0%, 
-                  rgba(200, 180, 255, 0.02) 30%,
-                  rgba(255, 200, 150, 0.01) 60%,
-                  transparent 80%
-                )
-              `,
-              transform: `rotate(${galaxyRotation}deg)`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.5s linear',
-              opacity: deviceInfo.isLowEnd ? 0.3 : 0.5
-            }}
-          />
-          
-          {/* Galaxy Core with gentle pulse */}
-          <motion.div 
-            className="absolute top-1/2 left-1/2"
-            style={{
-              width: '200px',
-              height: '200px',
-              marginLeft: '-100px',
-              marginTop: '-100px',
-              background: `
-                radial-gradient(circle at center, 
-                  rgba(255, 255, 255, 0.06) 0%, 
-                  rgba(200, 180, 255, 0.03) 20%,
-                  rgba(255, 200, 150, 0.015) 40%,
-                  transparent 70%
-                )
-              `,
-              borderRadius: '50%',
-              opacity: deviceInfo.isLowEnd ? 0.2 : 0.4
-            }}
-            animate={{
-              scale: [1, 1.05, 1],
-              opacity: deviceInfo.isLowEnd ? [0.2, 0.25, 0.2] : [0.4, 0.5, 0.4]
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          
-          {/* Subtle spiral arms */}
-          {!deviceInfo.isLowEnd && (
-            <div 
-              className="absolute inset-0"
-              style={{
-                background: `
-                  radial-gradient(ellipse 80% 40% at 50% 50%, 
-                    transparent 0%, 
-                    rgba(180, 200, 255, 0.008) 20%,
-                    rgba(255, 180, 200, 0.005) 50%,
-                    transparent 70%
-                  )
-                `,
-                transform: `rotate(${galaxyRotation * -0.7}deg)`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.5s linear',
-                opacity: 0.6
-              }}
-            />
-          )}
-        </div>
+      {/* Enhanced Canvas Background */}
+      <div className="fixed inset-0 z-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
+        {/* Deep space gradient background */}
+        <div 
+          className="absolute inset-0 opacity-60"
+          style={{
+            background: `
+              radial-gradient(ellipse 80% 100% at 50% 50%, 
+                rgba(10, 15, 30, 0.2) 0%, 
+                rgba(5, 8, 20, 0.4) 40%,
+                rgba(0, 0, 0, 0.8) 100%
+              )
+            `,
+          }}
+        />
         
-        {/* Enhanced constellation lines with animation */}
-        {showConstellations && (
-          <motion.svg 
-            className="absolute inset-0 w-full h-full" 
-            style={{ zIndex: 1, pointerEvents: 'none' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.line
-              x1="20%"
-              y1="30%"
-              x2="25%"
-              y2="25%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0 }}
-            />
-            <motion.line
-              x1="25%"
-              y1="25%"
-              x2="30%"
-              y2="20%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.2 }}
-            />
-            <motion.line
-              x1="30%"
-              y1="20%"
-              x2="35%"
-              y2="22%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.4 }}
-            />
-            <motion.line
-              x1="35%"
-              y1="22%"
-              x2="40%"
-              y2="28%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            />
-            <motion.line
-              x1="40%"
-              y1="28%"
-              x2="42%"
-              y2="35%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 0.8 }}
-            />
-            <motion.line
-              x1="42%"
-              y1="35%"
-              x2="38%"
-              y2="40%"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="1"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: 1 }}
-            />
-            
-            {/* Add constellation stars */}
-            {['20%,30%', '25%,25%', '30%,20%', '35%,22%', '40%,28%', '42%,35%', '38%,40%'].map((pos, i) => {
-              const [x, y] = pos.split(',');
-              return (
-                <motion.circle
-                  key={i}
-                  cx={x}
-                  cy={y}
-                  r="2"
-                  fill="rgba(255, 255, 255, 0.8)"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: [0.4, 1, 0.4] }}
-                  transition={{ 
-                    scale: { duration: 0.5, delay: i * 0.2 },
-                    opacity: { duration: 2, repeat: Infinity, delay: i * 0.3 }
-                  }}
-                />
-              );
-            })}
-          </motion.svg>
-        )}
-        
-        {/* tsParticles with smooth animations */}
-        {init && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 2 }}
-            className="absolute inset-0"
-          >
-            <Particles
-              id="stars"
-              options={starsParticlesOptions}
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-              }}
-            />
-            
-            {/* Shooting stars with smooth entrance */}
-            {!deviceInfo.isLowEnd && !deviceInfo.prefersReducedMotion && (
-              <Particles
-                id="shootingStars"
-                options={shootingStarsOptions}
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
-            )}
-          </motion.div>
-        )}
+        {/* Main enhanced canvas */}
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            background: 'transparent',
+            imageRendering: 'auto',
+            mixBlendMode: enableTrails ? 'screen' : 'normal'
+          }}
+        />
       </div>
     </>
   );
