@@ -259,4 +259,129 @@ export async function getReadingProgress(bookId: string) {
   }
 }
 
+// ========================= STARRY BACKGROUND FUNCTIONS =========================
+
+// Starry background preferences and interactions collections
+const starryBackgroundRef = collection(db, "starryBackground");
+const starryAnalyticsRef = collection(db, "starryAnalytics");
+
+// Interface for starry background preferences
+export interface StarryBackgroundPreferences {
+  id?: string;
+  userId?: string;
+  showConstellations: boolean;
+  enableTrails: boolean;
+  enableNebulae: boolean;
+  hideGUI: boolean;
+  starCount: number;
+  lastUpdated: any;
+  sessionDuration: number;
+  interactions: number;
+}
+
+// Interface for starry background analytics
+export interface StarryBackgroundAnalytics {
+  id?: string;
+  sessionId: string;
+  startTime: any;
+  endTime?: any;
+  duration?: number;
+  interactions: {
+    constellationToggles: number;
+    trailToggles: number;
+    nebulaeToggles: number;
+    guiToggles: number;
+    panelOpens: number;
+  };
+  deviceInfo: {
+    isMobile: boolean;
+    isLowEnd: boolean;
+    prefersReducedMotion: boolean;
+    screenResolution: string;
+  };
+  starSettings: {
+    totalStars: number;
+    layerDistribution: number[];
+    meteorCount: number;
+  };
+}
+
+// Save starry background preferences
+export async function saveStarryPreferences(preferences: Omit<StarryBackgroundPreferences, "id" | "lastUpdated">) {
+  try {
+    const docRef = await addDoc(starryBackgroundRef, {
+      ...preferences,
+      lastUpdated: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error saving starry preferences:", error);
+    throw error;
+  }
+}
+
+// Get starry background preferences
+export async function getStarryPreferences(userId?: string) {
+  try {
+    const q = query(starryBackgroundRef, orderBy("lastUpdated", "desc"));
+    const snapshot = await getDocs(q);
+    const preferences = snapshot.docs.find(doc => {
+      const data = doc.data();
+      return userId ? data.userId === userId : !data.userId;
+    });
+    
+    if (preferences) {
+      return {
+        id: preferences.id,
+        ...preferences.data()
+      } as StarryBackgroundPreferences;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting starry preferences:", error);
+    return null;
+  }
+}
+
+// Update starry background preferences
+export async function updateStarryPreferences(preferencesId: string, updates: Partial<StarryBackgroundPreferences>) {
+  try {
+    const preferencesDoc = doc(db, "starryBackground", preferencesId);
+    await updateDoc(preferencesDoc, {
+      ...updates,
+      lastUpdated: serverTimestamp()
+    });
+    return preferencesId;
+  } catch (error) {
+    console.error("Error updating starry preferences:", error);
+    throw error;
+  }
+}
+
+// Save starry background analytics
+export async function saveStarryAnalytics(analytics: Omit<StarryBackgroundAnalytics, "id">) {
+  try {
+    const docRef = await addDoc(starryAnalyticsRef, analytics);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error saving starry analytics:", error);
+    throw error;
+  }
+}
+
+// Get starry background analytics
+export async function getStarryAnalytics(limit: number = 100) {
+  try {
+    const q = query(starryAnalyticsRef, orderBy("startTime", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.slice(0, limit).map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as StarryBackgroundAnalytics[];
+  } catch (error) {
+    console.error("Error getting starry analytics:", error);
+    return [];
+  }
+}
+
 export { db, auth, storage };

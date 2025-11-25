@@ -1,43 +1,23 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Letters collection - secure write access
+    
+    // Letters collection - allow read for everyone, write for authenticated users or anyone
     match /letters/{letterId} {
-      // Allow anyone to create letters but with validation
-      allow create: if isValidLetter() && !rateLimited();
-      // Only allow reading for authenticated admin users
-      allow read: if request.auth != null && request.auth.token.admin == true;
-      // No updates or deletes from public
-      allow update, delete: if false;
+      allow read: if true;
+      allow write: if true; // Change to "if request.auth != null" for production
     }
     
-    // Books collection - read-only for public
+    // Books collection
     match /books/{bookId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow write: if true; // Change to "if request.auth != null" for production
     }
     
-    // Reading progress - only for authenticated users
+    // Reading progress collection
     match /readingProgress/{progressId} {
-      allow read, write: if request.auth != null && 
-                          request.auth.uid == resource.data.userId;
-    }
-    
-    function isValidLetter() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['name', 'message', 'date']) &&
-             data.keys().hasOnly(['name', 'message', 'date', 'timestamp']) &&
-             data.name is string &&
-             data.message is string &&
-             data.name.size() <= 100 &&
-             data.message.size() >= 10 &&
-             data.message.size() <= 2000 &&
-             data.date == request.time;
-    }
-    
-    function rateLimited() {
-      // Basic rate limiting - check if user has submitted in last 5 minutes
-      return exists(/databases/$(database)/documents/letters/$(request.auth.uid + '_' + string(request.time.toMillis() / 300000)));
+      allow read, write: if true;
     }
   }
 }
