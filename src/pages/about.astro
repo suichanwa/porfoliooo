@@ -1,434 +1,238 @@
 ﻿---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import SkillBadge from "../components/SkillBadge.tsx";
-import TypeWriter from "../components/TypeWriter.tsx";
-
-// Define Skill type interface
-export interface Skill {
-  name: string;
-  level?: number;
-  iconUrl?: string;
-  category?: string;
-}
-
-// Define your skills with proper Skill interface
-const skills: Skill[] = [
-  { name: "TypeScript", iconUrl: "/images/icons/typescript.svg", level: 85, category: "Language" },
-  { name: "React", iconUrl: "/images/icons/react.svg", level: 88, category: "Frontend" },
-  { name: "Node.js", iconUrl: "/images/icons/nodejs.svg", level: 82, category: "Backend" },
-  { name: "Python", iconUrl: "/images/icons/python.svg", level: 78, category: "Language" },
-  { name: "JavaScript", iconUrl: "/images/icons/javascript.svg", level: 90, category: "Language" },
-  { name: "Astro", iconUrl: "/images/icons/astro.svg", level: 75, category: "Framework" },
-  { name: "Tailwind CSS", iconUrl: "/images/icons/tailwind.svg", level: 85, category: "Styling" },
-  { name: "Git", iconUrl: "/images/icons/git.svg", level: 80, category: "Tools" },
-  { name: "Docker", iconUrl: "/images/icons/docker.svg", level: 70, category: "DevOps" },
-  { name: "MongoDB", iconUrl: "/images/icons/mongodb.svg", level: 75, category: "Database" },
-  { name: "PostgreSQL", iconUrl: "/images/icons/postgresql.svg", level: 68, category: "Database" },
-  { name: "AWS", iconUrl: "/images/icons/aws.svg", level: 65, category: "Cloud" },
-  { name: "Next.js", level: 80, category: "Framework" },
-  { name: "GraphQL", level: 72, category: "API" },
-  { name: "Redis", level: 68, category: "Database" },
-  { name: "Kubernetes", level: 60, category: "DevOps" }
-];
-
-// Group skills by category for better organization
-const skillCategories = skills.reduce((acc, skill) => {
-  const category = skill.category || 'Other';
-  if (!acc[category]) {
-    acc[category] = [];
-  }
-  acc[category].push(skill);
-  return acc;
-}, {} as Record<string, Skill[]>);
-
-// Define your interests with categories
-const interests = [
-  { name: "GregTech New Horizons", category: "gaming", emoji: "⚙️", description: "Complex automation in Minecraft" },
-  { name: "Automation", category: "tech", emoji: "🤖", description: "Making repetitive tasks disappear" },
-  { name: "Minecraft Modding", category: "gaming", emoji: "🧱", description: "Creating custom game experiences" },
-  { name: "System Architecture", category: "tech", emoji: "🏗️", description: "Designing scalable solutions" },
-  { name: "Performance Optimization", category: "tech", emoji: "⚡", description: "Making code run faster" },
-  { name: "Open Source", category: "dev", emoji: "📦", description: "Contributing to the community" },
-  { name: "Problem Solving", category: "dev", emoji: "🧩", description: "Breaking down complex challenges" },
-  { name: "Learning New Tech", category: "dev", emoji: "📚", description: "Always staying curious" }
-];
-
-// Fun facts about you
-const funFacts = [
-  "Can debug code for hours but can't find my keys for 5 minutes",
-  "Spends more time optimizing build pipelines than actual development",
-  "Has strong opinions about semicolons",
-  "Thinks the best code is the code you don't have to write",
-  "Knows more about GregTech recipes than cooking recipes",
-  "Prefers dark mode for everything, including sunglasses"
-];
-
-// Professional stats
-const stats = [
-  { 
-    number: "6+", 
-    label: "Years Coding", 
-    icon: "🕒",
-    description: "Since I started my coding journey"
-  },
-  { 
-    number: "50+", 
-    label: "Projects Built", 
-    icon: "🚀",
-    description: "From small scripts to full applications"
-  },
-  { 
-    number: "12+", 
-    label: "Technologies", 
-    icon: "⚡",
-    description: "Languages, frameworks, and tools"
-  },
-  { 
-    number: "∞", 
-    label: "Coffee Cups", 
-    icon: "☕",
-    description: "The fuel that powers development"
-  }
-];
+import VoidBackground from "../components/VoidBackground.astro";
 ---
 
-<BaseLayout title="About Me | My Portfolio">
-  <div class="min-h-screen gui-element">
-    <!-- Hero Section with Enhanced Design -->
-    <section class="py-12 md:py-20 bg-gradient-to-br from-primary-bg via-base-100 to-primary-bg relative overflow-hidden">
-      <!-- Enhanced Animated background elements -->
-      <div class="absolute inset-0 opacity-5">
-        <div class="absolute top-10 left-10 w-20 h-20 border-2 border-primary-accent rounded-full animate-pulse"></div>
-        <div class="absolute top-32 right-20 w-16 h-16 border-2 border-secondary-accent rounded-lg rotate-45 animate-bounce"></div>
-        <div class="absolute bottom-20 left-1/4 w-12 h-12 border-2 border-accent rounded-full animate-ping"></div>
-        <div class="absolute top-1/2 right-1/3 w-8 h-8 border border-primary-accent/30 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
-        <div class="absolute bottom-1/3 right-10 w-6 h-6 border border-secondary-accent/30 rounded-lg animate-bounce" style="animation-delay: 2s;"></div>
+<BaseLayout title="About Me | My Portfolio" useVoidBackground={true}>
+  <VoidBackground starCount={350} />
+  
+  <div class="void-page">
+    <!-- About Me - Top Left corner label (fixed positioning) -->
+    <span class="page-label">About Me</span>
+    
+    <!-- Main content area -->
+    <main class="void-main">
+      <div class="text-block" data-depth="1">
+        <p class="void-text primary">
+          I'm a fullstack developer who finds peace in the quiet complexity of code.
+        </p>
       </div>
-
-      <div class="container max-w-6xl mx-auto px-4 relative z-10">
-        <div data-scroll class="text-center opacity-0">
-          <h1 class="text-4xl md:text-6xl font-bold mb-6 min-h-[4rem]">
-            <TypeWriter 
-              client:load 
-              text="About Me" 
-              speed={100} 
-              delay={300}
-              className="bg-gradient-to-r from-primary-accent to-secondary-accent bg-clip-text text-transparent"
-            />
-          </h1>
-          <div class="w-24 h-1 bg-gradient-to-r from-primary-accent to-secondary-accent mx-auto mb-8"></div>
-          <p class="text-xl md:text-2xl text-base-content/80 max-w-3xl mx-auto">
-            Fullstack developer who turns coffee into code and bugs into features ✨
-          </p>
-        </div>
-
-        <!-- Stats Grid -->
-        <div data-scroll data-scroll-delay="0.1" class="opacity-0 mt-12">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {stats.map((stat, i) => (
-              <div class="text-center p-4 bg-base-200/50 backdrop-blur-sm rounded-xl border border-white/10">
-                <div class="text-2xl mb-2">{stat.icon}</div>
-                <div class="text-2xl md:text-3xl font-bold text-primary-accent mb-1">{stat.number}</div>
-                <div class="text-sm font-medium text-base-content mb-1">{stat.label}</div>
-                <div class="text-xs text-base-content/60">{stat.description}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+      
+      <div class="text-block" data-depth="2">
+        <p class="void-text">
+          Like the Boötes Void, I appreciate the beauty in emptiness — 
+          clean code, minimal design, purposeful functionality.
+        </p>
       </div>
-    </section>
-
-    <!-- Main Content -->
-    <div class="container max-w-6xl mx-auto px-4 pb-16">
-      <!-- Bio Cards Section -->
-      <section class="mb-16">
-        <div class="grid md:grid-cols-2 gap-8">
-          <!-- Main Bio Card -->
-          <div data-scroll data-scroll-delay="0.2" class="opacity-0">
-            <div class="bg-base-200/80 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-xl border border-white/10 h-full">
-              <div class="flex items-center gap-4 mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-primary-accent to-secondary-accent rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h2 class="text-2xl font-bold text-primary-accent">Hey there! 👋</h2>
-              </div>
-              
-              <div class="prose prose-lg max-w-none text-base-content/90 space-y-4">
-                <p>Ughhh, something something, I should write an intro here but honestly I just really like <span class="text-primary-accent font-semibold">GregTech New Horizons</span>.</p>
-                
-                <p>When I'm not deep in code or fighting with CSS, you'll probably find me automating complex processing chains in GTNH or exploring other tech mods. There's something oddly satisfying about building elaborate factories in a virtual world that mirrors my passion for elegant solutions in web development.</p>
-                
-                <p>I've been developing web applications for several years now, always chasing that perfect balance between functionality and performance. Whether it's optimizing database queries or crafting pixel-perfect UIs, I love the challenge of making things work beautifully.</p>
-                
-                <p class="text-primary-accent italic text-sm border-l-4 border-primary-accent pl-4">
-                  i've been genuinely not expecting that this shit claude3.7 gonna be so good at knowing shits about me, however text above haven't been wrote by me but i completely agree to all of it
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Fun Facts Card -->
-          <div data-scroll data-scroll-delay="0.3" class="opacity-0">
-            <div class="bg-base-200/80 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-xl border border-white/10 h-full">
-              <div class="flex items-center gap-4 mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-secondary-accent to-accent rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <h2 class="text-2xl font-bold text-secondary-accent">Fun Facts</h2>
-              </div>
-              
-              <div class="space-y-3">
-                {funFacts.map((fact, index) => (
-                  <div class="flex items-start gap-3 p-3 bg-base-100/50 rounded-lg hover:bg-base-100/70 transition-colors duration-200">
-                    <div class="w-6 h-6 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span class="text-accent text-sm font-bold">{index + 1}</span>
-                    </div>
-                    <p class="text-base-content/80 text-sm leading-relaxed">{fact}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Interests Section -->
-      <section class="mb-16">
-        <div data-scroll data-scroll-delay="0.4" class="opacity-0 text-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-text-dark-bg mb-4">Things I'm Into</h2>
-          <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
-            A mix of technical passions and random obsessions that keep me motivated
-          </p>
-        </div>
-        
-        <div data-scroll data-scroll-delay="0.5" class="opacity-0">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {interests.map((interest, i) => (
-              <div class={`
-                group relative p-6 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer
-                ${i % 4 === 0 ? 'bg-primary/10 border-primary/30 hover:bg-primary/20' : ''}
-                ${i % 4 === 1 ? 'bg-secondary-accent/10 border-secondary-accent/30 hover:bg-secondary-accent/20' : ''}
-                ${i % 4 === 2 ? 'bg-accent/10 border-accent/30 hover:bg-accent/20' : ''}
-                ${i % 4 === 3 ? 'bg-base-300/50 border-base-content/20 hover:bg-base-300/80' : ''}
-              `}>
-                <div class="text-center">
-                  <span class="text-3xl mb-3 block">{interest.emoji}</span>
-                  <h3 class="font-medium text-base-content mb-2">{interest.name}</h3>
-                  <p class="text-xs text-base-content/70 leading-relaxed">{interest.description}</p>
-                  <span class="text-xs text-base-content/50 capitalize mt-2 block">#{interest.category}</span>
-                </div>
-                
-                <!-- Enhanced Hover effect overlay -->
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out rounded-xl"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <!-- Skills Section with Categories -->
-      <section class="mb-16">
-        <div data-scroll data-scroll-delay="0.6" class="opacity-0 text-center mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold text-text-dark-bg mb-4">Skills & Technologies</h2>
-          <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
-            Tools and technologies I use to bring ideas to life, organized by expertise level
-          </p>
-        </div>
-        
-        <!-- All Skills Grid -->
-        <div data-scroll data-scroll-delay="0.7" class="opacity-0 mb-12">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {skills.map((skill) => (
-              <SkillBadge client:visible skill={skill} variant="default" showLevel={true} />
-            ))}
-          </div>
-        </div>
-
-        <!-- Skills by Category -->
-        <div data-scroll data-scroll-delay="0.8" class="opacity-0">
-          <h3 class="text-xl font-bold text-center mb-6 text-primary-accent">Skills by Category</h3>
-          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(skillCategories).map(([category, categorySkills]) => (
-              <div class="bg-base-200/50 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-                <h4 class="font-medium text-primary-accent mb-3 text-center">{category}</h4>
-                <div class="flex flex-wrap gap-2 justify-center">
-                  {categorySkills.map((skill) => (
-                    <SkillBadge client:visible skill={skill} variant="compact" showLevel={false} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <!-- Call to Action Section -->
-      <section data-scroll data-scroll-delay="0.9" class="opacity-0">
-        <div class="bg-gradient-to-r from-primary-accent/10 via-secondary-accent/10 to-accent/10 rounded-2xl p-8 md:p-12 text-center border border-white/10 relative overflow-hidden">
-          <!-- Decorative elements -->
-          <div class="absolute top-4 left-4 w-8 h-8 border border-primary-accent/20 rounded-full animate-pulse"></div>
-          <div class="absolute bottom-4 right-4 w-6 h-6 border border-secondary-accent/20 rounded-lg animate-bounce"></div>
-          
-          <h2 class="text-2xl md:text-3xl font-bold mb-4 text-text-dark-bg">Let's Build Something Together</h2>
-          <p class="text-lg text-base-content/80 mb-8 max-w-2xl mx-auto">
-            Whether you want to discuss tech, share GTNH automation strategies, or collaborate on a project, I'm always up for a good conversation.
-          </p>
-          
-          <div class="flex flex-wrap justify-center gap-4">
-            <a 
-              href="/write-letter"
-              class="btn btn-primary btn-lg group relative overflow-hidden"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 group-hover:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              Write Me a Letter
-            </a>
-            
-            <a 
-              href="/#projects"
-              class="btn btn-outline btn-lg group"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              View My Projects
-            </a>
-            
-            <a 
-              href="/diary"
-              class="btn btn-secondary btn-lg group"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              Read My Diary
-            </a>
-          </div>
-        </div>
-      </section>
-    </div>
+      
+      <div class="text-block" data-depth="3">
+        <p class="void-text dim">
+          When I'm not lost in code, I'm lost in GregTech New Horizons, 
+          building elaborate automation systems that mirror my development philosophy.
+        </p>
+      </div>
+      
+      <div class="text-block" data-depth="4">
+        <p class="void-text dimmer">
+          TypeScript · React · Node.js — my tools for shaping the digital void.
+        </p>
+      </div>
+      
+      <div class="text-block" data-depth="5">
+        <p class="void-text dimmest">
+          Sometimes the most profound things exist in the spaces between.
+        </p>
+      </div>
+    </main>
+    
+    <!-- Bottom navigation links -->
+    <nav class="void-nav">
+      <a href="/write-letter" class="nav-link">write to me</a>
+      <span class="nav-dot"></span>
+      <a href="/diary" class="nav-link">read my thoughts</a>
+      <span class="nav-dot"></span>
+      <a href="/books" class="nav-link">see what I read</a>
+    </nav>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const scrollElements = document.querySelectorAll('[data-scroll]');
+    function initAboutPage() {
+      const textBlocks = document.querySelectorAll('.text-block');
       
-      const elementInView = (el: Element, dividend = 1) => {
-        const elementTop = el.getBoundingClientRect().top;
-        return (
-          elementTop <= 
-          (window.innerHeight || document.documentElement.clientHeight) / dividend
-        );
-      };
-      
-      const displayScrollElement = (element: HTMLElement) => {
-        const delay = parseFloat(element.dataset.scrollDelay || '0');
+      // Fade in animation
+      textBlocks.forEach((block, index) => {
         setTimeout(() => {
-          element.style.opacity = '1';
-          element.style.transform = 'translateY(0)';
-        }, delay * 1000);
-      };
-      
-      const hideScrollElement = (element: HTMLElement) => {
-        element.style.opacity = '0';
-        element.style.transform = 'translateY(20px)';
-      };
-      
-      const handleScrollAnimation = () => {
-        scrollElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          if (elementInView(el, 1.25)) {
-            displayScrollElement(htmlEl);
-          } else {
-            hideScrollElement(htmlEl);
-          }
-        });
-      };
-      
-      // Add smooth transition for scroll elements
-      scrollElements.forEach(el => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+          (block as HTMLElement).style.opacity = '1';
+        }, 600 + index * 500);
       });
       
-      window.addEventListener('scroll', () => {
-        handleScrollAnimation();
-      });
-      
-      // Initial check
-      handleScrollAnimation();
-
-      // Add subtle parallax effect to background elements
-      window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const backgrounds = document.querySelectorAll('.absolute');
+      // Subtle parallax on mouse move - but NOT on the label
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
         
-        backgrounds.forEach((bg, index) => {
-          const speed = (index + 1) * 0.1;
-          const htmlBg = bg as HTMLElement;
-          htmlBg.style.transform = `translateY(${scrolled * speed}px)`;
+        textBlocks.forEach((block) => {
+          const depth = parseFloat((block as HTMLElement).dataset.depth || '1');
+          const moveX = x * depth * 3;
+          const moveY = y * depth * 3;
+          (block as HTMLElement).style.transform = `translate(${moveX}px, ${moveY}px)`;
         });
       });
-    });
+    }
+    
+    document.addEventListener('DOMContentLoaded', initAboutPage);
+    document.addEventListener('astro:page-load', initAboutPage);
   </script>
 </BaseLayout>
 
 <style>
-  [data-scroll] {
+  .void-page {
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .page-label {
+    position: fixed;
+    top: 5rem;
+    left: 2rem;
+    font-size: 0.7rem;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.25);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    z-index: 10;
+    pointer-events: none;
+    transform: none !important;
+    will-change: auto;
+    transition: none;
+  }
+  
+  .void-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: 750px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 6rem 2rem;
+    gap: 3rem;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .text-block {
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
+    transition: opacity 1.2s ease, transform 0.4s ease;
+    will-change: transform, opacity;
+    width: 100%;
   }
-
-  .gui-element {
-    transition: opacity 0.5s ease, transform 0.5s ease, pointer-events 0s ease 0.5s;
+  
+  .void-text {
+    font-size: 1.125rem;
+    line-height: 1.9;
+    color: rgba(255, 255, 255, 0.65);
+    text-align: center;
+    font-weight: 300;
+    letter-spacing: 0.015em;
   }
-
-  /* Custom scrollbar for webkit browsers */
-  ::-webkit-scrollbar {
-    width: 8px;
+  
+  .void-text.primary {
+    font-size: 1.625rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.7;
+    font-weight: 400;
   }
-
-  ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+  
+  .void-text.dim {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.05rem;
   }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+  
+  .void-text.dimmer {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.95rem;
   }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+  
+  .void-text.dimmest {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.875rem;
+    font-style: italic;
   }
-
-  /* Enhanced animations */
-  @keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(79, 172, 254, 0.2); }
-    50% { box-shadow: 0 0 30px rgba(79, 172, 254, 0.4); }
+  
+  .void-nav {
+    position: fixed;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    z-index: 10;
   }
-
-  .animate-glow {
-    animation: glow 3s ease-in-out infinite;
+  
+  .nav-link {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    text-transform: lowercase;
+    transition: color 0.4s ease;
   }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+  
+  .nav-link:hover {
+    color: rgba(255, 255, 255, 0.6);
   }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
+  
+  .nav-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
   }
-
-  /* Hover effects for cards */
-  .group:hover .animate-pulse {
-    animation-duration: 0.5s;
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-label {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      writing-mode: horizontal-tb;
+      font-size: 0.65rem;
+    }
+    
+    .void-main {
+      padding: 5rem 1.5rem;
+      gap: 2.5rem;
+    }
+    
+    .void-text {
+      font-size: 1rem;
+    }
+    
+    .void-text.primary {
+      font-size: 1.25rem;
+    }
+    
+    .void-nav {
+      flex-direction: column;
+      gap: 0.875rem;
+      bottom: 2rem;
+    }
+    
+    .nav-dot {
+      display: none;
+    }
   }
 </style>

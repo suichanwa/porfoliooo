@@ -9,18 +9,19 @@ interface Star {
   id: number;
   x: number;
   y: number;
-  z: number; // Depth layer
+  z: number;
   size: number;
   opacity: number;
   baseOpacity: number;
   twinkleSpeed: number;
   twinkleOffset: number;
   color: string;
-  temperature: number; // Star temperature class
+  temperature: number;
   rightAscension: number;
   declination: number;
   magnitude: number;
-  noiseOffset: number; // For smooth noise twinkling
+  noiseOffset: number;
+  cluster: 'sparse' | 'medium' | 'dense'; // New: star distribution type
 }
 
 interface ShootingStar {
@@ -69,7 +70,6 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
   const constellationLinesRef = useRef<ConstellationLine[]>([]);
   const timeRef = useRef(0);
   const lastShootingStarRef = useRef(0);
-  const cameraOffsetRef = useRef({ x: 0, y: 0 });
   
   // Device detection
   const deviceInfo = useMemo(() => {
@@ -90,77 +90,130 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     setIsClient(true);
   }, []);
 
-  // Star temperature-based colors
+  // Star temperature-based colors - cooler, more subtle palette
   const getStarColor = (temperature: number) => {
     const colors = [
-      '#ff6b4a', // Red dwarf
-      '#ffaa77', // Orange
-      '#fff4e6', // Yellow (Sun-like)
-      '#ffffff', // White
-      '#e6f3ff', // Blue-white
-      '#aaccff', // Blue giant
-      '#8899ff'  // Blue supergiant
+      '#ffaa88', // Warm orange
+      '#ffe6d5', // Pale warm
+      '#fffff0', // Ivory white
+      '#f0f8ff', // Alice blue
+      '#e6f2ff', // Very pale blue
+      '#d5e5ff', // Light blue
+      '#c5d9ff'  // Soft blue
     ];
     return colors[Math.floor(temperature * colors.length)];
   };
 
-  // FIXED: Much slower depth layers for parallax
-  const depthLayers = [
-    { speed: 0.005, size: 0.5, density: 0.4, zIndex: 1 }, // Far background - 10x slower
-    { speed: 0.01,  size: 0.8, density: 0.3, zIndex: 2 }, // Mid background - 10x slower
-    { speed: 0.02,  size: 1.2, density: 0.2, zIndex: 3 }, // Mid foreground - 10x slower
-    { speed: 0.04,  size: 1.8, density: 0.1, zIndex: 4 }  // Near foreground - 10x slower
-  ];
-
-  // Create initial stars with depth layers
+  // Create initial stars with sparse, elegant distribution
   const createStars = useCallback((width: number, height: number) => {
-    const totalStars = deviceInfo.isLowEnd ? 150 : deviceInfo.isMobile ? 250 : 400;
+    // Significantly reduced star count - 60% fewer stars
+    const totalStars = deviceInfo.isLowEnd ? 60 : deviceInfo.isMobile ? 100 : 150;
     const stars: Star[] = [];
 
-    depthLayers.forEach((layer, layerIndex) => {
-      const layerStarCount = Math.floor(totalStars * layer.density);
+    // Define cluster zones (optional dense areas)
+    const clusters = [
+      { x: width * 0.25, y: height * 0.3, radius: 150 },
+      { x: width * 0.75, y: height * 0.6, radius: 120 },
+      { x: width * 0.5, y: height * 0.8, radius: 100 }
+    ];
+
+    for (let i = 0; i < totalStars; i++) {
+      const temperature = Math.random();
       
-      for (let i = 0; i < layerStarCount; i++) {
-        const temperature = Math.random();
-        const magnitude = Math.random() * 5 + 1;
-        const baseSize = (6 - magnitude) * layer.size;
-        
-        stars.push({
-          id: stars.length,
-          x: Math.random() * width * 1.2 - width * 0.1, // Extend beyond canvas
-          y: Math.random() * height * 1.2 - height * 0.1,
-          z: layerIndex + 1,
-          size: Math.max(0.5, baseSize),
-          opacity: Math.random() * 0.6 + 0.4,
-          baseOpacity: Math.random() * 0.6 + 0.4,
-          twinkleSpeed: Math.random() * 0.0005 + 0.0001,
-          twinkleOffset: Math.random() * Math.PI * 2,
-          color: getStarColor(temperature),
-          temperature,
-          rightAscension: Math.random() * 24,
-          declination: (Math.random() - 0.5) * 180,
-          magnitude,
-          noiseOffset: Math.random() * 1000
-        });
+      // 70% sparse, 20% medium, 10% in clusters
+      const distributionRoll = Math.random();
+      let cluster: 'sparse' | 'medium' | 'dense' = 'sparse';
+      let x: number, y: number;
+
+      if (distributionRoll < 0.7) {
+        // Sparse - truly random across entire canvas
+        cluster = 'sparse';
+        x = Math.random() * width;
+        y = Math.random() * height;
+      } else if (distributionRoll < 0.9) {
+        // Medium - slightly grouped but still spread out
+        cluster = 'medium';
+        x = Math.random() * width;
+        y = Math.random() * height;
+      } else {
+        // Dense - clustered around specific points
+        cluster = 'dense';
+        const chosenCluster = clusters[Math.floor(Math.random() * clusters.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * chosenCluster.radius;
+        x = chosenCluster.x + Math.cos(angle) * distance;
+        y = chosenCluster.y + Math.sin(angle) * distance;
       }
-    });
+
+      // Magnitude system: 1 (brightest) to 6 (dimmest)
+      // Most stars are dim (magnitude 4-6), few are bright (1-3)
+      const magnitudeRoll = Math.random();
+      let magnitude: number;
+      
+      if (magnitudeRoll < 0.05) {
+        magnitude = 1 + Math.random(); // Very bright (5% of stars)
+      } else if (magnitudeRoll < 0.15) {
+        magnitude = 2 + Math.random(); // Bright (10% of stars)
+      } else if (magnitudeRoll < 0.35) {
+        magnitude = 3 + Math.random(); // Medium (20% of stars)
+      } else {
+        magnitude = 4 + Math.random() * 2; // Dim to very dim (65% of stars)
+      }
+
+      // Size based on magnitude - smaller overall
+      const baseSize = Math.max(0.3, (6 - magnitude) * 0.6);
+      
+      // Opacity based on magnitude and cluster - much dimmer overall
+      let baseOpacity: number;
+      if (magnitude < 2) {
+        baseOpacity = 0.5 + Math.random() * 0.3; // Bright stars: 0.5-0.8
+      } else if (magnitude < 4) {
+        baseOpacity = 0.25 + Math.random() * 0.2; // Medium stars: 0.25-0.45
+      } else {
+        baseOpacity = 0.1 + Math.random() * 0.15; // Dim stars: 0.1-0.25
+      }
+
+      // Clustered stars are slightly brighter
+      if (cluster === 'dense') {
+        baseOpacity *= 1.2;
+      }
+      
+      stars.push({
+        id: i,
+        x: Math.max(0, Math.min(width, x)),
+        y: Math.max(0, Math.min(height, y)),
+        z: 1,
+        size: baseSize,
+        opacity: baseOpacity,
+        baseOpacity,
+        twinkleSpeed: Math.random() * 0.0003 + 0.0001, // Slower twinkle
+        twinkleOffset: Math.random() * Math.PI * 2,
+        color: getStarColor(temperature),
+        temperature,
+        rightAscension: Math.random() * 24,
+        declination: (Math.random() - 0.5) * 180,
+        magnitude,
+        noiseOffset: Math.random() * 1000,
+        cluster
+      });
+    }
 
     return stars;
   }, [deviceInfo.isLowEnd, deviceInfo.isMobile]);
 
-  // Create nebulae
+  // Create nebulae - fewer and more subtle
   const createNebulae = useCallback((width: number, height: number) => {
     const nebulae: Nebula[] = [];
-    const nebulaCount = deviceInfo.isLowEnd ? 2 : 4;
+    const nebulaCount = deviceInfo.isLowEnd ? 1 : 2;
     
     for (let i = 0; i < nebulaCount; i++) {
       nebulae.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        radius: Math.random() * 200 + 100,
-        color: ['#ff44aa', '#44aaff', '#aa44ff', '#44ffaa'][Math.floor(Math.random() * 4)],
-        opacity: Math.random() * 0.05 + 0.02,
-        pulseSpeed: Math.random() * 0.0003 + 0.0001,
+        radius: Math.random() * 150 + 100,
+        color: ['#4a3366', '#2a4466', '#3a4466', '#2a5544'][Math.floor(Math.random() * 4)],
+        opacity: Math.random() * 0.03 + 0.01, // More subtle
+        pulseSpeed: Math.random() * 0.0002 + 0.00005,
         pulseOffset: Math.random() * Math.PI * 2
       });
     }
@@ -171,27 +224,29 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
   // Create dynamic constellation lines
   const createConstellationLines = useCallback((stars: Star[]) => {
     const lines: ConstellationLine[] = [];
-    const maxDistance = 150;
+    const maxDistance = 120; // Shorter max distance
     
     stars.forEach((star, i) => {
-      if (star.z <= 2) return; // Only connect foreground stars
+      // Only connect brighter stars (magnitude < 4)
+      if (star.magnitude > 4) return;
       
       const nearbyStars = stars
         .filter((otherStar, j) => {
-          if (i === j || otherStar.z !== star.z) return false;
+          if (i === j) return false;
+          if (otherStar.magnitude > 4) return false; // Only connect to bright stars
           const dx = star.x - otherStar.x;
           const dy = star.y - otherStar.y;
           return Math.sqrt(dx * dx + dy * dy) < maxDistance;
         })
-        .slice(0, 2); // Max 2 connections per star
+        .slice(0, 2);
       
       nearbyStars.forEach((nearStar) => {
-        if (Math.random() < 0.3) { // 30% chance to connect
+        if (Math.random() < 0.25) { // Fewer connections
           lines.push({
             star1: star.id,
             star2: nearStar.id,
             opacity: 0,
-            fadeSpeed: Math.random() * 0.02 + 0.01
+            fadeSpeed: Math.random() * 0.015 + 0.005
           });
         }
       });
@@ -216,61 +271,51 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       id: Date.now() + Math.random(),
       x: startX,
       y: startY,
-      length: Math.random() * 120 + 80,
+      length: Math.random() * 100 + 60,
       angle,
-      speed: Math.random() * 4 + 3,
-      opacity: 1,
+      speed: Math.random() * 3 + 2,
+      opacity: 0.8, // Slightly dimmer meteors
       life: 0,
-      maxLife: Math.random() * 100 + 60,
+      maxLife: Math.random() * 80 + 50,
       trail: []
     };
   }, []);
 
-  // FIXED: Draw star without lens flare/cross effect
+  // Draw star with subtler glow
   const drawStar = useCallback((
     ctx: CanvasRenderingContext2D, 
     star: Star, 
-    time: number,
-    cameraOffset: { x: number; y: number }
+    time: number
   ) => {
-    // Apply parallax based on depth
-    const parallaxFactor = (5 - star.z) * 0.3;
-    const x = star.x + cameraOffset.x * parallaxFactor;
-    const y = star.y + cameraOffset.y * parallaxFactor;
+    const x = star.x;
+    const y = star.y;
     
-    // Skip if outside extended canvas area
     if (x < -50 || x > ctx.canvas.width + 50 || y < -50 || y > ctx.canvas.height + 50) {
       return;
     }
 
-    // Smooth noise-based twinkling
     const noiseValue = smoothNoise(time * star.twinkleSpeed + star.noiseOffset);
     const twinkle = 0.7 + noiseValue * 0.3;
-    const currentOpacity = Math.max(0.1, star.baseOpacity * twinkle);
+    const currentOpacity = Math.max(0.05, star.baseOpacity * twinkle);
     const currentSize = star.size * (0.9 + noiseValue * 0.2);
 
-    // REMOVED: Lens flare/cross effect completely removed
+    // Subtle glow - only for brighter stars
+    if (star.magnitude < 3) {
+      const glowSize = currentSize * 4;
+      const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
+      
+      glowGradient.addColorStop(0, `${star.color}${Math.floor(currentOpacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
+      glowGradient.addColorStop(0.5, `${star.color}${Math.floor(currentOpacity * 0.15 * 255).toString(16).padStart(2, '0')}`);
+      glowGradient.addColorStop(1, `${star.color}00`);
 
-    // Glow based on depth and temperature
-    const glowSize = currentSize * (6 - star.z) * 0.8;
-    const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
-    
-    glowGradient.addColorStop(0, `${star.color}${Math.floor(currentOpacity * 0.8 * 255).toString(16).padStart(2, '0')}`);
-    glowGradient.addColorStop(0.4, `${star.color}${Math.floor(currentOpacity * 0.3 * 255).toString(16).padStart(2, '0')}`);
-    glowGradient.addColorStop(1, `${star.color}00`);
+      ctx.fillStyle = glowGradient;
+      ctx.beginPath();
+      ctx.arc(x, y, glowSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    ctx.fillStyle = glowGradient;
-    ctx.beginPath();
-    ctx.arc(x, y, glowSize, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Core star
-    const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize);
-    coreGradient.addColorStop(0, `${star.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`);
-    coreGradient.addColorStop(0.7, `${star.color}${Math.floor(currentOpacity * 0.6 * 255).toString(16).padStart(2, '0')}`);
-    coreGradient.addColorStop(1, `${star.color}00`);
-
-    ctx.fillStyle = coreGradient;
+    // Core star - simple point
+    ctx.fillStyle = `${star.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`;
     ctx.beginPath();
     ctx.arc(x, y, currentSize, 0, Math.PI * 2);
     ctx.fill();
@@ -292,7 +337,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     );
     
     gradient.addColorStop(0, `${nebula.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(0.3, `${nebula.color}${Math.floor(currentOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(0.3, `${nebula.color}${Math.floor(currentOpacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
     gradient.addColorStop(1, `${nebula.color}00`);
 
     ctx.fillStyle = gradient;
@@ -315,20 +360,18 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       opacity *= Math.max(0, (1 - progress) / 0.3);
     }
 
-    // Update trail
     shootingStar.trail.push({ x: shootingStar.x, y: shootingStar.y, opacity });
-    if (shootingStar.trail.length > 20) {
+    if (shootingStar.trail.length > 15) {
       shootingStar.trail.shift();
     }
 
-    // Draw trail
     shootingStar.trail.forEach((point, i) => {
-      const trailOpacity = point.opacity * (i / shootingStar.trail.length) * 0.5;
-      const size = (i / shootingStar.trail.length) * 3;
+      const trailOpacity = point.opacity * (i / shootingStar.trail.length) * 0.4;
+      const size = (i / shootingStar.trail.length) * 2.5;
       
       const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 2);
       gradient.addColorStop(0, `rgba(255, 255, 255, ${trailOpacity})`);
-      gradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
+      gradient.addColorStop(1, `rgba(200, 220, 255, 0)`);
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
@@ -336,18 +379,17 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       ctx.fill();
     });
 
-    // Draw main meteor
     const headGradient = ctx.createRadialGradient(
       shootingStar.x, shootingStar.y, 0,
-      shootingStar.x, shootingStar.y, 15
+      shootingStar.x, shootingStar.y, 12
     );
     headGradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
-    headGradient.addColorStop(0.3, `rgba(200, 220, 255, ${opacity * 0.7})`);
-    headGradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
+    headGradient.addColorStop(0.3, `rgba(220, 230, 255, ${opacity * 0.6})`);
+    headGradient.addColorStop(1, `rgba(180, 200, 255, 0)`);
 
     ctx.fillStyle = headGradient;
     ctx.beginPath();
-    ctx.arc(shootingStar.x, shootingStar.y, 15, 0, Math.PI * 2);
+    ctx.arc(shootingStar.x, shootingStar.y, 12, 0, Math.PI * 2);
     ctx.fill();
   }, []);
 
@@ -364,13 +406,12 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       
       if (!star1 || !star2) return;
 
-      // Animate line opacity
-      line.opacity += (Math.sin(time * line.fadeSpeed) > 0 ? 1 : -1) * 0.01;
-      line.opacity = Math.max(0, Math.min(0.3, line.opacity));
+      line.opacity += (Math.sin(time * line.fadeSpeed) > 0 ? 1 : -1) * 0.008;
+      line.opacity = Math.max(0, Math.min(0.2, line.opacity)); // Max 0.2 opacity
 
-      if (line.opacity > 0.05) {
-        ctx.strokeStyle = `rgba(100, 150, 255, ${line.opacity})`;
-        ctx.lineWidth = 0.5;
+      if (line.opacity > 0.03) {
+        ctx.strokeStyle = `rgba(140, 180, 220, ${line.opacity})`;
+        ctx.lineWidth = 0.4;
         ctx.beginPath();
         ctx.moveTo(star1.x, star1.y);
         ctx.lineTo(star2.x, star2.y);
@@ -379,7 +420,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     });
   }, []);
 
-  // FIXED: Much slower animation loop
+  // Simplified animation loop
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -392,62 +433,49 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
 
     timeRef.current += 16;
 
-    // FIXED: Much slower camera drift
-    cameraOffsetRef.current.x = Math.sin(timeRef.current * 0.000005) * 2; // 10x slower, smaller movement
-    cameraOffsetRef.current.y = Math.cos(timeRef.current * 0.000003) * 1; // 10x slower, smaller movement
-
-    // Star trails effect or full clear
     if (enableTrails) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
       ctx.fillRect(0, 0, width, height);
     } else {
       ctx.clearRect(0, 0, width, height);
     }
 
-    // Draw nebulae first (background)
     if (enableNebulae) {
       nebulaeRef.current.forEach(nebula => {
         drawNebula(ctx, nebula, timeRef.current);
       });
     }
 
-    // FIXED: Much slower stellar motion
-    depthLayers.forEach((layer, layerIndex) => {
-      const layerStars = starsRef.current.filter(star => star.z === layerIndex + 1);
-      
-      layerStars.forEach(star => {
-        // FIXED: Much slower stellar motion - reduced by 100x
-        const stellarMotion = timeRef.current * 0.00000001 * layer.speed; // Was 0.000001, now 0.00000001
-        star.x += Math.cos(star.rightAscension + stellarMotion) * layer.speed * 0.02; // Was layer.speed * 2, now * 0.02
-        star.y += Math.sin(star.declination * Math.PI / 180) * layer.speed * 0.01; // Added * 0.01 to slow down
+    // Draw all stars with very slow motion
+    starsRef.current.forEach(star => {
+      const stellarMotion = timeRef.current * 0.000000005; // Even slower
+      star.x += Math.cos(star.rightAscension + stellarMotion) * 0.005;
+      star.y += Math.sin(star.declination * Math.PI / 180) * 0.003;
 
-        // Wrap around screen
-        if (star.x < -width * 0.1) star.x = width * 1.1;
-        if (star.x > width * 1.1) star.x = -width * 0.1;
-        if (star.y < -height * 0.1) star.y = height * 1.1;
-        if (star.y > height * 1.1) star.y = -height * 0.1;
+      // Wrap around screen
+      if (star.x < 0) star.x = width;
+      if (star.x > width) star.x = 0;
+      if (star.y < 0) star.y = height;
+      if (star.y > height) star.y = 0;
 
-        drawStar(ctx, star, timeRef.current, cameraOffsetRef.current);
-      });
+      drawStar(ctx, star, timeRef.current);
     });
 
-    // Draw dynamic constellation lines
     if (showConstellations && constellationLinesRef.current.length > 0) {
       drawConstellationLines(ctx, starsRef.current, constellationLinesRef.current, timeRef.current);
     }
 
-    // Shooting stars
+    // Less frequent shooting stars
     if (!deviceInfo.isLowEnd && !deviceInfo.prefersReducedMotion) {
-      const meteorInterval = deviceInfo.isMobile ? 15000 : 10000;
+      const meteorInterval = deviceInfo.isMobile ? 20000 : 15000;
       if (timeRef.current - lastShootingStarRef.current > meteorInterval) {
-        if (Math.random() < 0.6) {
+        if (Math.random() < 0.4) { // Lower probability
           shootingStarsRef.current.push(createShootingStar(width, height));
           lastShootingStarRef.current = timeRef.current;
         }
       }
     }
 
-    // Update meteors
     shootingStarsRef.current.forEach((shootingStar, index) => {
       shootingStar.life++;
       shootingStar.x -= Math.cos(shootingStar.angle) * shootingStar.speed;
@@ -475,16 +503,16 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
 
     const resizeCanvas = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rect = canvas.getBoundingClientRect();
       
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
       
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.scale(dpr, dpr);
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
       }
 
       const canvasSize = { width: canvas.width / dpr, height: canvas.height / dpr };
@@ -495,8 +523,11 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
 
     resizeCanvas();
 
-    const resizeObserver = new ResizeObserver(resizeCanvas);
-    resizeObserver.observe(canvas);
+    const handleResize = () => {
+      resizeCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
 
     animationRef.current = requestAnimationFrame(animate);
 
@@ -504,7 +535,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
     };
   }, [isClient, animate, createStars, createNebulae, createConstellationLines]);
 
@@ -605,7 +636,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
                         : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
                     }`}
                   >
-                    ⭐ {showConstellations ? 'Hide' : 'Show'} Dynamic Constellations
+                    ⭐ {showConstellations ? 'Hide' : 'Show'} Constellations
                   </button>
 
                   <button
@@ -627,7 +658,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
                         : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
                     }`}
                   >
-                    🌌 {enableNebulae ? 'Hide' : 'Show'} Distant Nebulae
+                    🌌 {enableNebulae ? 'Hide' : 'Show'} Nebulae
                   </button>
 
                   <button
@@ -644,11 +675,11 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
                 
                 <div className="mt-4 pt-3 border-t border-white/10">
                   <p className="text-xs text-white/60 text-center leading-relaxed">
-                    🌠 4-Layer Parallax Depth<br/>
-                    🎨 Temperature-Based Colors<br/>
-                    ⭐ No Lens Flare Spikes<br/>
-                    ☄️ Enhanced Meteor Trails<br/>
-                    📷 Gentle Camera Drift
+                    ✨ Sparse & Elegant<br/>
+                    🌟 Realistic Magnitude System<br/>
+                    🎨 Subtle Color Palette<br/>
+                    ☄️ Rare Shooting Stars<br/>
+                    🌌 Minimal Nebulae
                   </p>
                 </div>
               </div>
@@ -657,27 +688,47 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
         )}
       </AnimatePresence>
 
-      {/* Enhanced Canvas Background */}
-      <div className="fixed inset-0 z-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
-        {/* Deep space gradient background */}
+      {/* Canvas Background */}
+      <div 
+        style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: -1,
+          pointerEvents: 'none',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Darker gradient background */}
         <div 
-          className="absolute inset-0 opacity-60"
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0.7,
             background: `
-              radial-gradient(ellipse 80% 100% at 50% 50%, 
-                rgba(10, 15, 30, 0.2) 0%, 
-                rgba(5, 8, 20, 0.4) 40%,
-                rgba(0, 0, 0, 0.8) 100%
+              radial-gradient(ellipse 70% 90% at 50% 50%, 
+                rgba(8, 10, 20, 0.3) 0%, 
+                rgba(4, 5, 12, 0.6) 50%,
+                rgba(0, 0, 0, 0.9) 100%
               )
-            `,
+            `
           }}
         />
         
-        {/* Main enhanced canvas */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full"
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            display: 'block',
             background: 'transparent',
             imageRendering: 'auto',
             mixBlendMode: enableTrails ? 'screen' : 'normal'

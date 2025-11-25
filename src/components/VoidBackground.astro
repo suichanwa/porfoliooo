@@ -1,0 +1,218 @@
+---
+interface Props {
+  starCount?: number;
+  voidIntensity?: number;
+}
+
+---
+
+
+
+<script>
+  function initVoidBackground() {
+    const container = document.getElementById('voidStarsContainer');
+    if (!container) return;
+    
+    const starCount = parseInt(container.dataset.starCount || '300');
+    
+    // Clear existing stars
+    container.innerHTML = '';
+    
+    for (let i = 0; i < starCount; i++) {
+      const star = document.createElement('div');
+      star.className = 'void-star';
+      
+      // Calculate position - stars heavily concentrated on edges, avoid left edge
+      let x, y;
+      let attempts = 0;
+      
+      do {
+        x = Math.random() * 100;
+        y = Math.random() * 100;
+        attempts++;
+        
+        // Calculate distance from center
+        const distFromCenter = Math.sqrt(
+          Math.pow(x - 50, 2) + Math.pow(y - 50, 2)
+        );
+        
+        // Avoid left 5% of screen to prevent white line
+        const isLeftEdge = x < 5;
+        
+        // Stars should be mostly on edges - 90% on edges, 10% scattered, but never on far left
+        if (!isLeftEdge && (distFromCenter > 25 || Math.random() < 0.1)) {
+          break;
+        }
+      } while (attempts < 25);
+      
+      star.style.left = `${x}%`;
+      star.style.top = `${y}%`;
+      
+      // Size based on distance from center - bigger at edges
+      const distFromCenter = Math.sqrt(Math.pow(x - 50, 2) + Math.pow(y - 50, 2));
+      const sizeMultiplier = Math.min(distFromCenter / 50, 1);
+      const size = (1.2 + Math.random() * 2.8) * (0.8 + sizeMultiplier * 0.5);
+      star.style.width = `${size}px`;
+      star.style.height = `${size}px`;
+      
+      // Opacity based on distance from center - much brighter at edges
+      const baseOpacity = 0.4 + (distFromCenter / 50) * 0.6;
+      star.style.setProperty('--star-opacity', `${baseOpacity * (0.8 + Math.random() * 0.2)}`);
+      
+      // Random animation timing
+      star.style.animationDelay = `${Math.random() * 15}s`;
+      star.style.animationDuration = `${18 + Math.random() * 22}s`;
+      
+      // Add color variation - some stars have slight color tints
+      const colorRoll = Math.random();
+      if (colorRoll < 0.15) {
+        star.style.background = 'rgba(200, 220, 255, 1)'; // Blue-ish
+        star.style.boxShadow = '0 0 6px rgba(200, 220, 255, 0.8), 0 0 3px rgba(200, 220, 255, 1)';
+      } else if (colorRoll < 0.25) {
+        star.style.background = 'rgba(255, 220, 200, 1)'; // Warm
+        star.style.boxShadow = '0 0 6px rgba(255, 220, 200, 0.8), 0 0 3px rgba(255, 220, 200, 1)';
+      } else {
+        star.style.background = 'rgba(255, 255, 255, 1)';
+        star.style.boxShadow = '0 0 6px rgba(255, 255, 255, 0.7), 0 0 3px rgba(255, 255, 255, 0.9)';
+      }
+      
+      container.appendChild(star);
+    }
+  }
+  
+  // Initialize on load
+  document.addEventListener('DOMContentLoaded', initVoidBackground);
+  
+  // Re-initialize on page transitions (for Astro)
+  document.addEventListener('astro:page-load', initVoidBackground);
+</script>
+
+<style>
+  .void-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: #000000;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    left: 0;
+    top: 0;
+  }
+  
+  .void-gradient {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(ellipse 65% 45% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.85) 55%),
+      radial-gradient(ellipse 100% 80% at 50% 50%, #0d0d12 0%, #000000 100%);
+    margin: 0;
+    padding: 0;
+  }
+  
+  .void-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 55vmax;
+    height: 55vmax;
+    background: radial-gradient(
+      circle at center,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.97) 20%,
+      rgba(5, 5, 12, 0.85) 45%,
+      rgba(8, 8, 15, 0.5) 65%,
+      transparent 100%
+    );
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .void-stars {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .void-star {
+    position: absolute;
+    border-radius: 50%;
+    opacity: var(--star-opacity, 0.7);
+    animation: 
+      void-drift linear infinite,
+      void-twinkle ease-in-out infinite alternate;
+    margin: 0;
+    padding: 0;
+  }
+  
+  @keyframes void-drift {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    20% {
+      transform: translate(5px, -2px) scale(1.04);
+    }
+    40% {
+      transform: translate(-2px, 5px) scale(0.97);
+    }
+    60% {
+      transform: translate(-5px, -3px) scale(1.02);
+    }
+    80% {
+      transform: translate(3px, 4px) scale(0.96);
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+  
+  @keyframes void-twinkle {
+    0% {
+      opacity: calc(var(--star-opacity, 0.7) * 0.6);
+    }
+    100% {
+      opacity: var(--star-opacity, 0.7);
+    }
+  }
+  
+  /* Subtle ambient glow on edges - more visible, but avoid left edge */
+  .void-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(ellipse 45% 28% at 92% 18%, rgba(100, 120, 180, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 38% 22% at 92% 82%, rgba(150, 100, 160, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 32% 40% at 88% 12%, rgba(80, 100, 150, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 28% 32% at 85% 88%, rgba(120, 80, 140, 0.07) 0%, transparent 50%);
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Very subtle noise texture */
+  .void-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>
