@@ -6,9 +6,10 @@ import "../styles/global.css";
 interface Props {
   title: string;
   useVoidBackground?: boolean;
+  enableNeptuneTransition?: boolean;
 }
 
-const { title, useVoidBackground = false } = Astro.props;
+const { title, useVoidBackground = false, enableNeptuneTransition = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -23,7 +24,7 @@ const { title, useVoidBackground = false } = Astro.props;
   </head>
   <body class={useVoidBackground ? 'void-body' : 'starry-body'}>
     <!-- Only render StarryBackground if NOT using void background -->
-    {!useVoidBackground && <StarryBackground client:load />}
+    {!useVoidBackground && <StarryBackground client:load enableNeptuneTransition={enableNeptuneTransition} />}
     
     <Navigation client:load />
     

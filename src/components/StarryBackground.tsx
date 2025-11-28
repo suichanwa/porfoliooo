@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface StarryBackgroundProps {
   onHideGUI?: (hidden: boolean) => void;
+  enableNeptuneTransition?: boolean;
+  neptuneSectionId?: string;
 }
 
 interface Star {
@@ -54,13 +56,14 @@ interface ConstellationLine {
   fadeSpeed: number;
 }
 
-export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
+export default function StarryBackground({ onHideGUI, enableNeptuneTransition = false, neptuneSectionId = "neptune-widget" }: StarryBackgroundProps) {
   const [showConstellations, setShowConstellations] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [enableTrails, setEnableTrails] = useState(false);
   const [enableNebulae, setEnableNebulae] = useState(true);
+  const [neptuneTransitionProgress, setNeptuneTransitionProgress] = useState(0);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -539,6 +542,86 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
     };
   }, [isClient, animate, createStars, createNebulae, createConstellationLines]);
 
+  // Neptune section transition logic
+  useEffect(() => {
+    if (!enableNeptuneTransition || !isClient) return;
+
+    const handleScroll = () => {
+      const neptuneSection = document.getElementById(neptuneSectionId);
+      if (!neptuneSection) return;
+
+      const rect = neptuneSection.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate how much of the Neptune section is visible
+      const sectionTop = rect.top;
+      const sectionHeight = rect.height;
+      
+      // Start transition when Neptune section starts entering viewport
+      let progress = 0;
+      if (sectionTop < viewportHeight * 0.8) {
+        // Calculate progress: 0 when just entering, 1 when fully in view
+        const totalDistance = viewportHeight * 0.8 + sectionHeight * 0.5;
+        const currentDistance = Math.max(0, viewportHeight * 0.8 - sectionTop);
+        progress = Math.min(Math.max(currentDistance / totalDistance, 0), 1);
+      }
+      
+      setNeptuneTransitionProgress(progress);
+    };
+
+    // Throttled scroll handler for performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener('scroll', throttledScroll);
+    };
+  }, [enableNeptuneTransition, neptuneSectionId, isClient]);
+
+  // Dynamic background based on transition progress
+  const getDynamicBackground = useMemo(() => {
+    const progress = neptuneTransitionProgress;
+    
+    if (progress <= 0) {
+      // Default space background
+      return `
+        radial-gradient(ellipse 70% 90% at 50% 50%, 
+          rgba(8, 10, 20, 0.3) 0%, 
+          rgba(4, 5, 12, 0.6) 50%,
+          rgba(0, 0, 0, 0.9) 100%
+        )
+      `;
+    }
+    
+    // Blend between space and Neptune backgrounds
+    const spaceOpacity = 1 - progress * 0.7;
+    const neptuneOpacity = progress * 0.8;
+    
+    return `
+      radial-gradient(ellipse 70% 90% at 50% 50%, 
+        rgba(8, 10, 20, ${spaceOpacity * 0.3}) 0%, 
+        rgba(4, 5, 12, ${spaceOpacity * 0.6}) 50%,
+        rgba(15, 20, 25, ${spaceOpacity * 0.9}) 100%
+      ),
+      radial-gradient(ellipse 60% 80% at 30% 70%, 
+        rgba(26, 31, 53, ${neptuneOpacity * 0.4}) 0%, 
+        rgba(15, 20, 25, ${neptuneOpacity * 0.6}) 50%,
+        rgba(10, 15, 20, ${neptuneOpacity * 0.8}) 100%
+      )
+    `;
+  }, [neptuneTransitionProgress]);
+
   // GUI hiding functionality
   const handleHideGUI = useCallback(() => {
     const newHideState = !hideGUI;
@@ -701,7 +784,7 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
           overflow: 'hidden'
         }}
       >
-        {/* Darker gradient background */}
+        {/* Dynamic gradient background with Neptune transition */}
         <div 
           style={{
             position: 'absolute',
@@ -710,13 +793,8 @@ export default function StarryBackground({ onHideGUI }: StarryBackgroundProps) {
             width: '100%',
             height: '100%',
             opacity: 0.7,
-            background: `
-              radial-gradient(ellipse 70% 90% at 50% 50%, 
-                rgba(8, 10, 20, 0.3) 0%, 
-                rgba(4, 5, 12, 0.6) 50%,
-                rgba(0, 0, 0, 0.9) 100%
-              )
-            `
+            background: getDynamicBackground,
+            transition: 'background 0.3s ease-out'
           }}
         />
         

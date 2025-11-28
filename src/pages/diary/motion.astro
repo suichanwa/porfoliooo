@@ -4,43 +4,126 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import MotionDemo from '../../components/Physics/MotionDemo';
 ---
 
-<BaseLayout title="Motion Physics - Interactive Demo">
-  <div class="container mx-auto px-4 py-12 max-w-6xl">
-    <div class="mb-12">
-      <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+<BaseLayout title="Motion in Physics - Basic Concepts">
+  <div class="container mx-auto px-4 py-6 sm:py-12 max-w-4xl">
+    <div class="mb-8 sm:mb-12">
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-blue-400">
         Motion in Physics
       </h1>
-      <p class="text-xl text-base-content/70">
-        Interactive demonstrations of speed, velocity, and acceleration
+      <p class="text-lg sm:text-xl text-base-content/70">
+        Basic concepts of speed, velocity, and acceleration
       </p>
     </div>
 
-    <div class="space-y-16">
-      <!-- Speed Demo -->
+    <div class="space-y-12 sm:space-y-16">
+      <!-- Speed Section -->
       <section>
-        <h2 class="text-3xl font-bold mb-4 text-blue-400">Speed</h2>
-        <p class="text-lg text-base-content/80 mb-6">
-          Speed is a scalar quantity - it only has magnitude (how fast something is moving).
-        </p>
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-blue-400">1. Speed</h2>
+        
+        <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 sm:p-6 mb-6">
+          <h3 class="text-lg sm:text-xl font-semibold mb-3 text-blue-300">Definition</h3>
+          <p class="text-blue-200 mb-4 text-sm sm:text-base">
+            Speed is defined as the distance traveled divided by the time of travel.
+          </p>
+          
+          <div class="bg-gray-800/50 p-3 sm:p-4 rounded-lg">
+            <p class="text-green-300 font-mono text-base sm:text-lg">s = d / t</p>
+            <p class="text-gray-300 text-xs sm:text-sm mt-2">
+              where s = speed, d = distance, t = time
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800/30 p-4 sm:p-6 rounded-lg border border-gray-600">
+          <h3 class="text-base sm:text-lg font-semibold mb-4">Interactive Demo:</h3>
+          <p class="text-gray-300 mb-4 text-sm sm:text-base">
+            Use the controls below to experiment with different speeds and observe how distance changes with time.
+          </p>
+        </div>
+
         <MotionDemo type="speed" client:load />
       </section>
 
-      <!-- Velocity Demo -->
+      <!-- Velocity Section -->
       <section>
-        <h2 class="text-3xl font-bold mb-4 text-blue-400">Velocity</h2>
-        <p class="text-lg text-base-content/80 mb-6">
-          Velocity is a vector quantity - it has both magnitude and direction.
-        </p>
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-green-400">2. Velocity</h2>
+        
+        <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4 sm:p-6 mb-6">
+          <h3 class="text-lg sm:text-xl font-semibold mb-3 text-green-300">Vector vs Scalar</h3>
+          <p class="text-green-200 mb-4 text-sm sm:text-base">
+            While speed is a scalar (only magnitude), velocity is a vector (magnitude + direction).
+          </p>
+          
+          <div class="bg-gray-800/50 p-3 sm:p-4 rounded-lg">
+            <p class="text-green-300 font-mono text-base sm:text-lg">v = d / t (with direction)</p>
+            <p class="text-gray-300 text-xs sm:text-sm mt-2">
+              Example: 50 mi/hr North, 25 m/s East
+            </p>
+          </div>
+        </div>
+
         <MotionDemo type="velocity" client:load />
       </section>
 
-      <!-- Acceleration Demo -->
+      <!-- Acceleration Section -->
       <section>
-        <h2 class="text-3xl font-bold mb-4 text-blue-400">Acceleration</h2>
-        <p class="text-lg text-base-content/80 mb-6">
-          Acceleration is the rate of change of velocity over time.
-        </p>
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-purple-400">3. Acceleration</h2>
+        
+        <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 sm:p-6 mb-6">
+          <h3 class="text-lg sm:text-xl font-semibold mb-3 text-purple-300">Rate of Change</h3>
+          <p class="text-purple-200 mb-4 text-sm sm:text-base">
+            Acceleration is the change in speed divided by the time it takes to make the change.
+          </p>
+          
+          <div class="bg-gray-800/50 p-3 sm:p-4 rounded-lg">
+            <p class="text-purple-300 font-mono text-base sm:text-lg">a = (vf - v₀) / t</p>
+            <p class="text-gray-300 text-xs sm:text-sm mt-2">
+              where vf = final speed, v₀ = initial speed, t = time
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800/30 p-4 sm:p-6 rounded-lg border border-gray-600">
+          <h3 class="text-base sm:text-lg font-semibold mb-4">Interactive Demo:</h3>
+          <p class="text-gray-300 mb-4 text-sm sm:text-base">
+            Experiment with different acceleration values and observe how velocity changes over time.
+          </p>
+        </div>
+
         <MotionDemo type="acceleration" client:load />
+      </section>
+
+      <!-- Key Equations Summary -->
+      <section class="bg-gray-800 rounded-xl p-4 sm:p-8 border border-gray-600">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-200">📊 Key Equations Summary</h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div class="bg-blue-900/30 p-3 sm:p-4 rounded-lg border border-blue-500/30">
+            <h3 class="text-base sm:text-lg font-semibold text-blue-300 mb-2">Speed</h3>
+            <p class="font-mono text-blue-200 mb-2 text-sm sm:text-base">s = d / t</p>
+            <p class="text-xs text-blue-200">Distance divided by time</p>
+          </div>
+          
+          <div class="bg-green-900/30 p-3 sm:p-4 rounded-lg border border-green-500/30">
+            <h3 class="text-base sm:text-lg font-semibold text-green-300 mb-2">Velocity</h3>
+            <p class="font-mono text-green-200 mb-2 text-sm sm:text-base">v = d / t</p>
+            <p class="text-xs text-green-200">Speed with direction</p>
+          </div>
+          
+          <div class="bg-purple-900/30 p-3 sm:p-4 rounded-lg border border-purple-500/30">
+            <h3 class="text-base sm:text-lg font-semibold text-purple-300 mb-2">Acceleration</h3>
+            <p class="font-mono text-purple-200 mb-2 text-sm sm:text-base">a = Δv / t</p>
+            <p class="text-xs text-purple-200">Change in velocity over time</p>
+          </div>
+        </div>
+
+        <div class="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+          <h4 class="text-base sm:text-lg font-semibold text-yellow-300 mb-2">Important Note</h4>
+          <p class="text-yellow-200 text-xs sm:text-sm">
+            Average speed doesn't tell us about motion at any particular instant. 
+            Only when moving with constant speed does average speed equal actual speed.
+          </p>
+        </div>
       </section>
     </div>
   </div>

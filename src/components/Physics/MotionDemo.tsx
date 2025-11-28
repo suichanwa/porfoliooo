@@ -1,10 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useMotionValue, useTransform, animate } from 'motion/react';
+import { useState, useEffect, useRef } from 'react';
 import AnimationCanvas from './AnimationCanvas';
 import ControlPanel from './ControlPanel';
-import SpeedVisualization from './visualizations/SpeedVisualization';
-import VelocityVisualization from './visualizations/VelocityVisualization';
-import AccelerationVisualization from './visualizations/AccelerationVisualization';
 
 interface MotionDemoProps {
   type: 'speed' | 'velocity' | 'acceleration';
@@ -14,67 +10,69 @@ export default function MotionDemo({ type }: MotionDemoProps): JSX.Element {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(50);
   const [time, setTime] = useState<number>(0);
+  const [position, setPosition] = useState<number>(0);
+  const [currentSpeed, setCurrentSpeed] = useState<number>(50);
   
-  const position = useMotionValue(0);
-  const currentSpeed = useMotionValue(speed);
-  const ballX = useTransform(position, [0, 600], [50, 650]);
+  const animationFrameRef = useRef<number>();
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    let animationControls: any;
-    let startTime: number;
-    let animationFrame: number;
-
-    if (isPlaying) {
-      startTime = Date.now();
-      
-      if (type === 'acceleration') {
-        const updateAcceleration = () => {
-          const elapsed = (Date.now() - startTime) / 1000;
-          setTime(elapsed);
-          
-          const newSpeed = Math.min(30 + 10 * elapsed, 150);
-          currentSpeed.set(newSpeed);
-          
-          const newPosition = position.get() + newSpeed * 0.016;
-          
-          if (newPosition >= 600) {
-            position.set(0);
-            startTime = Date.now();
-          } else {
-            position.set(newPosition);
-          }
-          
-          if (isPlaying) {
-            animationFrame = requestAnimationFrame(updateAcceleration);
-          }
-        };
-        
-        animationFrame = requestAnimationFrame(updateAcceleration);
-      } else {
-        const duration = 600 / speed;
-        
-        animationControls = animate(position, 600, {
-          duration,
-          ease: 'linear',
-          repeat: Infinity,
-          onUpdate: () => {
-            const elapsed = (Date.now() - startTime) / 1000;
-            setTime(elapsed % duration);
-          }
-        });
+    if (!isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
       }
+      return;
     }
 
-    return () => {
-      if (animationControls) animationControls.stop();
-      if (animationFrame) cancelAnimationFrame(animationFrame);
+    let animationId: number;
+    let lastTime = performance.now();
+    
+    const updateAnimation = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      
+      const elapsed = (currentTime - startTimeRef.current) / 1000;
+      
+      setTime(elapsed);
+      
+      let newPosition = 0;
+      
+      if (type === 'acceleration') {
+        const newSpeed = Math.min(30 + 10 * elapsed, 150);
+        setCurrentSpeed(newSpeed);
+        newPosition = (elapsed * newSpeed * 0.2) % 600;
+      } else {
+        // More visible movement: position increases based on speed
+        const currentPos = (elapsed * speed * 2) % 600;
+        newPosition = currentPos;
+      }
+      
+      setPosition(newPosition);
+      
+      if (isPlaying) {
+        animationId = requestAnimationFrame(updateAnimation);
+        animationFrameRef.current = animationId;
+      }
     };
-  }, [isPlaying, speed, type, position, currentSpeed]);
+    
+    startTimeRef.current = performance.now();
+    lastTime = startTimeRef.current;
+    animationId = requestAnimationFrame(updateAnimation);
+    animationFrameRef.current = animationId;
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
+      }
+    };
+  }, [isPlaying, speed, type]);
 
   const handleReset = (): void => {
     setIsPlaying(false);
-    position.set(0);
-    currentSpeed.set(speed);
+    setPosition(0);
+    setCurrentSpeed(speed);
     setTime(0);
   };
 
@@ -85,27 +83,16 @@ export default function MotionDemo({ type }: MotionDemoProps): JSX.Element {
   const handleSpeedChange = (newSpeed: number): void => {
     setSpeed(newSpeed);
     if (!isPlaying) {
-      currentSpeed.set(newSpeed);
+      setCurrentSpeed(newSpeed);
     }
   };
 
-  const vectorLength = type === 'acceleration' 
-    ? Math.min(currentSpeed.get() * 0.8, 100)
-    : Math.min(speed * 0.8, 100);
+  const displaySpeed = type === 'acceleration' ? currentSpeed : speed;
+  const vectorLength = Math.min(displaySpeed * 0.8, 100);
 
   return (
-    <div className="bg-gradient-to-br from-base-200/50 to-base-300/30 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 shadow-xl">
-      <AnimationCanvas time={time} position={position.get()}>
-        {type === 'speed' && (
-          <SpeedVisualization ballX={ballX} speed={speed} vectorLength={vectorLength} />
-        )}
-        {type === 'velocity' && (
-          <VelocityVisualization ballX={ballX} speed={speed} vectorLength={vectorLength} />
-        )}
-        {type === 'acceleration' && (
-          <AccelerationVisualization ballX={ballX} currentSpeed={currentSpeed} />
-        )}
-      </AnimationCanvas>
+    <div className="bg-gray-800 rounded-xl border border-gray-600 p-4 sm:p-6 shadow-lg">
+      <AnimationCanvas time={time} position={position} isAnimating={isPlaying} />
       
       <ControlPanel
         isPlaying={isPlaying}
