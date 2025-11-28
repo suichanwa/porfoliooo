@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { StarEngine, generateStars, renderStars, updateStarPositions, type Star } from "../utils/starEngine";
 
 interface StarryBackgroundProps {
   onHideGUI?: (hidden: boolean) => void;
@@ -8,54 +7,45 @@ interface StarryBackgroundProps {
   neptuneSectionId?: string;
 }
 
-interface ShootingStar {
+interface Star {
   id: number;
   x: number;
   y: number;
-  length: number;
-  angle: number;
-  speed: number;
+  size: number;
   opacity: number;
-  life: number;
-  maxLife: number;
-  trail: { x: number; y: number; opacity: number }[];
-}
-
-interface Nebula {
-  x: number;
-  y: number;
-  radius: number;
+  twinkleSpeed: number;
+  twinkleOffset: number;
+  driftX: number;
+  driftY: number;
   color: string;
-  opacity: number;
-  pulseSpeed: number;
-  pulseOffset: number;
 }
 
-interface ConstellationLine {
-  star1: number;
-  star2: number;
-  opacity: number;
-  fadeSpeed: number;
+interface ShootingStar {
+  id: number;
+  startX: number;
+  startY: number;
+  angle: number;
+  duration: number;
+  delay: number;
 }
 
-export default function StarryBackground({ onHideGUI, enableNeptuneTransition = false, neptuneSectionId = "neptune-widget" }: StarryBackgroundProps) {
+export default function StarryBackground({ 
+  onHideGUI, 
+  enableNeptuneTransition = false, 
+  neptuneSectionId = "neptune-widget" 
+}: StarryBackgroundProps) {
   const [showConstellations, setShowConstellations] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [enableTrails, setEnableTrails] = useState(false);
   const [enableNebulae, setEnableNebulae] = useState(true);
   const [neptuneTransitionProgress, setNeptuneTransitionProgress] = useState(0);
+  const [stars, setStars] = useState<Star[]>([]);
+  const [shootingStars, setShootingStars] = useState<ShootingStar[]>([]);
   
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  const starsRef = useRef<Star[]>([]);
-  const shootingStarsRef = useRef<ShootingStar[]>([]);
-  const nebulaeRef = useRef<Nebula[]>([]);
-  const constellationLinesRef = useRef<ConstellationLine[]>([]);
-  const timeRef = useRef(0);
-  const lastShootingStarRef = useRef(0);
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const shootingStarTimeoutRef = useRef<number>();
+
   // Device detection
   const deviceInfo = useMemo(() => {
     if (!isClient || typeof window === 'undefined') {
@@ -70,309 +60,103 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
     };
   }, [isClient]);
 
-  // Initialize client-side rendering
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Shared star engine instance
-  const starEngine = useMemo(() => {
-    return StarEngine.getInstance(42); // Fixed seed for consistency
-  }, []);
-
-  // Create initial stars using shared engine
-  const createStars = useCallback((width: number, height: number) => {
-    const totalStars = deviceInfo.isLowEnd ? 60 : deviceInfo.isMobile ? 100 : 150;
-    const stars = starEngine.generate(width, height, totalStars);
-    starsRef.current = stars;
-    return stars;
-  }, [deviceInfo.isLowEnd, deviceInfo.isMobile, starEngine]);
-
-  // Create nebulae - fewer and more subtle
-  const createNebulae = useCallback((width: number, height: number) => {
-    const nebulae: Nebula[] = [];
-    const nebulaCount = deviceInfo.isLowEnd ? 1 : 2;
+  // Generate stars once on mount
+  const generateStars = useCallback(() => {
+    const starCount = deviceInfo.isLowEnd ? 40 : deviceInfo.isMobile ? 80 : 120;
+    const newStars: Star[] = [];
     
-    for (let i = 0; i < nebulaCount; i++) {
-      nebulae.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        radius: Math.random() * 150 + 100,
-        color: ['#4a3366', '#2a4466', '#3a4466', '#2a5544'][Math.floor(Math.random() * 4)],
-        opacity: Math.random() * 0.03 + 0.01, // More subtle
-        pulseSpeed: Math.random() * 0.0002 + 0.00005,
-        pulseOffset: Math.random() * Math.PI * 2
+    const colors = ['#ffffff', '#fff8e7', '#e7f0ff', '#ffe7e7'];
+    
+    for (let i = 0; i < starCount; i++) {
+      // Use magnitude-based size distribution (most stars are small)
+      const magnitude = Math.random() * 6;
+      const size = magnitude < 2 ? Math.random() * 2 + 2 : 
+                   magnitude < 4 ? Math.random() * 1.5 + 1 : 
+                   Math.random() * 1 + 0.5;
+      
+      newStars.push({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size,
+        opacity: Math.random() * 0.4 + 0.6,
+        twinkleSpeed: Math.random() * 4 + 3,
+        twinkleOffset: Math.random() * 10,
+        driftX: (Math.random() - 0.5) * 0.5, // Subtle drift
+        driftY: (Math.random() - 0.5) * 0.3,
+        color: colors[Math.floor(Math.random() * colors.length)]
       });
     }
     
-    return nebulae;
-  }, [deviceInfo.isLowEnd]);
+    setStars(newStars);
+  }, [deviceInfo.isLowEnd, deviceInfo.isMobile]);
 
-  // Create dynamic constellation lines
-  const createConstellationLines = useCallback((stars: Star[]) => {
-    const lines: ConstellationLine[] = [];
-    const maxDistance = 120; // Shorter max distance
-    
-    stars.forEach((star, i) => {
-      // Only connect brighter stars (magnitude < 4)
-      if (star.magnitude > 4) return;
-      
-      const nearbyStars = stars
-        .filter((otherStar, j) => {
-          if (i === j) return false;
-          if (otherStar.magnitude > 4) return false; // Only connect to bright stars
-          const dx = star.x - otherStar.x;
-          const dy = star.y - otherStar.y;
-          return Math.sqrt(dx * dx + dy * dy) < maxDistance;
-        })
-        .slice(0, 2);
-      
-      nearbyStars.forEach((nearStar) => {
-        if (Math.random() < 0.25) { // Fewer connections
-          lines.push({
-            star1: star.id,
-            star2: nearStar.id,
-            opacity: 0,
-            fadeSpeed: Math.random() * 0.015 + 0.005
-          });
-        }
-      });
-    });
-    
-    return lines;
-  }, []);
-
-  // Create shooting star with trail
-  const createShootingStar = useCallback((width: number, height: number): ShootingStar => {
-    const fromRight = Math.random() > 0.5;
-    const startX = fromRight ? width + 50 : -50;
-    const startY = Math.random() * height * 0.5;
-    const angle = fromRight ? Math.PI * 0.75 : Math.PI * 0.25;
-    
-    return {
-      id: Date.now() + Math.random(),
-      x: startX,
-      y: startY,
-      length: Math.random() * 100 + 60,
-      angle,
-      speed: Math.random() * 3 + 2,
-      opacity: 0.8, // Slightly dimmer meteors
-      life: 0,
-      maxLife: Math.random() * 80 + 50,
-      trail: []
-    };
-  }, []);
-
-  // Draw nebula
-  const drawNebula = useCallback((
-    ctx: CanvasRenderingContext2D, 
-    nebula: Nebula, 
-    time: number
-  ) => {
-    const pulse = Math.sin(time * nebula.pulseSpeed + nebula.pulseOffset) * 0.3 + 0.7;
-    const currentOpacity = nebula.opacity * pulse;
-    const currentRadius = nebula.radius * (0.9 + pulse * 0.2);
-
-    const gradient = ctx.createRadialGradient(
-      nebula.x, nebula.y, 0,
-      nebula.x, nebula.y, currentRadius
-    );
-    
-    gradient.addColorStop(0, `${nebula.color}${Math.floor(currentOpacity * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(0.3, `${nebula.color}${Math.floor(currentOpacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(1, `${nebula.color}00`);
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(nebula.x, nebula.y, currentRadius, 0, Math.PI * 2);
-    ctx.fill();
-  }, []);
-
-  // Draw shooting star with enhanced trail
-  const drawShootingStar = useCallback((
-    ctx: CanvasRenderingContext2D, 
-    shootingStar: ShootingStar
-  ) => {
-    const progress = shootingStar.life / shootingStar.maxLife;
-    let opacity = shootingStar.opacity;
-    
-    if (progress < 0.1) {
-      opacity *= progress / 0.1;
-    } else if (progress > 0.7) {
-      opacity *= Math.max(0, (1 - progress) / 0.3);
-    }
-
-    shootingStar.trail.push({ x: shootingStar.x, y: shootingStar.y, opacity });
-    if (shootingStar.trail.length > 15) {
-      shootingStar.trail.shift();
-    }
-
-    shootingStar.trail.forEach((point, i) => {
-      const trailOpacity = point.opacity * (i / shootingStar.trail.length) * 0.4;
-      const size = (i / shootingStar.trail.length) * 2.5;
-      
-      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 2);
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${trailOpacity})`);
-      gradient.addColorStop(1, `rgba(200, 220, 255, 0)`);
-      
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    const headGradient = ctx.createRadialGradient(
-      shootingStar.x, shootingStar.y, 0,
-      shootingStar.x, shootingStar.y, 12
-    );
-    headGradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
-    headGradient.addColorStop(0.3, `rgba(220, 230, 255, ${opacity * 0.6})`);
-    headGradient.addColorStop(1, `rgba(180, 200, 255, 0)`);
-
-    ctx.fillStyle = headGradient;
-    ctx.beginPath();
-    ctx.arc(shootingStar.x, shootingStar.y, 12, 0, Math.PI * 2);
-    ctx.fill();
-  }, []);
-
-  // Draw dynamic constellation lines
-  const drawConstellationLines = useCallback((
-    ctx: CanvasRenderingContext2D,
-    stars: Star[],
-    lines: ConstellationLine[],
-    time: number
-  ) => {
-    lines.forEach(line => {
-      const star1 = stars.find(s => s.id === line.star1);
-      const star2 = stars.find(s => s.id === line.star2);
-      
-      if (!star1 || !star2) return;
-
-      line.opacity += (Math.sin(time * line.fadeSpeed) > 0 ? 1 : -1) * 0.008;
-      line.opacity = Math.max(0, Math.min(0.2, line.opacity)); // Max 0.2 opacity
-
-      if (line.opacity > 0.03) {
-        ctx.strokeStyle = `rgba(140, 180, 220, ${line.opacity})`;
-        ctx.lineWidth = 0.4;
-        ctx.beginPath();
-        ctx.moveTo(star1.x, star1.y);
-        ctx.lineTo(star2.x, star2.y);
-        ctx.stroke();
-      }
-    });
-  }, []);
-
-  // Simplified animation loop
-  const animate = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    timeRef.current += 16;
-
-    if (enableTrails) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
-      ctx.fillRect(0, 0, width, height);
-    } else {
-      ctx.clearRect(0, 0, width, height);
-    }
-
-    if (enableNebulae) {
-      nebulaeRef.current.forEach(nebula => {
-        drawNebula(ctx, nebula, timeRef.current);
-      });
-    }
-
-    // Update star positions using shared engine
-    updateStarPositions(starsRef.current, timeRef.current, width, height);
-    
-    // Render stars using shared engine
-    renderStars(ctx, starsRef.current, timeRef.current);
-
-    if (showConstellations && constellationLinesRef.current.length > 0) {
-      drawConstellationLines(ctx, starsRef.current, constellationLinesRef.current, timeRef.current);
-    }
-
-    // Less frequent shooting stars
-    if (!deviceInfo.isLowEnd && !deviceInfo.prefersReducedMotion) {
-      const meteorInterval = deviceInfo.isMobile ? 20000 : 15000;
-      if (timeRef.current - lastShootingStarRef.current > meteorInterval) {
-        if (Math.random() < 0.4) { // Lower probability
-          shootingStarsRef.current.push(createShootingStar(width, height));
-          lastShootingStarRef.current = timeRef.current;
-        }
-      }
-    }
-
-    shootingStarsRef.current.forEach((shootingStar, index) => {
-      shootingStar.life++;
-      shootingStar.x -= Math.cos(shootingStar.angle) * shootingStar.speed;
-      shootingStar.y += Math.sin(shootingStar.angle) * shootingStar.speed;
-
-      if (shootingStar.life >= shootingStar.maxLife || 
-          shootingStar.x < -200 || shootingStar.x > width + 200 ||
-          shootingStar.y > height + 200) {
-        shootingStarsRef.current.splice(index, 1);
-        return;
-      }
-
-      drawShootingStar(ctx, shootingStar);
-    });
-
-    animationRef.current = requestAnimationFrame(animate);
-  }, [deviceInfo, enableTrails, enableNebulae, showConstellations, drawNebula, drawShootingStar, drawConstellationLines, createShootingStar]);
-
-  // Setup canvas and start animation
+  // Generate stars on mount and window resize
   useEffect(() => {
     if (!isClient) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-      }
-
-      const canvasSize = { width: canvas.width / dpr, height: canvas.height / dpr };
-      starsRef.current = createStars(canvasSize.width, canvasSize.height);
-      nebulaeRef.current = createNebulae(canvasSize.width, canvasSize.height);
-      constellationLinesRef.current = createConstellationLines(starsRef.current);
-    };
-
-    resizeCanvas();
-
+    
+    generateStars();
+    
+    let resizeTimeout: number;
     const handleResize = () => {
-      resizeCanvas();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(generateStars, 300);
     };
-
+    
     window.addEventListener('resize', handleResize);
-
-    animationRef.current = requestAnimationFrame(animate);
-
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isClient, animate, createStars, createNebulae, createConstellationLines]);
+  }, [isClient, generateStars]);
 
-  // Neptune section transition logic - Enhanced star fade out
+  // Shooting star generator
+  useEffect(() => {
+    if (!isClient || deviceInfo.isLowEnd || deviceInfo.prefersReducedMotion) return;
+    
+    const createShootingStar = () => {
+      const fromRight = Math.random() > 0.5;
+      const newStar: ShootingStar = {
+        id: Date.now() + Math.random(),
+        startX: fromRight ? 110 : -10,
+        startY: Math.random() * 50,
+        angle: fromRight ? 135 : 45,
+        duration: Math.random() * 1.5 + 1.5,
+        delay: 0
+      };
+      
+      setShootingStars(prev => [...prev, newStar]);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        setShootingStars(prev => prev.filter(s => s.id !== newStar.id));
+      }, (newStar.duration + 0.5) * 1000);
+    };
+    
+    const scheduleNext = () => {
+      const delay = (deviceInfo.isMobile ? 20000 : 15000) + Math.random() * 10000;
+      shootingStarTimeoutRef.current = window.setTimeout(() => {
+        if (Math.random() < 0.5) {
+          createShootingStar();
+        }
+        scheduleNext();
+      }, delay);
+    };
+    
+    scheduleNext();
+    
+    return () => {
+      if (shootingStarTimeoutRef.current) {
+        clearTimeout(shootingStarTimeoutRef.current);
+      }
+    };
+  }, [isClient, deviceInfo.isMobile, deviceInfo.isLowEnd, deviceInfo.prefersReducedMotion]);
+
+  // Neptune transition
   useEffect(() => {
     if (!enableNeptuneTransition || !isClient) return;
 
@@ -382,31 +166,24 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
 
       const rect = neptuneSection.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      
-      // Calculate how much of the Neptune section is visible
       const sectionTop = rect.top;
-      const sectionHeight = rect.height;
       
-      // Start transition earlier for smoother star fade out
       let progress = 0;
       if (sectionTop < viewportHeight) {
-        // Start fading stars when Neptune section enters viewport
-        const fadeStartDistance = viewportHeight * 1.0; // Start 1 viewport height before
-        const fadeEndDistance = viewportHeight * 0.3;   // Complete fade when 30% in view
-        
+        const fadeStartDistance = viewportHeight * 1.0;
+        const fadeEndDistance = viewportHeight * 0.3;
         const distanceFromSection = Math.max(0, viewportHeight - sectionTop);
         
         if (distanceFromSection <= fadeStartDistance) {
           progress = Math.min(Math.max((fadeStartDistance - distanceFromSection) / (fadeStartDistance - fadeEndDistance), 0), 1);
         } else {
-          progress = 0; // Haven't started transition yet
+          progress = 0;
         }
       }
       
       setNeptuneTransitionProgress(progress);
     };
 
-    // Throttled scroll handler for performance
     let ticking = false;
     const throttledScroll = () => {
       if (!ticking) {
@@ -419,29 +196,21 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
     };
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
-    handleScroll(); // Initial check
+    handleScroll();
 
-    return () => {
-      window.removeEventListener('scroll', throttledScroll);
-    };
+    return () => window.removeEventListener('scroll', throttledScroll);
   }, [enableNeptuneTransition, neptuneSectionId, isClient]);
 
-  // Dynamic background based on transition progress
   const getDynamicBackground = useMemo(() => {
     const progress = neptuneTransitionProgress;
     
     if (progress <= 0) {
-      // Default space background
-      return `
-        radial-gradient(ellipse 70% 90% at 50% 50%, 
+      return `radial-gradient(ellipse 70% 90% at 50% 50%, 
           rgba(8, 10, 20, 0.3) 0%, 
           rgba(4, 5, 12, 0.6) 50%,
-          rgba(0, 0, 0, 0.9) 100%
-        )
-      `;
+          rgba(0, 0, 0, 0.9) 100%)`;
     }
     
-    // Blend between space and Neptune backgrounds
     const spaceOpacity = 1 - progress * 0.7;
     const neptuneOpacity = progress * 0.8;
     
@@ -449,39 +218,17 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
       radial-gradient(ellipse 70% 90% at 50% 50%, 
         rgba(8, 10, 20, ${spaceOpacity * 0.3}) 0%, 
         rgba(4, 5, 12, ${spaceOpacity * 0.6}) 50%,
-        rgba(15, 20, 25, ${spaceOpacity * 0.9}) 100%
-      ),
+        rgba(15, 20, 25, ${spaceOpacity * 0.9}) 100%),
       radial-gradient(ellipse 60% 80% at 30% 70%, 
         rgba(26, 31, 53, ${neptuneOpacity * 0.4}) 0%, 
         rgba(15, 20, 25, ${neptuneOpacity * 0.6}) 50%,
-        rgba(10, 15, 20, ${neptuneOpacity * 0.8}) 100%
-      )
-    `;
+        rgba(10, 15, 20, ${neptuneOpacity * 0.8}) 100%)`;
   }, [neptuneTransitionProgress]);
 
-  // GUI hiding functionality
   const handleHideGUI = useCallback(() => {
     const newHideState = !hideGUI;
     setHideGUI(newHideState);
-    
-    if (newHideState) {
-      setIsPanelOpen(false);
-    }
-    
-    if (typeof window !== 'undefined') {
-      requestAnimationFrame(() => {
-        const guiElements = document.querySelectorAll('.gui-element');
-        guiElements.forEach(element => {
-          const htmlElement = element as HTMLElement;
-          if (newHideState) {
-            htmlElement.style.cssText = 'opacity: 0; pointer-events: none; transform: translateY(20px);';
-          } else {
-            htmlElement.style.cssText = 'opacity: 1; pointer-events: auto; transform: translateY(0);';
-          }
-        });
-      });
-    }
-    
+    if (newHideState) setIsPanelOpen(false);
     onHideGUI?.(newHideState);
   }, [hideGUI, onHideGUI]);
 
@@ -500,25 +247,15 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
         style={{ pointerEvents: 'auto' }}
         whileHover={{ scale: hideGUI ? 1 : 1.05 }}
         whileTap={{ scale: 0.95 }}
-        animate={{
-          opacity: hideGUI ? 0.3 : 1,
-          rotate: isPanelOpen ? 180 : 0
-        }}
+        animate={{ opacity: hideGUI ? 0.3 : 1, rotate: isPanelOpen ? 180 : 0 }}
         transition={{ duration: 0.2 }}
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="20" 
-          height="20" 
-          viewBox="0 0 24 24" 
-          fill="currentColor"
-          className="drop-shadow-lg"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
       </motion.button>
 
-      {/* Enhanced Control Panel */}
+      {/* Control Panel */}
       <AnimatePresence>
         {isPanelOpen && (
           <>
@@ -542,15 +279,13 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
               <div className="p-4">
                 <div className="mb-4">
                   <h3 className="text-white font-medium text-base">🌌 Cosmic Observatory</h3>
-                  {hideGUI && (
-                    <p className="text-white/60 text-xs mt-1">Interface is currently hidden</p>
-                  )}
+                  {hideGUI && <p className="text-white/60 text-xs mt-1">Interface hidden</p>}
                 </div>
                 
                 <div className="space-y-3">
                   <button
                     onClick={() => setShowConstellations(!showConstellations)}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       showConstellations 
                         ? 'bg-blue-500/30 text-blue-300 border border-blue-400/30' 
                         : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
@@ -560,19 +295,8 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
                   </button>
 
                   <button
-                    onClick={() => setEnableTrails(!enableTrails)}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      enableTrails 
-                        ? 'bg-purple-500/30 text-purple-300 border border-purple-400/30' 
-                        : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
-                    }`}
-                  >
-                    ✨ {enableTrails ? 'Disable' : 'Enable'} Star Trails
-                  </button>
-
-                  <button
                     onClick={() => setEnableNebulae(!enableNebulae)}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       enableNebulae 
                         ? 'bg-pink-500/30 text-pink-300 border border-pink-400/30' 
                         : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
@@ -583,10 +307,10 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
 
                   <button
                     onClick={handleHideGUI}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       hideGUI 
-                        ? 'bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30' 
-                        : 'bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30'
+                        ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                        : 'bg-red-500/20 text-red-300 border border-red-400/30'
                     }`}
                   >
                     🎛️ {hideGUI ? 'Show' : 'Hide'} Interface
@@ -595,11 +319,10 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
                 
                 <div className="mt-4 pt-3 border-t border-white/10">
                   <p className="text-xs text-white/60 text-center leading-relaxed">
-                    ✨ Sparse & Elegant<br/>
-                    🌟 Realistic Magnitude System<br/>
-                    🎨 Subtle Color Palette<br/>
-                    ☄️ Rare Shooting Stars<br/>
-                    🌌 Minimal Nebulae
+                    ⚡ GPU Optimized<br/>
+                    🌟 CSS-Powered Stars<br/>
+                    ☄️ Smooth Animations<br/>
+                    💫 Ultra Low Power
                   </p>
                 </div>
               </div>
@@ -608,8 +331,9 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
         )}
       </AnimatePresence>
 
-      {/* Canvas Background */}
+      {/* Starry Background Container */}
       <div 
+        ref={containerRef}
         style={{ 
           position: 'fixed',
           top: 0,
@@ -618,37 +342,163 @@ export default function StarryBackground({ onHideGUI, enableNeptuneTransition = 
           height: '100vh',
           zIndex: -1,
           pointerEvents: 'none',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          background: getDynamicBackground,
+          transition: 'background 0.3s ease-out'
         }}
       >
-        {/* Dynamic gradient background with Neptune transition */}
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0.7,
-            background: getDynamicBackground,
-            transition: 'background 0.3s ease-out'
-          }}
-        />
-        
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            display: 'block',
-            background: 'transparent',
-            imageRendering: 'auto',
-            mixBlendMode: enableTrails ? 'screen' : 'normal'
-          }}
-        />
+        {/* Nebulae */}
+        {enableNebulae && (
+          <>
+            <div style={{
+              position: 'absolute',
+              top: '20%',
+              left: '15%',
+              width: '300px',
+              height: '300px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(74, 51, 102, 0.15) 0%, transparent 70%)',
+              filter: 'blur(60px)',
+              animation: 'nebulaPulse 8s ease-in-out infinite',
+              willChange: 'opacity'
+            }} />
+            
+            {!deviceInfo.isLowEnd && (
+              <div style={{
+                position: 'absolute',
+                top: '60%',
+                right: '20%',
+                width: '250px',
+                height: '250px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(42, 68, 102, 0.12) 0%, transparent 70%)',
+                filter: 'blur(50px)',
+                animation: 'nebulaPulse 10s ease-in-out infinite 2s',
+                willChange: 'opacity'
+              }} />
+            )}
+          </>
+        )}
+
+        {/* Stars with CSS animations */}
+        {stars.map(star => (
+          <div
+            key={star.id}
+            style={{
+              position: 'absolute',
+              left: `${star.x}%`,
+              top: `${star.y}%`,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              borderRadius: '50%',
+              backgroundColor: star.color,
+              opacity: star.opacity,
+              boxShadow: `0 0 ${star.size * 2}px ${star.color}`,
+              animation: `twinkle ${star.twinkleSpeed}s ease-in-out infinite ${star.twinkleOffset}s, 
+                         drift ${30 + Math.random() * 20}s ease-in-out infinite ${Math.random() * 10}s`,
+              willChange: 'opacity, transform',
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+        ))}
+
+        {/* Constellation lines */}
+        {showConstellations && (
+          <svg 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none'
+            }}
+          >
+            {stars.slice(0, 30).map((star, i) => {
+              if (i % 3 !== 0) return null;
+              const nextStar = stars[i + 3];
+              if (!nextStar) return null;
+              
+              return (
+                <line
+                  key={`line-${i}`}
+                  x1={`${star.x}%`}
+                  y1={`${star.y}%`}
+                  x2={`${nextStar.x}%`}
+                  y2={`${nextStar.y}%`}
+                  stroke="rgba(140, 180, 220, 0.15)"
+                  strokeWidth="0.5"
+                  style={{
+                    animation: 'constellationFade 4s ease-in-out infinite',
+                    animationDelay: `${i * 0.2}s`
+                  }}
+                />
+              );
+            })}
+          </svg>
+        )}
+
+        {/* Shooting Stars */}
+        {shootingStars.map(star => (
+          <div
+            key={star.id}
+            style={{
+              position: 'absolute',
+              left: `${star.startX}%`,
+              top: `${star.startY}%`,
+              width: '3px',
+              height: '3px',
+              borderRadius: '50%',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 0 8px #88bbff, 0 0 4px #ffffff',
+              animation: `shootingStar ${star.duration}s linear forwards`,
+              '--angle': `${star.angle}deg`,
+              willChange: 'transform, opacity'
+            } as React.CSSProperties}
+          />
+        ))}
+
+        {/* CSS Animations */}
+        <style>{`
+          @keyframes twinkle {
+            0%, 100% { opacity: var(--base-opacity, 0.8); }
+            50% { opacity: calc(var(--base-opacity, 0.8) * 0.3); }
+          }
+          
+          @keyframes drift {
+            0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+            25% { transform: translate(-50%, -50%) translate(3px, -2px); }
+            50% { transform: translate(-50%, -50%) translate(-2px, 3px); }
+            75% { transform: translate(-50%, -50%) translate(2px, 1px); }
+          }
+          
+          @keyframes nebulaPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+          }
+          
+          @keyframes shootingStar {
+            0% {
+              transform: translate(0, 0) rotate(var(--angle));
+              opacity: 0;
+            }
+            10% {
+              opacity: 1;
+            }
+            90% {
+              opacity: 0.8;
+            }
+            100% {
+              transform: translate(-200px, 200px) rotate(var(--angle));
+              opacity: 0;
+            }
+          }
+          
+          @keyframes constellationFade {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.05; }
+          }
+        `}</style>
       </div>
     </>
   );
