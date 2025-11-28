@@ -1,0 +1,47 @@
+---
+// filepath: src/pages/diary/motion.astro
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MotionDemo from '../../components/Physics/MotionDemo';
+---
+
+<BaseLayout title="Motion Physics - Interactive Demo">
+  <div class="container mx-auto px-4 py-12 max-w-6xl">
+    <div class="mb-12">
+      <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+        Motion in Physics
+      </h1>
+      <p class="text-xl text-base-content/70">
+        Interactive demonstrations of speed, velocity, and acceleration
+      </p>
+    </div>
+
+    <div class="space-y-16">
+      <!-- Speed Demo -->
+      <section>
+        <h2 class="text-3xl font-bold mb-4 text-blue-400">Speed</h2>
+        <p class="text-lg text-base-content/80 mb-6">
+          Speed is a scalar quantity - it only has magnitude (how fast something is moving).
+        </p>
+        <MotionDemo type="speed" client:load />
+      </section>
+
+      <!-- Velocity Demo -->
+      <section>
+        <h2 class="text-3xl font-bold mb-4 text-blue-400">Velocity</h2>
+        <p class="text-lg text-base-content/80 mb-6">
+          Velocity is a vector quantity - it has both magnitude and direction.
+        </p>
+        <MotionDemo type="velocity" client:load />
+      </section>
+
+      <!-- Acceleration Demo -->
+      <section>
+        <h2 class="text-3xl font-bold mb-4 text-blue-400">Acceleration</h2>
+        <p class="text-lg text-base-content/80 mb-6">
+          Acceleration is the rate of change of velocity over time.
+        </p>
+        <MotionDemo type="acceleration" client:load />
+      </section>
+    </div>
+  </div>
+</BaseLayout>

@@ -204,6 +204,40 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
           </div>
         )}
       </div>
+
+      <!-- Add this to your existing diary page, in the blog posts section -->
+      <div class="grid md:grid-cols-2 gap-6 mt-12">
+        <!-- Physics: Motion Card -->
+        <a 
+          href="/diary/motion"
+          class="block bg-gradient-to-br from-blue-950/40 to-indigo-950/40 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-1"
+        >
+          <div class="flex items-start gap-4 mb-4">
+            <div class="bg-blue-500/20 p-3 rounded-lg">
+              <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-md">Physics</span>
+                <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-md">Interactive</span>
+              </div>
+              <h3 class="text-xl font-bold text-blue-300 mb-2">Understanding Motion</h3>
+              <p class="text-base-content/70 text-sm mb-3">
+                An interactive exploration of speed, velocity, and acceleration with live demonstrations
+              </p>
+              <div class="flex items-center gap-3 text-xs text-base-content/50">
+                <span>Today</span>
+                <span>•</span>
+                <span>10 min read</span>
+              </div>
+            </div>
+          </div>
+        </a>
+        
+        <!-- Add more diary entries here -->
+      </div>
     </div>
   </section>
 

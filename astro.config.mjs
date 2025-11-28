@@ -4,7 +4,14 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   integrations: [
-    react(), // Enables .jsx/.tsx support
-    tailwind(), // Enables Tailwind support
+    react({
+      include: ['**/react/*', '**/Physics/*'],
+    }),
+    tailwind()
   ],
+  vite: {
+    esbuild: {
+      jsx: 'automatic',
+    },
+  },
 });
