@@ -1,11 +1,11 @@
 ---
+// filepath: c:\Users\suiseika\porfoliooo\src\pages\write-letter.astro
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
-import { addLetter } from "../utils/firebaseConfig";
 ---
 
 <BaseLayout title="Write Me a Letter | My Portfolio">
-  <section class="py-12 md:py-16 max-w-2xl mx-auto">
+  <section class="py-12 md:py-16 max-w-2xl mx-auto px-4">
     <div data-scroll class="opacity-0">
       <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
         <TypeWriter 
@@ -17,286 +17,345 @@ import { addLetter } from "../utils/firebaseConfig";
       </h1>
       <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
       
-      <p class="text-center mb-4">I'd love to hear your thoughts - share anything that's on your mind.</p>
-      <p class="text-center mb-8 italic text-secondary-accent flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 17a3 3 0 0 1-3-3v-2a3 3 0 1 1 6 0v2a3 3 0 0 1-3 3Z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7 10V8a5 5 0 1 1 10 0v2" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 10h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9Z" />
-        </svg>
-        Private delivery straight to my inbox.
+      <p class="text-center mb-4 text-base-content/80">
+        I'd love to hear your thoughts! Leave me a little note about anything that's on your mind.
       </p>
+      <div class="flex items-center justify-center gap-2 mb-8 text-secondary-accent italic">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+        <span>Your message will be delivered directly to me, like a digital letter in a bottle</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+      </div>
     </div>
     
     <div data-scroll data-scroll-delay="0.1" class="opacity-0">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <div class="flex items-center gap-3 p-3 rounded-lg border border-secondary-accent/30 bg-base-100 shadow-sm">
-          <div class="p-2 rounded-full bg-primary-accent/10 text-primary-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 17a3 3 0 0 1-3-3v-2a3 3 0 1 1 6 0v2a3 3 0 0 1-3 3Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M7 10V8a5 5 0 1 1 10 0v2" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 10h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9Z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold">Private delivery</p>
-            <p class="text-xs text-secondary-accent">Only I see what you share.</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-lg border border-secondary-accent/30 bg-base-100 shadow-sm">
-          <div class="p-2 rounded-full bg-primary-accent/10 text-primary-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 10h6" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 6h6" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold">Friendly tone</p>
-            <p class="text-xs text-secondary-accent">Feel free to be informal.</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3 p-3 rounded-lg border border-secondary-accent/30 bg-base-100 shadow-sm">
-          <div class="p-2 rounded-full bg-primary-accent/10 text-primary-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-6" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M7 9.6 4.5 12A2 2 0 0 0 4.09 14l1.1 4.4A2 2 0 0 0 7.11 20H16.9a2 2 0 0 0 1.91-1.6l1.1-4.4A2 2 0 0 0 19.5 12L17 9.6a2 2 0 0 0-1.44-.6H8.44a2 2 0 0 0-1.44.6Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a4 4 0 0 0-4 4v2h8V7a4 4 0 0 0-4-4Z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold">Human reply</p>
-            <p class="text-xs text-secondary-accent">You'll hear from me, not a bot.</p>
-          </div>
-        </div>
-      </div>
-
-      <form id="letterForm" class="bg-base-200 p-6 md:p-8 rounded-xl shadow-lg border border-secondary-accent/20">
+      <form id="letterForm" class="bg-base-200/50 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-xl border border-secondary-accent/20 relative overflow-hidden">
+        <!-- Decorative corner elements -->
+        <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-primary-accent/30 rounded-tl-2xl"></div>
+        <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-primary-accent/30 rounded-br-2xl"></div>
+        
         <div class="form-control mb-5">
           <label class="label" for="name">
-            <span class="label-text flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="text-primary-accent">
-                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+            <span class="label-text flex items-center gap-2 text-base-content/90">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary-accent">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              Who's writing? (optional)
+              Who's writing?
+              <span class="text-base-content/50 text-sm">(optional)</span>
             </span>
           </label>
-          <input type="text" id="name" class="input input-bordered w-full bg-base-100" placeholder="Your name or stay anonymous..." />
+          <div class="relative">
+            <input 
+              type="text" 
+              id="name" 
+              class="input input-bordered w-full bg-base-100/80 pl-10 focus:border-primary-accent focus:ring-2 focus:ring-primary-accent/20 transition-all duration-200" 
+              placeholder="Your name or stay anonymous..." 
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
         </div>
         
         <div class="form-control mb-6">
           <label class="label" for="message">
-            <span class="label-text flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="text-primary-accent">
-                <path d="M2 2a2 2 0 0 0-2 2v8.01a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm-2 7a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2 0a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zM12 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+            <span class="label-text flex items-center gap-2 text-base-content/90">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary-accent">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
               Your Message
             </span>
-            <span class="label-text-alt text-secondary-accent flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5a7 7 0 1 1-7 7 7 7 0 0 1 7-7Z" />
+            <span class="label-text-alt flex items-center gap-1 text-secondary-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-red-400">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
               </svg>
-              Required
             </span>
           </label>
-          <textarea 
-            id="message" 
-            rows="8" 
-            class="textarea textarea-bordered w-full bg-base-100" 
-            placeholder="Dear friend, I wanted to tell you..." 
-            maxlength="600"
-            required
-          ></textarea>
-          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-xs text-secondary-accent mt-2">
-            <span class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 7h6m-6 4h14m-14 4h10" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 5v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.5a2 2 0 0 1 1.4.58l4.5 4.42A2 2 0 0 1 19 9.4Z" />
-              </svg>
-              Share a story, feedback, or a quick hello.
-            </span>
-            <span id="messageCounter" class="flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-9-9" />
-              </svg>
-              0/600
-            </span>
+          <div class="relative">
+            <textarea 
+              id="message" 
+              rows="8" 
+              class="textarea textarea-bordered w-full bg-base-100/80 pl-10 pt-3 focus:border-primary-accent focus:ring-2 focus:ring-primary-accent/20 transition-all duration-200 resize-none" 
+              placeholder="Dear friend, I wanted to tell you..." 
+              required
+            ></textarea>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-4 text-base-content/40">
+              <line x1="17" y1="10" x2="3" y2="10"></line>
+              <line x1="21" y1="6" x2="3" y2="6"></line>
+              <line x1="21" y1="14" x2="3" y2="14"></line>
+              <line x1="17" y1="18" x2="3" y2="18"></line>
+            </svg>
           </div>
+          <label class="label">
+            <span class="label-text-alt text-base-content/50 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              Share whatever's on your mind
+            </span>
+            <span class="label-text-alt text-base-content/40" id="charCount">0 characters</span>
+          </label>
         </div>
         
         <button 
           type="submit" 
-          class="btn btn-primary w-full group relative overflow-hidden"
+          class="btn-send-note group w-full"
           id="submitButton"
         >
-          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform translate-x-0 -skew-x-12 bg-primary-accent group-hover:skew-x-12"></span>
-          <span class="absolute inset-0 w-full h-full transition-all duration-300 ease-out transform skew-x-12 bg-secondary-accent group-hover:-skew-x-12"></span>
-          <span id="submitText" class="relative flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Animated gradient background -->
+          <span class="btn-gradient"></span>
+          
+          <!-- Shimmer effect -->
+          <span class="btn-shimmer"></span>
+          
+          <!-- Button content -->
+          <span id="submitText" class="btn-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-icon">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
-            Send Your Note
+            <span class="btn-text">Send Your Note</span>
           </span>
-          <span id="loadingSpinner" class="loading loading-spinner loading-md hidden"></span>
+          
+          <!-- Loading spinner -->
+          <span id="loadingSpinner" class="btn-loading hidden">
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="ml-2">Sending...</span>
+          </span>
         </button>
         
-        <p class="text-xs mt-4 text-center opacity-70">
-          Your note will be delivered straight to me, and nobody else will see it.
-        </p>
+        <div class="flex items-center justify-center gap-2 mt-5 text-xs text-base-content/60">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary-accent/70">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Your note will be delivered straight to me, and nobody else will see it</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary-accent/70">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
       </form>
     </div>
     
-    <div id="successMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-6 bg-success/10 border border-success/30 rounded-xl text-center hidden">
-      <div class="flex justify-center mb-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success">
-          <path d="M22 2L11 13"></path>
-          <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+    <!-- Success Message -->
+    <div id="successMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-8 bg-success/10 border border-success/30 rounded-2xl text-center hidden relative overflow-hidden">
+      <!-- Decorative background -->
+      <div class="absolute inset-0 opacity-5">
+        <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <pattern id="successPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="1.5" fill="currentColor" class="text-success"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#successPattern)"/>
         </svg>
       </div>
-      <h3 class="text-xl font-bold text-success mb-2">Your Note Has Been Sent!</h3>
-      <p>Thank you for your sweet message! I'll read it soon and treasure your thoughts.</p>
-      <button id="writeAnother" class="btn btn-outline btn-success mt-4">Write Another Note</button>
+      
+      <div class="relative">
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success animate-bounce">
+              <path d="M22 2L11 13"></path>
+              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-2xl font-bold text-success mb-3 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Your Note Has Been Sent!
+        </h3>
+        <p class="text-base-content/80 mb-6 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success/70">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          Thank you for your sweet message! I'll read it soon and treasure your thoughts.
+        </p>
+        
+        <!-- Button group -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <button id="writeAnother" class="btn btn-outline btn-success gap-2 group w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-45 transition-transform duration-200">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Write Another Note
+          </button>
+          
+          <a href="/letters" class="btn btn-success gap-2 group w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-1 transition-transform duration-200">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            View Your Messages
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-0.5 transition-transform duration-200">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div id="errorMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-6 bg-error/10 border border-error/30 rounded-xl text-center hidden">
-      <h3 class="text-xl font-bold text-error mb-2">Oh no! Something went wrong</h3>
-      <p>There was a tiny hiccup sending your note. Please try again in a moment.</p>
-      <button id="tryAgain" class="btn btn-outline btn-error mt-4">Try Again</button>
+    <!-- Error Message -->
+    <div id="errorMessage" data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8 p-8 bg-error/10 border border-error/30 rounded-2xl text-center hidden relative overflow-hidden">
+      <div class="relative">
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-2xl font-bold text-error mb-3 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Oh no! Something went wrong
+        </h3>
+        <p class="text-base-content/80 mb-6">
+          There was a tiny hiccup sending your note. Please try again in a moment.
+        </p>
+        <button id="tryAgain" class="btn btn-outline btn-error gap-2 group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-180 transition-transform duration-300">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Try Again
+        </button>
+      </div>
     </div>
   </section>
 
   <script>
     import { addLetter } from '../utils/firebaseConfig';
 
+    // Character count
+    const messageInput = document.getElementById('message') as HTMLTextAreaElement;
+    const charCount = document.getElementById('charCount') as HTMLSpanElement;
+    
+    messageInput?.addEventListener('input', () => {
+      const count = messageInput.value.length;
+      charCount.textContent = `${count} character${count !== 1 ? 's' : ''}`;
+    });
+
+    // Handle form submission
+    document.getElementById('letterForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const form = e.target as HTMLFormElement;
+      const nameInput = document.getElementById('name') as HTMLInputElement;
+      const messageInput = document.getElementById('message') as HTMLTextAreaElement;
+      const submitButton = document.getElementById('submitButton') as HTMLButtonElement;
+      const submitText = document.getElementById('submitText') as HTMLSpanElement;
+      const loadingSpinner = document.getElementById('loadingSpinner') as HTMLSpanElement;
+      const successMessage = document.getElementById('successMessage') as HTMLDivElement;
+      const errorMessage = document.getElementById('errorMessage') as HTMLDivElement;
+      
+      const name = nameInput.value.trim();
+      const message = messageInput.value.trim();
+      
+      if (!message) {
+        messageInput.focus();
+        messageInput.classList.add('input-error');
+        setTimeout(() => messageInput.classList.remove('input-error'), 2000);
+        return;
+      }
+      
+      try {
+        submitButton.disabled = true;
+        submitButton.classList.add('btn-sending');
+        submitText.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        
+        await addLetter({ name, message });
+        
+        form.classList.add('hidden');
+        successMessage.classList.remove('hidden');
+        successMessage.style.opacity = '1';
+        
+        form.reset();
+        charCount.textContent = '0 characters';
+      } catch (error) {
+        console.error('Error sending letter:', error);
+        errorMessage.classList.remove('hidden');
+        errorMessage.style.opacity = '1';
+      } finally {
+        submitButton.disabled = false;
+        submitButton.classList.remove('btn-sending');
+        submitText.classList.remove('hidden');
+        loadingSpinner.classList.add('hidden');
+      }
+    });
+    
+    // Handle "Write Another Letter" button
+    document.getElementById('writeAnother')?.addEventListener('click', () => {
+      const form = document.getElementById('letterForm');
+      const successMessage = document.getElementById('successMessage');
+      
+      form?.classList.remove('hidden');
+      successMessage?.classList.add('hidden');
+    });
+    
+    // Handle "Try Again" button
+    document.getElementById('tryAgain')?.addEventListener('click', () => {
+      document.getElementById('errorMessage')?.classList.add('hidden');
+    });
+
+    // Scroll animation
     document.addEventListener('DOMContentLoaded', () => {
-      const MAX_MESSAGE_LENGTH = 600;
-      const submitDefaultContent = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-          Send Your Note
-        `;
-
-      const form = document.getElementById('letterForm') as HTMLFormElement | null;
-      const nameInput = document.getElementById('name') as HTMLInputElement | null;
-      const messageInput = document.getElementById('message') as HTMLTextAreaElement | null;
-      const submitButton = document.getElementById('submitButton') as HTMLButtonElement | null;
-      const submitText = document.getElementById('submitText') as HTMLSpanElement | null;
-      const loadingSpinner = document.getElementById('loadingSpinner') as HTMLSpanElement | null;
-      const successMessage = document.getElementById('successMessage') as HTMLDivElement | null;
-      const errorMessage = document.getElementById('errorMessage') as HTMLDivElement | null;
-      const messageCounter = document.getElementById('messageCounter') as HTMLSpanElement | null;
-
-      const updateMessageCounter = () => {
-        if (!messageInput || !messageCounter) return;
-        const length = messageInput.value.length;
-        messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}`;
-        messageCounter.classList.toggle('text-error', length >= MAX_MESSAGE_LENGTH);
-      };
-
-      messageInput?.addEventListener('input', updateMessageCounter);
-      updateMessageCounter();
-
-      form?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        if (!messageInput || !submitButton || !submitText || !loadingSpinner || !successMessage || !errorMessage) {
-          return;
-        }
-
-        const name = nameInput?.value.trim() || '';
-        const message = messageInput.value.trim();
-
-        if (!message) {
-          messageInput.focus();
-          return;
-        }
-
-        try {
-          submitButton.disabled = true;
-          submitText.textContent = "Sending...";
-          loadingSpinner.classList.remove("hidden");
-          
-          await addLetter({ name, message });
-          
-          form.classList.add('hidden');
-          successMessage.classList.remove('hidden');
-          errorMessage.classList.add('hidden');
-          
-          form.reset();
-          updateMessageCounter();
-        } catch (error) {
-          console.error('Error sending letter:', error);
-          
-          errorMessage.classList.remove('hidden');
-          form.classList.remove('hidden');
-        } finally {
-          submitButton.disabled = false;
-          submitText.innerHTML = submitDefaultContent;
-          loadingSpinner.classList.add("hidden");
-        }
-      });
-      
-      document.getElementById('writeAnother')?.addEventListener('click', () => {
-        form?.classList.remove('hidden');
-        successMessage?.classList.add('hidden');
-        errorMessage?.classList.add('hidden');
-        messageInput?.focus();
-      });
-      
-      document.getElementById('tryAgain')?.addEventListener('click', () => {
-        errorMessage?.classList.add('hidden');
-        form?.classList.remove('hidden');
-        messageInput?.focus();
-      });
-
       const scrollElements = document.querySelectorAll('[data-scroll]');
       
-      const elementInView = (el, scrollOffset = 0) => {
+      const elementInView = (el: Element) => {
         const elementTop = el.getBoundingClientRect().top;
-        return (
-          elementTop <= 
-          (window.innerHeight || document.documentElement.clientHeight) * 0.8
-        );
+        return elementTop <= (window.innerHeight || document.documentElement.clientHeight) * 0.85;
       };
       
-      const displayScrollElement = (element) => {
-        const delay = element.dataset.scrollDelay || 0;
+      const displayScrollElement = (element: HTMLElement) => {
+        const delay = parseFloat(element.dataset.scrollDelay || '0');
         setTimeout(() => {
           element.classList.add('motion-safe:animate-fadeIn');
-          element.style.opacity = 1;
+          element.style.opacity = '1';
           element.style.transform = 'translateY(0)';
         }, delay * 1000);
       };
       
-      const hideScrollElement = (element) => {
-        element.style.opacity = 0;
+      const hideScrollElement = (element: HTMLElement) => {
+        element.style.opacity = '0';
         element.style.transform = 'translateY(20px)';
       };
       
       const handleScrollAnimation = () => {
         scrollElements.forEach((el) => {
-          if (elementInView(el, 100)) {
-            displayScrollElement(el);
+          const htmlEl = el as HTMLElement;
+          if (elementInView(el)) {
+            displayScrollElement(htmlEl);
           } else {
-            hideScrollElement(el);
+            hideScrollElement(htmlEl);
           }
         });
       };
       
       scrollElements.forEach(el => {
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
       });
       
-      window.addEventListener('scroll', () => {
-        handleScrollAnimation();
-      });
-      
+      window.addEventListener('scroll', handleScrollAnimation, { passive: true });
       handleScrollAnimation();
     });
   </script>
@@ -307,5 +366,223 @@ import { addLetter } from "../utils/firebaseConfig";
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  
+  .input:focus, .textarea:focus {
+    outline: none;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  
+  .input-error {
+    animation: shake 0.3s ease-in-out;
+    border-color: hsl(var(--er)) !important;
+  }
+
+  /* Enhanced Send Note Button Styles */
+  .btn-send-note {
+    position: relative;
+    height: 56px;
+    padding: 0;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-send-note:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 10px 15px -3px rgba(0, 0, 0, 0.15),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .btn-send-note:active {
+    transform: translateY(0);
+  }
+
+  .btn-send-note:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Animated gradient background */
+  .btn-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--p) / 0.85) 0%,
+      hsl(var(--s) / 0.9) 50%,
+      hsl(var(--a) / 0.85) 100%
+    );
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    opacity: 0.95;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-send-note:hover .btn-gradient {
+    opacity: 1;
+    animation-duration: 2s;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Shimmer effect */
+  .btn-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 3s infinite;
+  }
+
+  .btn-send-note:hover .btn-shimmer {
+    animation-duration: 2s;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* Button content */
+  .btn-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 100%;
+    padding: 0 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+
+  .btn-text {
+    letter-spacing: 0.3px;
+  }
+
+  /* Send icon animation */
+  .send-icon {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  }
+
+  .btn-send-note:hover .send-icon {
+    transform: translate(4px, -4px) rotate(-10deg);
+  }
+
+  /* Sparkle emoji */
+  .btn-sparkle {
+    font-size: 18px;
+    opacity: 0;
+    transform: scale(0) rotate(-45deg);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .btn-send-note:hover .btn-sparkle {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+
+  /* Loading state */
+  .btn-loading {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: white;
+    font-weight: 600;
+    z-index: 1;
+  }
+
+  .btn-send-note.btn-sending {
+    pointer-events: none;
+  }
+
+  .btn-send-note.btn-sending .btn-gradient {
+    animation: gradientPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes gradientPulse {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
+  }
+
+  /* Glow effect on hover */
+  .btn-send-note::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--p) / 0.5),
+      hsl(var(--s) / 0.5),
+      hsl(var(--a) / 0.5)
+    );
+    border-radius: 15px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+    filter: blur(8px);
+  }
+
+  .btn-send-note:hover::before {
+    opacity: 0.7;
+  }
+
+  /* Ripple effect on click */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  .btn-send-note::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    pointer-events: none;
+  }
+
+  .btn-send-note:active::after {
+    animation: ripple 0.6s ease-out;
   }
 </style>
