@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["vite/client", "@motion-canvas/core"]
+    "types": ["vite/client"]
   },
   "include": ["src/**/*", ".astro/**/*"],
   "exclude": ["node_modules", "dist"]
