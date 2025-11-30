@@ -20,7 +20,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
   const lastFrameTime = useRef<number>(0);
   const rotationRef = useRef({ planet: 0, orbit: 0, storm: 0, cloud: 0, triton: 0 });
 
-  // Real Neptune scientific data from NASA/Voyager 2 + JWST
   const NEPTUNE_DATA = useMemo(() => ({
     dayLength: 16.11,
     yearLength: 164.8,
@@ -30,22 +29,58 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     avgWind: 1200,
     axialTilt: 28.32,
     rotationPeriod: 16.11,
+    orbitalPeriod: 164.8,
+    distanceFromSun: 30.07,
     
-    // Ring system (discovered by Voyager 2, imaged by JWST)
     rings: {
-      galle: { innerRadius: 1.69, outerRadius: 1.75, opacity: 0.15 },
-      leverrier: { innerRadius: 2.15, outerRadius: 2.18, opacity: 0.25 },
-      lassell: { innerRadius: 2.18, outerRadius: 2.40, opacity: 0.1 },
-      arago: { innerRadius: 2.31, outerRadius: 2.36, opacity: 0.2 },
-      adams: { innerRadius: 2.54, outerRadius: 2.56, opacity: 0.4 }
+      galle: { 
+        innerRadius: 1.655,
+        outerRadius: 1.733,
+        opticalDepth: 0.0001,
+        dustFraction: 0.55,
+        width: 2000
+      },
+      leVerrier: { 
+        innerRadius: 2.148,
+        width: 0.00456,
+        opticalDepth: 0.0062,
+        dustFraction: 0.55
+      },
+      lassell: { 
+        innerRadius: 2.148,
+        outerRadius: 2.310,
+        opticalDepth: 0.0001,
+        dustFraction: 0.30,
+        width: 4000
+      },
+      arago: { 
+        radius: 2.310,
+        width: 0.004,
+        opticalDepth: 0.0002,
+        dustFraction: 0.40
+      },
+      adams: { 
+        radius: 2.541,
+        width: 0.0014,
+        opticalDepth: 0.011,
+        dustFraction: 0.30,
+        eccentricity: 0.00047,
+        inclination: 0.0617,
+        arcs: [
+          { name: 'Fraternité', longitude: 247, span: 10, brightness: 0.09 },
+          { name: 'Égalité 1', longitude: 261, span: 3, brightness: 0.05 },
+          { name: 'Égalité 2', longitude: 265, span: 1, brightness: 0.04 },
+          { name: 'Liberté', longitude: 276, span: 4, brightness: 0.07 },
+          { name: 'Courage', longitude: 284.5, span: 1, brightness: 0.03 }
+        ]
+      }
     },
     
-    // Triton - Neptune's largest moon
     triton: {
-      orbitalPeriod: 5.877, // days (retrograde)
-      distance: 354759, // km from Neptune
-      radius: 1353.4, // km
-      temperature: -235, // °C
+      orbitalPeriod: 5.877,
+      distance: 354759,
+      radius: 1353.4,
+      temperature: -235,
       atmosphere: 'Nitrogen, trace methane'
     },
     
@@ -64,7 +99,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     }
   }), []);
 
-  // Draw Triton moon
   const drawTriton = useCallback((
     ctx: CanvasRenderingContext2D,
     planetX: number,
@@ -72,19 +106,16 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     planetRadius: number,
     time: number
   ) => {
-    // Triton orbits retrograde (opposite direction)
     const orbitRadius = planetRadius * 3.2;
     const orbitTilt = 0.35;
-    const tritonAngle = -time; // Negative for retrograde
+    const tritonAngle = -time;
     
     const tritonX = planetX + Math.cos(tritonAngle) * orbitRadius;
     const tritonY = planetY + Math.sin(tritonAngle) * orbitRadius * orbitTilt;
     const tritonRadius = planetRadius * 0.12;
     
-    // Only draw if in front of planet (simple depth check)
     const isInFront = Math.sin(tritonAngle) > -0.3;
     
-    // Draw orbit path (very subtle)
     ctx.strokeStyle = 'rgba(150, 180, 220, 0.08)';
     ctx.lineWidth = 0.5;
     ctx.setLineDash([4, 8]);
@@ -93,9 +124,8 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.stroke();
     ctx.setLineDash([]);
     
-    if (!isInFront) return; // Behind Neptune
+    if (!isInFront) return;
     
-    // Triton outer glow
     const tritonGlow = ctx.createRadialGradient(
       tritonX, tritonY, 0,
       tritonX, tritonY, tritonRadius * 2.5
@@ -108,7 +138,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(tritonX, tritonY, tritonRadius * 2.5, 0, Math.PI * 2);
     ctx.fill();
     
-    // Triton body - icy pinkish-white surface
     const tritonGradient = ctx.createRadialGradient(
       tritonX - tritonRadius * 0.3,
       tritonY - tritonRadius * 0.3,
@@ -127,13 +156,11 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(tritonX, tritonY, tritonRadius, 0, Math.PI * 2);
     ctx.fill();
     
-    // Triton surface features (nitrogen ice)
     ctx.save();
     ctx.beginPath();
     ctx.arc(tritonX, tritonY, tritonRadius, 0, Math.PI * 2);
     ctx.clip();
     
-    // South polar cap (nitrogen/methane ice - pinkish)
     const polarGradient = ctx.createRadialGradient(
       tritonX, tritonY + tritonRadius * 0.5, 0,
       tritonX, tritonY + tritonRadius * 0.5, tritonRadius * 0.6
@@ -146,7 +173,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(tritonX, tritonY + tritonRadius * 0.5, tritonRadius * 0.6, 0, Math.PI * 2);
     ctx.fill();
     
-    // Terminator shadow
     const tritonShadow = ctx.createLinearGradient(
       tritonX - tritonRadius, tritonY,
       tritonX + tritonRadius * 0.3, tritonY
@@ -159,40 +185,144 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     
     ctx.restore();
     
-    // Triton label (subtle)
     ctx.fillStyle = 'rgba(200, 210, 230, 0.5)';
     ctx.font = '9px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('Triton', tritonX, tritonY + tritonRadius + 12);
   }, []);
 
-  // Memoized canvas drawing function
+  const drawRings = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    planetX: number, 
+    planetY: number, 
+    planetRadius: number, 
+    isBack: boolean
+  ) => {
+    const tilt = 0.22;
+    const rings = NEPTUNE_DATA.rings;
+    
+    ctx.save();
+    
+    if (!isBack) {
+      const galleInner = planetRadius * rings.galle.innerRadius;
+      const galleOuter = planetRadius * rings.galle.outerRadius;
+      
+      ctx.beginPath();
+      ctx.ellipse(planetX, planetY, galleOuter, galleOuter * tilt, 0, Math.PI, Math.PI * 2);
+      ctx.ellipse(planetX, planetY, galleInner, galleInner * tilt, 0, 0, Math.PI, true);
+      ctx.closePath();
+      
+      const galleGradient = ctx.createRadialGradient(planetX, planetY, galleInner, planetX, planetY, galleOuter);
+      galleGradient.addColorStop(0, 'rgba(140, 150, 170, 0.015)');
+      galleGradient.addColorStop(0.5, 'rgba(130, 145, 165, 0.025)');
+      galleGradient.addColorStop(1, 'rgba(120, 140, 160, 0.01)');
+      ctx.fillStyle = galleGradient;
+      ctx.fill();
+    }
+    
+    const leVerrierRadius = planetRadius * rings.leVerrier.innerRadius;
+    const leVerrierWidth = planetRadius * rings.leVerrier.width;
+    
+    ctx.beginPath();
+    if (isBack) {
+      ctx.ellipse(planetX, planetY, leVerrierRadius + leVerrierWidth/2, (leVerrierRadius + leVerrierWidth/2) * tilt, 0, 0, Math.PI);
+      ctx.ellipse(planetX, planetY, leVerrierRadius - leVerrierWidth/2, (leVerrierRadius - leVerrierWidth/2) * tilt, 0, Math.PI, 0, true);
+    } else {
+      ctx.ellipse(planetX, planetY, leVerrierRadius + leVerrierWidth/2, (leVerrierRadius + leVerrierWidth/2) * tilt, 0, Math.PI, Math.PI * 2);
+      ctx.ellipse(planetX, planetY, leVerrierRadius - leVerrierWidth/2, (leVerrierRadius - leVerrierWidth/2) * tilt, 0, 0, Math.PI, true);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(135, 150, 175, ${isBack ? 0.04 : 0.08})`;
+    ctx.lineWidth = leVerrierWidth;
+    ctx.stroke();
+    
+    if (!isBack) {
+      const lassellInner = planetRadius * rings.lassell.innerRadius;
+      const lassellOuter = planetRadius * rings.lassell.outerRadius;
+      
+      ctx.beginPath();
+      ctx.ellipse(planetX, planetY, lassellOuter, lassellOuter * tilt, 0, Math.PI, Math.PI * 2);
+      ctx.ellipse(planetX, planetY, lassellInner, lassellInner * tilt, 0, 0, Math.PI, true);
+      ctx.closePath();
+      
+      ctx.fillStyle = 'rgba(130, 145, 165, 0.012)';
+      ctx.fill();
+    }
+    
+    const aragoRadius = planetRadius * rings.arago.radius;
+    const aragoWidth = planetRadius * rings.arago.width;
+    
+    ctx.beginPath();
+    if (isBack) {
+      ctx.ellipse(planetX, planetY, aragoRadius, aragoRadius * tilt, 0, 0, Math.PI);
+    } else {
+      ctx.ellipse(planetX, planetY, aragoRadius, aragoRadius * tilt, 0, Math.PI, Math.PI * 2);
+    }
+    ctx.strokeStyle = `rgba(140, 155, 180, ${isBack ? 0.025 : 0.05})`;
+    ctx.lineWidth = aragoWidth;
+    ctx.stroke();
+    
+    const adamsRadius = planetRadius * rings.adams.radius;
+    const adamsWidth = planetRadius * rings.adams.width;
+    
+    ctx.beginPath();
+    if (isBack) {
+      ctx.ellipse(planetX, planetY, adamsRadius, adamsRadius * tilt, 0, 0, Math.PI);
+    } else {
+      ctx.ellipse(planetX, planetY, adamsRadius, adamsRadius * tilt, 0, Math.PI, Math.PI * 2);
+    }
+    ctx.strokeStyle = `rgba(140, 160, 190, ${isBack ? 0.03 : 0.06})`;
+    ctx.lineWidth = adamsWidth * 0.6;
+    ctx.stroke();
+    
+    if (!isBack) {
+      rings.adams.arcs.forEach(arc => {
+        const startAngle = (arc.longitude * Math.PI / 180) + Math.PI;
+        const endAngle = startAngle + (arc.span * Math.PI / 180);
+        
+        ctx.beginPath();
+        ctx.ellipse(planetX, planetY, adamsRadius, adamsRadius * tilt, 0, startAngle, endAngle);
+        
+        const arcOpacity = 0.15 + (arc.brightness * 0.8);
+        ctx.strokeStyle = `rgba(160, 180, 210, ${arcOpacity})`;
+        ctx.lineWidth = adamsWidth * 1.5;
+        ctx.stroke();
+        
+        ctx.strokeStyle = `rgba(180, 200, 230, ${arcOpacity * 0.3})`;
+        ctx.lineWidth = adamsWidth * 3;
+        ctx.stroke();
+      });
+    }
+    
+    ctx.restore();
+  }, [NEPTUNE_DATA.rings]);
+
   const drawNeptune = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, timestamp: number) => {
-    // Frame rate limiting - target 30 FPS
     if (timestamp - lastFrameTime.current < 33) return false;
     lastFrameTime.current = timestamp;
 
-    const centerX = width / 2;
-    const centerY = height * 0.45;
     const isMobile = width < 640;
 
     ctx.clearRect(0, 0, width, height);
 
-    // Calculate positions - Neptune stays more centered
-    const planetX = centerX;
-    const planetY = centerY;
+    // Invisible orbital center
+    const orbitCenterX = width * 0.5;
+    const orbitCenterY = height * 0.45;
+    const orbitRadius = width * (isMobile ? 0.15 : 0.12);
+
+    // Calculate Neptune's position in orbit around invisible center
+    const neptuneAngle = rotationRef.current.orbit;
+    const planetX = orbitCenterX + Math.cos(neptuneAngle) * orbitRadius;
+    const planetY = orbitCenterY + Math.sin(neptuneAngle) * orbitRadius * 0.3;
     const planetRadius = Math.min(width, height) * (isMobile ? 0.18 : 0.15);
 
-    // Draw Triton behind Neptune (if on back of orbit)
     const tritonAngle = rotationRef.current.triton;
     if (Math.sin(-tritonAngle) <= -0.3) {
       drawTriton(ctx, planetX, planetY, planetRadius, rotationRef.current.triton);
     }
 
-    // Draw back rings (behind planet) - much dimmer
     drawRings(ctx, planetX, planetY, planetRadius, true);
 
-    // Neptune's deep outer glow (atmospheric scatter) - enhanced for depth
     const deepGlow = ctx.createRadialGradient(
       planetX, planetY, planetRadius * 0.5,
       planetX, planetY, planetRadius * 2.0
@@ -206,7 +336,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY, planetRadius * 2.0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Inner atmospheric glow - stronger blue
     const innerGlow = ctx.createRadialGradient(
       planetX, planetY, planetRadius * 0.85,
       planetX, planetY, planetRadius * 1.25
@@ -220,7 +349,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY, planetRadius * 1.25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw Neptune base - deeper blue colors (less cyan)
     const baseGradient = ctx.createRadialGradient(
       planetX - planetRadius * 0.35, 
       planetY - planetRadius * 0.35, 
@@ -229,7 +357,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
       planetY + planetRadius * 0.1, 
       planetRadius * 1.1
     );
-    // Much deeper blue palette
     baseGradient.addColorStop(0, '#a0c4e8');
     baseGradient.addColorStop(0.15, '#7babd4');
     baseGradient.addColorStop(0.35, '#5088c0');
@@ -243,13 +370,11 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY, planetRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Save for clipped drawing
     ctx.save();
     ctx.beginPath();
     ctx.arc(planetX, planetY, planetRadius, 0, Math.PI * 2);
     ctx.clip();
 
-    // Draw atmospheric bands - more subtle, deeper blues
     const bandColors = [
       { y: -0.7, opacity: 0.12, color: '120, 160, 200' },
       { y: -0.35, opacity: 0.15, color: '90, 140, 190' },
@@ -269,7 +394,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
       ctx.fill();
     });
 
-    // Add depth with subtle inner shadow
     const innerShadow = ctx.createRadialGradient(
       planetX, planetY, planetRadius * 0.3,
       planetX, planetY, planetRadius
@@ -282,8 +406,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY, planetRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Bright polar regions (methane ice clouds) - more intense
-    // North pole
     const northPoleGradient = ctx.createRadialGradient(
       planetX, planetY - planetRadius * 0.72, 0,
       planetX, planetY - planetRadius * 0.72, planetRadius * 0.45
@@ -298,7 +420,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY - planetRadius * 0.72, planetRadius * 0.45, 0, Math.PI * 2);
     ctx.fill();
 
-    // South pole (brighter in JWST images) - enhanced
     const southPoleGradient = ctx.createRadialGradient(
       planetX, planetY + planetRadius * 0.68, 0,
       planetX, planetY + planetRadius * 0.68, planetRadius * 0.4
@@ -312,11 +433,9 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY + planetRadius * 0.68, planetRadius * 0.4, 0, Math.PI * 2);
     ctx.fill();
 
-    // Great Dark Spot - enhanced with more depth
     const spotX = planetX + Math.cos(rotationRef.current.storm) * planetRadius * 0.25;
     const spotY = planetY - planetRadius * 0.15;
     
-    // Spot outer halo
     const spotHalo = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, planetRadius * 0.35);
     spotHalo.addColorStop(0, 'rgba(15, 30, 50, 0)');
     spotHalo.addColorStop(0.5, 'rgba(20, 40, 70, 0.15)');
@@ -326,7 +445,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.ellipse(spotX, spotY, planetRadius * 0.35, planetRadius * 0.2, 0.15, 0, Math.PI * 2);
     ctx.fill();
     
-    // Spot core
     const spotGradient = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, planetRadius * 0.22);
     spotGradient.addColorStop(0, 'rgba(10, 20, 40, 0.6)');
     spotGradient.addColorStop(0.4, 'rgba(20, 35, 60, 0.4)');
@@ -337,7 +455,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.ellipse(spotX, spotY, planetRadius * 0.22, planetRadius * 0.13, 0.15, 0, Math.PI * 2);
     ctx.fill();
 
-    // Small companion storm
     const smallSpotX = spotX + planetRadius * 0.25;
     const smallSpotY = spotY + planetRadius * 0.12;
     const smallSpotGradient = ctx.createRadialGradient(smallSpotX, smallSpotY, 0, smallSpotX, smallSpotY, planetRadius * 0.08);
@@ -348,7 +465,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(smallSpotX, smallSpotY, planetRadius * 0.08, 0, Math.PI * 2);
     ctx.fill();
 
-    // Terminator shadow (day/night) - enhanced gradient
     const terminatorGradient = ctx.createLinearGradient(
       planetX - planetRadius * 1.1, planetY,
       planetX + planetRadius * 0.4, planetY
@@ -363,7 +479,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
     ctx.restore();
 
-    // Atmospheric rim (bright edge) - enhanced glow
     const rimGradient = ctx.createRadialGradient(
       planetX, planetY, planetRadius * 0.88,
       planetX, planetY, planetRadius * 1.08
@@ -378,7 +493,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX, planetY, planetRadius * 1.08, 0, Math.PI * 2);
     ctx.fill();
     
-    // Specular highlight (sun reflection)
     const specularGradient = ctx.createRadialGradient(
       planetX - planetRadius * 0.5, planetY - planetRadius * 0.45, 0,
       planetX - planetRadius * 0.5, planetY - planetRadius * 0.45, planetRadius * 0.35
@@ -391,71 +505,21 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.arc(planetX - planetRadius * 0.5, planetY - planetRadius * 0.45, planetRadius * 0.35, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw front rings (in front of planet) - dimmer
     drawRings(ctx, planetX, planetY, planetRadius, false);
     
-    // Draw Triton in front of Neptune (if on front of orbit)
     if (Math.sin(-tritonAngle) > -0.3) {
       drawTriton(ctx, planetX, planetY, planetRadius, rotationRef.current.triton);
     }
 
-    // Update rotations
     rotationRef.current.planet += 0.0008;
-    rotationRef.current.orbit += 0.001;
+    rotationRef.current.orbit += 0.0005;
     rotationRef.current.storm += 0.0004;
     rotationRef.current.cloud += 0.002;
-    rotationRef.current.triton += 0.003; // Triton orbits faster (5.877 day period)
+    rotationRef.current.triton += 0.003;
 
     return true;
-  }, [drawTriton]);
+  }, [drawTriton, drawRings]);
 
-  // Ring drawing function - much dimmer, subtle
-  const drawRings = useCallback((
-    ctx: CanvasRenderingContext2D, 
-    planetX: number, 
-    planetY: number, 
-    planetRadius: number, 
-    isBack: boolean
-  ) => {
-    const tilt = 0.22; // Ring tilt angle
-    
-    // Ring data - much dimmer opacities
-    const rings = [
-      { inner: 1.68, outer: 1.73, opacity: 0.04, brightness: 0.5 },  // Galle
-      { inner: 2.12, outer: 2.17, opacity: 0.07, brightness: 0.6 },  // Le Verrier
-      { inner: 2.17, outer: 2.38, opacity: 0.02, brightness: 0.3 },  // Lassell (very diffuse)
-      { inner: 2.48, outer: 2.58, opacity: 0.10, brightness: 0.7 },  // Adams (brightest but still dim)
-    ];
-
-    ctx.save();
-    
-    rings.forEach(ring => {
-      const innerRadius = planetRadius * ring.inner;
-      const outerRadius = planetRadius * ring.outer;
-      
-      ctx.beginPath();
-      
-      if (isBack) {
-        ctx.ellipse(planetX, planetY, outerRadius, outerRadius * tilt, 0, 0, Math.PI);
-        ctx.ellipse(planetX, planetY, innerRadius, innerRadius * tilt, 0, Math.PI, 0, true);
-      } else {
-        ctx.ellipse(planetX, planetY, outerRadius, outerRadius * tilt, 0, Math.PI, Math.PI * 2);
-        ctx.ellipse(planetX, planetY, innerRadius, innerRadius * tilt, 0, 0, Math.PI, true);
-      }
-      
-      ctx.closePath();
-      
-      // Dimmer, more blue-gray color
-      const brightness = Math.floor(140 + ring.brightness * 40);
-      const alpha = ring.opacity * (isBack ? 0.5 : 1);
-      ctx.fillStyle = `rgba(${brightness - 20}, ${brightness}, ${brightness + 30}, ${alpha})`;
-      ctx.fill();
-    });
-    
-    ctx.restore();
-  }, []);
-
-  // Canvas setup and animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -506,7 +570,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     };
   }, [drawNeptune]);
 
-  // Update time and weather simulation
   useEffect(() => {
     const updateNeptuneData = () => {
       const now = new Date();
@@ -551,7 +614,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
   return (
     <div className={`neptune-widget ${className}`}>
-      {/* Canvas for Neptune visualization */}
       <div className="relative w-full aspect-[16/9] sm:aspect-[2/1] bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950 rounded-2xl overflow-hidden border border-blue-400/20">
         <canvas
           ref={canvasRef}
@@ -559,12 +621,10 @@ export default function Neptune({ className = '' }: NeptuneProps) {
           style={{ display: 'block' }}
         />
         
-        {/* JWST badge */}
         <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-black/50 backdrop-blur-sm px-2 py-1 rounded text-[9px] sm:text-[10px] text-blue-300/70 font-mono border border-blue-500/20">
-          JWST Style
+          JWST + Voyager 2
         </div>
         
-        {/* Time overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 bg-gradient-to-t from-black/60 to-transparent">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
             <div className="space-y-1">
@@ -575,7 +635,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
                 {neptuneTime}
               </div>
               <div className="text-[10px] sm:text-xs text-blue-400/40">
-                Day Length: {NEPTUNE_DATA.dayLength}h
+                Day Length: {NEPTUNE_DATA.dayLength}h | Orbital Period: {NEPTUNE_DATA.orbitalPeriod} years
               </div>
             </div>
 
@@ -591,7 +651,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
         </div>
       </div>
 
-      {/* Weather Data Grid */}
       <div className="mt-3 sm:mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div className="bg-gradient-to-br from-blue-950/40 to-indigo-950/40 backdrop-blur-sm rounded-xl p-3 border border-blue-500/20">
           <div className="text-[10px] sm:text-xs text-blue-300/60 uppercase tracking-wider mb-1">Wind</div>
@@ -618,7 +677,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
         </div>
       </div>
 
-      {/* Current Conditions */}
       <div className="mt-3 bg-gradient-to-r from-blue-950/30 via-indigo-950/30 to-blue-950/30 backdrop-blur-sm rounded-xl p-3 border border-blue-500/20">
         <div className="flex items-center gap-3">
           <span className="text-xl">🌀</span>
@@ -629,18 +687,17 @@ export default function Neptune({ className = '' }: NeptuneProps) {
         </div>
       </div>
 
-      {/* Scientific Facts */}
       <div className="mt-3 bg-gradient-to-r from-blue-950/20 to-indigo-950/20 backdrop-blur-sm rounded-xl p-3 border border-blue-500/10">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-sm">🔭</span>
-          <span className="text-xs font-semibold text-blue-300">NASA JWST + Voyager 2 Data</span>
+          <span className="text-xs font-semibold text-blue-300">Orbiting at {NEPTUNE_DATA.distanceFromSun} AU from the Sun</span>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-blue-300/70">
-          <div>• Fastest winds: <strong className="text-blue-300">{NEPTUNE_DATA.maxWind} km/h</strong></div>
-          <div>• Year: <strong className="text-blue-300">{NEPTUNE_DATA.yearLength} Earth years</strong></div>
-          <div>• Triton: <strong className="text-blue-300">{NEPTUNE_DATA.triton.temperature}°C</strong> (retrograde orbit)</div>
-          <div>• Blue color: <strong className="text-blue-300">{NEPTUNE_DATA.atmosphere.methane}% methane</strong></div>
+          <div>• Adams ring arcs: <strong className="text-blue-300">5 distinct bright clumps</strong></div>
+          <div>• Ring material: <strong className="text-blue-300">20-70% dust particles</strong></div>
+          <div>• Optical depth: <strong className="text-blue-300">&lt;0.1 (very transparent)</strong></div>
+          <div>• Triton: <strong className="text-blue-300">{NEPTUNE_DATA.triton.temperature}°C</strong> (retrograde)</div>
         </div>
       </div>
     </div>
