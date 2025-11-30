@@ -1,4 +1,4 @@
-﻿\---
+﻿---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Avatar from "../components/Avatar.tsx";
 import TypeWriter from "../components/TypeWriter.tsx";
@@ -55,20 +55,8 @@ if (featuredProjects.length === 0) {
 
 // Stats with consistent styling
 const stats = [
-  { 
-    label: "Years Coding", 
-    value: "6", 
-    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    </svg>` 
-  },
-  { 
-    label: "Projects Built", 
-    value: "50+", 
-    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
-    </svg>` 
-  }
+  { label: "Years Coding", value: "6", icon: "clock" },
+  { label: "Projects Built", value: "50+", icon: "code" }
 ];
 ---
 
@@ -76,8 +64,8 @@ const stats = [
   <!-- Hero Section -->
   <section id="hero-section" class="py-24 bg-primary-bg min-h-[90vh] flex items-center relative overflow-hidden">
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
-      <div class="flex flex-col md:flex-row items-center justify-between">
-        <div class="md:w-2/3 text-center md:text-left mb-12 md:mb-0">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-12">
+        <div class="md:w-2/3 text-center md:text-left">
           <h1 class="text-4xl md:text-6xl font-bold mb-6 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
             <TypeWriter 
               client:load 
@@ -95,11 +83,19 @@ const stats = [
             />
           </h1>
           
-          <!-- Stats -->
+          <!-- Optimized Stats - Removed backdrop-blur -->
           <div class="flex flex-wrap justify-center md:justify-start gap-6 mb-8">
-            {stats.map((stat, i) => (
-              <div class="flex items-center gap-3 p-4 bg-base-100/10 backdrop-blur-sm rounded-lg border border-white/10 min-w-[140px]">
-                <div class="text-primary-accent" set:html={stat.iconSvg}></div>
+            {stats.map((stat) => (
+              <div class="flex items-center gap-3 p-4 bg-base-100/20 rounded-lg border border-white/10 min-w-[140px] hover:border-white/20 transition-colors">
+                {stat.icon === 'clock' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-accent">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-accent">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+                  </svg>
+                )}
                 <div class="text-center">
                   <div class="text-lg font-bold text-primary-accent">{stat.value}</div>
                   <div class="text-xs text-base-content/70">{stat.label}</div>
@@ -110,14 +106,15 @@ const stats = [
         </div>
 
         <div class="md:w-1/3 flex flex-col items-center">
-          <div class="mb-6 p-2 rounded-full border-4 border-primary-accent shadow-2xl bg-gradient-to-br from-primary-accent/20 to-secondary-accent/20 backdrop-blur-sm">
+          <!-- Simplified Avatar Container -->
+          <div class="mb-6 p-2 rounded-full border-4 border-primary-accent shadow-xl bg-primary-accent/10">
             <Avatar client:load />
           </div>
           
-          <!-- CTA Button -->
+          <!-- Optimized CTA Button -->
           <a 
             href="/write-letter"
-            class="px-6 py-3 border-2 border-secondary-accent text-secondary-accent font-bold rounded-xl hover:bg-secondary-accent hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            class="px-6 py-3 border-2 border-secondary-accent text-secondary-accent font-bold rounded-xl hover:bg-secondary-accent hover:text-white transition-colors duration-300 shadow-lg hover:scale-105"
           >
             <span class="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -141,9 +138,10 @@ const stats = [
         </p>
       </div>
       
+      <!-- Optimized Grid -->
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {featuredProjects.map((project, index) => (
-          <div class="bg-base-200/50 backdrop-blur-sm rounded-xl border border-white/10 hover:border-primary-accent/30 transition-all duration-300 overflow-hidden">
+        {featuredProjects.map((project) => (
+          <div class="bg-base-200/60 rounded-xl border border-white/10 hover:border-primary-accent/40 transition-colors duration-300 overflow-hidden">
             <div class="p-6">
               <!-- Stats badges -->
               {(project.stars !== undefined || project.forks !== undefined) && (
@@ -167,7 +165,6 @@ const stats = [
                 </div>
               )}
 
-              <!-- Project title and description -->
               <h3 class="text-xl font-bold text-text-dark-bg mb-2 hover:text-primary-accent transition-colors">
                 {project.title}
               </h3>
@@ -175,7 +172,6 @@ const stats = [
                 {project.description}
               </p>
 
-              <!-- Technology stack -->
               <div class="flex flex-wrap gap-1 mb-4">
                 {project.technologies.slice(0, 3).map((tech) => (
                   <span class="px-2 py-1 bg-base-300/50 text-base-content/70 text-xs rounded-md">
@@ -190,14 +186,13 @@ const stats = [
               </div>
             </div>
 
-            <!-- Action buttons -->
             <div class="px-6 pb-6">
               <div class="flex gap-2">
                 <a 
                   href={project.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-base-300/50 hover:bg-base-300 text-base-content hover:text-primary-accent rounded-lg transition-all text-sm"
+                  class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-base-300/50 hover:bg-base-300 text-base-content hover:text-primary-accent rounded-lg transition-colors text-sm"
                 >
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -210,7 +205,7 @@ const stats = [
                     href={project.liveUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-accent hover:bg-primary-accent/90 text-white rounded-lg transition-all text-sm"
+                    class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-accent hover:bg-primary-accent/90 text-white rounded-lg transition-colors text-sm"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -224,13 +219,12 @@ const stats = [
         ))}
       </div>
 
-      <!-- View all projects link -->
       <div class="text-center mt-12">
         <a 
           href="https://github.com/suichanwa"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-base-200/50 hover:bg-base-200 text-base-content hover:text-primary-accent rounded-lg transition-all border border-white/10 hover:border-primary-accent/30"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-base-200/50 hover:bg-base-200 text-base-content hover:text-primary-accent rounded-lg transition-colors border border-white/10 hover:border-primary-accent/30"
         >
           <span>View All Projects on GitHub</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,3 +250,13 @@ const stats = [
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

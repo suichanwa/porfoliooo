@@ -8,25 +8,17 @@ interface StarryBackgroundProps {
 }
 
 interface Star {
-  id: number;
   x: number;
   y: number;
-  size: number;
+  radius: number;
   opacity: number;
+  baseOpacity: number;
   twinkleSpeed: number;
-  twinkleOffset: number;
+  twinklePhase: number;
   driftX: number;
   driftY: number;
-  color: string;
-}
-
-interface ShootingStar {
-  id: number;
-  startX: number;
-  startY: number;
-  angle: number;
-  duration: number;
-  delay: number;
+  driftSpeed: number;
+  driftPhase: number;
 }
 
 export default function StarryBackground({ 
@@ -40,11 +32,12 @@ export default function StarryBackground({
   const [isClient, setIsClient] = useState(false);
   const [enableNebulae, setEnableNebulae] = useState(true);
   const [neptuneTransitionProgress, setNeptuneTransitionProgress] = useState(0);
-  const [stars, setStars] = useState<Star[]>([]);
-  const [shootingStars, setShootingStars] = useState<ShootingStar[]>([]);
   
-  const containerRef = useRef<HTMLDivElement>(null);
-  const shootingStarTimeoutRef = useRef<number>();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const starsRef = useRef<Star[]>([]);
+  const animationRef = useRef<number>();
+  const lastFrameTime = useRef<number>(0);
+  const isVisible = useRef<boolean>(true);
 
   // Device detection
   const deviceInfo = useMemo(() => {
@@ -64,97 +57,166 @@ export default function StarryBackground({
     setIsClient(true);
   }, []);
 
-  // Generate stars once on mount
-  const generateStars = useCallback(() => {
-    const starCount = deviceInfo.isLowEnd ? 40 : deviceInfo.isMobile ? 80 : 120;
-    const newStars: Star[] = [];
-    
-    const colors = ['#ffffff', '#fff8e7', '#e7f0ff', '#ffe7e7'];
+  // Generate optimized stars
+  const generateStars = useCallback((width: number, height: number) => {
+    const starCount = deviceInfo.isLowEnd ? 30 : deviceInfo.isMobile ? 50 : 80;
+    const stars: Star[] = [];
     
     for (let i = 0; i < starCount; i++) {
-      // Use magnitude-based size distribution (most stars are small)
       const magnitude = Math.random() * 6;
-      const size = magnitude < 2 ? Math.random() * 2 + 2 : 
-                   magnitude < 4 ? Math.random() * 1.5 + 1 : 
-                   Math.random() * 1 + 0.5;
+      const radius = magnitude < 2 ? Math.random() * 1.5 + 1.5 : 
+                     magnitude < 4 ? Math.random() * 1 + 0.8 : 
+                     Math.random() * 0.5 + 0.3;
       
-      newStars.push({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size,
-        opacity: Math.random() * 0.4 + 0.6,
-        twinkleSpeed: Math.random() * 4 + 3,
-        twinkleOffset: Math.random() * 10,
-        driftX: (Math.random() - 0.5) * 0.5, // Subtle drift
-        driftY: (Math.random() - 0.5) * 0.3,
-        color: colors[Math.floor(Math.random() * colors.length)]
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius,
+        opacity: Math.random() * 0.3 + 0.5,
+        baseOpacity: Math.random() * 0.3 + 0.5,
+        twinkleSpeed: Math.random() * 0.0005 + 0.0002,
+        twinklePhase: Math.random() * Math.PI * 2,
+        driftX: (Math.random() - 0.5) * 0.3,
+        driftY: (Math.random() - 0.5) * 0.2,
+        driftSpeed: Math.random() * 0.00008 + 0.00003,
+        driftPhase: Math.random() * Math.PI * 2
       });
     }
     
-    setStars(newStars);
+    starsRef.current = stars;
   }, [deviceInfo.isLowEnd, deviceInfo.isMobile]);
 
-  // Generate stars on mount and window resize
+  // Optimized render function with frame skipping
+  const render = useCallback((timestamp: number) => {
+    if (!canvasRef.current || !isVisible.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+    if (!ctx) return;
+
+    // Target 30 FPS instead of 60 FPS for better performance
+    const targetFPS = deviceInfo.isLowEnd ? 20 : 30;
+    const frameInterval = 1000 / targetFPS;
+    
+    if (timestamp - lastFrameTime.current < frameInterval) {
+      animationRef.current = requestAnimationFrame(render);
+      return;
+    }
+    
+    lastFrameTime.current = timestamp;
+    
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.width / dpr;
+    const height = canvas.height / dpr;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw stars with minimal operations
+    starsRef.current.forEach(star => {
+      // Update twinkle
+      const twinkle = Math.sin(timestamp * star.twinkleSpeed + star.twinklePhase) * 0.3 + 0.7;
+      star.opacity = star.baseOpacity * twinkle;
+      
+      // Update drift
+      const driftOffsetX = Math.sin(timestamp * star.driftSpeed + star.driftPhase) * star.driftX;
+      const driftOffsetY = Math.cos(timestamp * star.driftSpeed + star.driftPhase) * star.driftY;
+      
+      const x = star.x + driftOffsetX;
+      const y = star.y + driftOffsetY;
+      
+      // Draw star (single operation)
+      ctx.globalAlpha = star.opacity;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, star.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    ctx.globalAlpha = 1;
+
+    // Draw constellation lines (if enabled)
+    if (showConstellations && starsRef.current.length > 10) {
+      ctx.strokeStyle = 'rgba(140, 180, 220, 0.15)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      
+      for (let i = 0; i < Math.min(starsRef.current.length, 30); i += 3) {
+        const star1 = starsRef.current[i];
+        const star2 = starsRef.current[i + 3];
+        if (!star2) break;
+        
+        const dx = star2.x - star1.x;
+        const dy = star2.y - star1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < width * 0.15) {
+          ctx.moveTo(star1.x, star1.y);
+          ctx.lineTo(star2.x, star2.y);
+        }
+      }
+      
+      ctx.stroke();
+    }
+
+    animationRef.current = requestAnimationFrame(render);
+  }, [deviceInfo.isLowEnd, showConstellations]);
+
+  // Initialize canvas
   useEffect(() => {
     if (!isClient) return;
-    
-    generateStars();
-    
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const setupCanvas = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, deviceInfo.isLowEnd ? 1 : 1.5);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      
+      const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+      }
+
+      generateStars(width, height);
+    };
+
+    setupCanvas();
+
     let resizeTimeout: number;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = window.setTimeout(generateStars, 300);
+      resizeTimeout = window.setTimeout(setupCanvas, 300);
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(resizeTimeout);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [isClient, generateStars]);
 
-  // Shooting star generator
-  useEffect(() => {
-    if (!isClient || deviceInfo.isLowEnd || deviceInfo.prefersReducedMotion) return;
-    
-    const createShootingStar = () => {
-      const fromRight = Math.random() > 0.5;
-      const newStar: ShootingStar = {
-        id: Date.now() + Math.random(),
-        startX: fromRight ? 110 : -10,
-        startY: Math.random() * 50,
-        angle: fromRight ? 135 : 45,
-        duration: Math.random() * 1.5 + 1.5,
-        delay: 0
-      };
-      
-      setShootingStars(prev => [...prev, newStar]);
-      
-      // Remove after animation completes
-      setTimeout(() => {
-        setShootingStars(prev => prev.filter(s => s.id !== newStar.id));
-      }, (newStar.duration + 0.5) * 1000);
-    };
-    
-    const scheduleNext = () => {
-      const delay = (deviceInfo.isMobile ? 20000 : 15000) + Math.random() * 10000;
-      shootingStarTimeoutRef.current = window.setTimeout(() => {
-        if (Math.random() < 0.5) {
-          createShootingStar();
-        }
-        scheduleNext();
-      }, delay);
-    };
-    
-    scheduleNext();
-    
-    return () => {
-      if (shootingStarTimeoutRef.current) {
-        clearTimeout(shootingStarTimeoutRef.current);
+    // Visibility API to pause when not visible
+    const handleVisibilityChange = () => {
+      isVisible.current = !document.hidden;
+      if (isVisible.current && !animationRef.current) {
+        animationRef.current = requestAnimationFrame(render);
       }
     };
-  }, [isClient, deviceInfo.isMobile, deviceInfo.isLowEnd, deviceInfo.prefersReducedMotion]);
+
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    animationRef.current = requestAnimationFrame(render);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isClient, deviceInfo.isLowEnd, generateStars, render]);
 
   // Neptune transition
   useEffect(() => {
@@ -319,10 +381,10 @@ export default function StarryBackground({
                 
                 <div className="mt-4 pt-3 border-t border-white/10">
                   <p className="text-xs text-white/60 text-center leading-relaxed">
-                    ⚡ GPU Optimized<br/>
-                    🌟 CSS-Powered Stars<br/>
-                    ☄️ Smooth Animations<br/>
-                    💫 Ultra Low Power
+                    ⚡ Ultra Optimized<br/>
+                    🎯 30 FPS Target<br/>
+                    💫 Minimal Redraws<br/>
+                    🔋 Battery Friendly
                   </p>
                 </div>
               </div>
@@ -331,9 +393,7 @@ export default function StarryBackground({
         )}
       </AnimatePresence>
 
-      {/* Starry Background Container */}
       <div 
-        ref={containerRef}
         style={{ 
           position: 'fixed',
           top: 0,
@@ -347,20 +407,18 @@ export default function StarryBackground({
           transition: 'background 0.3s ease-out'
         }}
       >
-        {/* Nebulae */}
         {enableNebulae && (
           <>
             <div style={{
               position: 'absolute',
               top: '20%',
               left: '15%',
-              width: '300px',
-              height: '300px',
+              width: '250px',
+              height: '250px',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(74, 51, 102, 0.15) 0%, transparent 70%)',
-              filter: 'blur(60px)',
-              animation: 'nebulaPulse 8s ease-in-out infinite',
-              willChange: 'opacity'
+              background: 'radial-gradient(circle, rgba(74, 51, 102, 0.08) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+              opacity: 0.6
             }} />
             
             {!deviceInfo.isLowEnd && (
@@ -368,137 +426,29 @@ export default function StarryBackground({
                 position: 'absolute',
                 top: '60%',
                 right: '20%',
-                width: '250px',
-                height: '250px',
+                width: '200px',
+                height: '200px',
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(42, 68, 102, 0.12) 0%, transparent 70%)',
-                filter: 'blur(50px)',
-                animation: 'nebulaPulse 10s ease-in-out infinite 2s',
-                willChange: 'opacity'
+                background: 'radial-gradient(circle, rgba(42, 68, 102, 0.06) 0%, transparent 70%)',
+                filter: 'blur(35px)',
+                opacity: 0.5
               }} />
             )}
           </>
         )}
 
-        {/* Stars with CSS animations */}
-        {stars.map(star => (
-          <div
-            key={star.id}
-            style={{
-              position: 'absolute',
-              left: `${star.x}%`,
-              top: `${star.y}%`,
-              width: `${star.size}px`,
-              height: `${star.size}px`,
-              borderRadius: '50%',
-              backgroundColor: star.color,
-              opacity: star.opacity,
-              boxShadow: `0 0 ${star.size * 2}px ${star.color}`,
-              animation: `twinkle ${star.twinkleSpeed}s ease-in-out infinite ${star.twinkleOffset}s, 
-                         drift ${30 + Math.random() * 20}s ease-in-out infinite ${Math.random() * 10}s`,
-              willChange: 'opacity, transform',
-              transform: 'translate(-50%, -50%)'
-            }}
-          />
-        ))}
-
-        {/* Constellation lines */}
-        {showConstellations && (
-          <svg 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              pointerEvents: 'none'
-            }}
-          >
-            {stars.slice(0, 30).map((star, i) => {
-              if (i % 3 !== 0) return null;
-              const nextStar = stars[i + 3];
-              if (!nextStar) return null;
-              
-              return (
-                <line
-                  key={`line-${i}`}
-                  x1={`${star.x}%`}
-                  y1={`${star.y}%`}
-                  x2={`${nextStar.x}%`}
-                  y2={`${nextStar.y}%`}
-                  stroke="rgba(140, 180, 220, 0.15)"
-                  strokeWidth="0.5"
-                  style={{
-                    animation: 'constellationFade 4s ease-in-out infinite',
-                    animationDelay: `${i * 0.2}s`
-                  }}
-                />
-              );
-            })}
-          </svg>
-        )}
-
-        {/* Shooting Stars */}
-        {shootingStars.map(star => (
-          <div
-            key={star.id}
-            style={{
-              position: 'absolute',
-              left: `${star.startX}%`,
-              top: `${star.startY}%`,
-              width: '3px',
-              height: '3px',
-              borderRadius: '50%',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 0 8px #88bbff, 0 0 4px #ffffff',
-              animation: `shootingStar ${star.duration}s linear forwards`,
-              '--angle': `${star.angle}deg`,
-              willChange: 'transform, opacity'
-            } as React.CSSProperties}
-          />
-        ))}
-
-        {/* CSS Animations */}
-        <style>{`
-          @keyframes twinkle {
-            0%, 100% { opacity: var(--base-opacity, 0.8); }
-            50% { opacity: calc(var(--base-opacity, 0.8) * 0.3); }
-          }
-          
-          @keyframes drift {
-            0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
-            25% { transform: translate(-50%, -50%) translate(3px, -2px); }
-            50% { transform: translate(-50%, -50%) translate(-2px, 3px); }
-            75% { transform: translate(-50%, -50%) translate(2px, 1px); }
-          }
-          
-          @keyframes nebulaPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-          }
-          
-          @keyframes shootingStar {
-            0% {
-              transform: translate(0, 0) rotate(var(--angle));
-              opacity: 0;
-            }
-            10% {
-              opacity: 1;
-            }
-            90% {
-              opacity: 0.8;
-            }
-            100% {
-              transform: translate(-200px, 200px) rotate(var(--angle));
-              opacity: 0;
-            }
-          }
-          
-          @keyframes constellationFade {
-            0%, 100% { opacity: 0.15; }
-            50% { opacity: 0.05; }
-          }
-        `}</style>
+        {/* Canvas for stars */}
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'block'
+          }}
+        />
       </div>
     </>
   );
