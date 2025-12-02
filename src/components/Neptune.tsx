@@ -184,11 +184,6 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     ctx.fillRect(tritonX - tritonRadius, tritonY - tritonRadius, tritonRadius * 2, tritonRadius * 2);
     
     ctx.restore();
-    
-    ctx.fillStyle = 'rgba(200, 210, 230, 0.5)';
-    ctx.font = '9px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText('Triton', tritonX, tritonY + tritonRadius + 12);
   }, []);
 
   const drawRings = useCallback((

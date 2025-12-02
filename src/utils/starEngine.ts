@@ -97,17 +97,14 @@ export const generateStars = (
   const finalIsMobile = isMobile || deviceInfo.isMobile;
   const finalIsLowEnd = isLowEnd || deviceInfo.isLowEnd;
   
-  // Use seeded random for consistent generation
   const rand = createSeededRandom(seed);
   
-  // Adjust star count based on device capabilities
   const totalStars = finalIsLowEnd ? Math.min(count, 60) : 
                      finalIsMobile ? Math.min(count, 100) : 
                      count;
 
   const stars: Star[] = [];
 
-  // Define cluster zones for more realistic distribution
   const clusters = [
     { x: width * 0.25, y: height * 0.3, radius: 150 },
     { x: width * 0.75, y: height * 0.6, radius: 120 },
