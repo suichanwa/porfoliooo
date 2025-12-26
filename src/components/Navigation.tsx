@@ -7,6 +7,7 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [currentPfp, setCurrentPfp] = useState("/images/pfp.jpg");
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  const [bgmProgress, setBgmProgress] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
@@ -24,15 +25,30 @@ export default function Navigation() {
 
     const handlePlay = () => setIsBgmPlaying(true);
     const handlePause = () => setIsBgmPlaying(false);
+    const handleTimeUpdate = () => {
+      if (!audio.duration) {
+        setBgmProgress(0);
+        return;
+      }
+      setBgmProgress(audio.currentTime / audio.duration);
+    };
+    const handleEnded = () => {
+      setIsBgmPlaying(false);
+      setBgmProgress(0);
+    };
 
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
-    audio.addEventListener("ended", handlePause);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleTimeUpdate);
 
     return () => {
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("ended", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleTimeUpdate);
     };
   }, []);
 
@@ -204,7 +220,7 @@ export default function Navigation() {
           </a>
 
           {/* Mini Player */}
-          <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-full border border-base-300/50 bg-base-100/50 backdrop-blur-sm">
+          <div className="hidden md:flex items-center gap-2 h-8 px-2.5 rounded-full border border-base-300/50 bg-base-100/50 backdrop-blur-sm ml-4 relative">
             <button
               type="button"
               onClick={toggleBgm}
@@ -226,9 +242,15 @@ export default function Navigation() {
                 </svg>
               )}
             </button>
-            <span className="text-xs text-base-content/80 max-w-[120px] truncate">
-              BGM.mp3
+            <span className="text-xs text-base-content/80 max-w-[150px] truncate">
+              play a song for yourself
             </span>
+            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-base-300/40 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary-accent/70"
+                style={{ width: `${Math.round(bgmProgress * 100)}%` }}
+              />
+            </div>
             <audio ref={bgmRef} src="/song/BGM.mp3" preload="none" />
           </div>
         </div>
