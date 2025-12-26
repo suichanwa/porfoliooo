@@ -6,11 +6,34 @@ export default function Navigation() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [currentPfp, setCurrentPfp] = useState("/images/pfp.jpg");
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     setActiveHash(window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    const audio = bgmRef.current;
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.volume = 0.5;
+
+    const handlePlay = () => setIsBgmPlaying(true);
+    const handlePause = () => setIsBgmPlaying(false);
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handlePause);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handlePause);
+    };
   }, []);
 
   useEffect(() => {
@@ -47,6 +70,20 @@ export default function Navigation() {
     setCurrentPfp(prev => 
       prev === "/images/pfp.jpg" ? "/images/pfp2.jpg" : "/images/pfp.jpg"
     );
+  };
+
+  const toggleBgm = () => {
+    const audio = bgmRef.current;
+    if (!audio) return;
+
+    if (audio.paused) {
+      audio.play()
+        .then(() => setIsBgmPlaying(true))
+        .catch(() => setIsBgmPlaying(false));
+    } else {
+      audio.pause();
+      setIsBgmPlaying(false);
+    }
   };
 
   // Main navigation items (always visible)
@@ -165,6 +202,35 @@ export default function Navigation() {
           <a href="/" className="hidden sm:block pb-1 hover:opacity-80 transition-opacity">
             <div className="text-xs text-primary-accent">fullstack dev</div>
           </a>
+
+          {/* Mini Player */}
+          <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-full border border-base-300/50 bg-base-100/50 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={toggleBgm}
+              aria-pressed={isBgmPlaying}
+              aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
+              className={`flex items-center justify-center w-7 h-7 rounded-full border border-base-300/60 transition-all ${
+                isBgmPlaying
+                  ? "bg-primary-accent/20 text-primary-accent"
+                  : "bg-base-100/60 text-base-content hover:text-primary-accent"
+              }`}
+            >
+              {isBgmPlaying ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+            <span className="text-xs text-base-content/80 max-w-[120px] truncate">
+              BGM.mp3
+            </span>
+            <audio ref={bgmRef} src="/song/BGM.mp3" preload="none" />
+          </div>
         </div>
 
         {/* Desktop Navigation */}

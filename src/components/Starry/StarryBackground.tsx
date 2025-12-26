@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import AudioPlayButton from "../AudioPlayButton";
 import StarryCanvas from "./StarryCanvas";
 import StarryControlButton from "./StarryControlButton";
 import StarryControlPanel from "./StarryControlPanel";
@@ -45,13 +44,6 @@ export default function StarryBackground({
 
   return (
     <>
-      <AudioPlayButton
-        className={`fixed top-20 left-6 z-[9999] transition-opacity duration-300 ${
-          hideGUI ? "opacity-40" : "opacity-100"
-        }`}
-        src="/song/BGM.mp3"
-      />
-
       <StarryControlButton
         hideGUI={hideGUI}
         isPanelOpen={isPanelOpen}
