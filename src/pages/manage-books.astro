@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 ---
 
 <BaseLayout title="Manage Books | My Portfolio">

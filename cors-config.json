@@ -1,8 +1,8 @@
 [
   {
-    "origin": ["http://localhost:4321", "https://porfoliooo.web.app", "https://porfoliooo.firebaseapp.com"],
-    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "origin": ["*"],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "Accept-Encoding", "X-CSRF-Token"]
+    "responseHeader": ["Content-Type"]
   }
 ]
