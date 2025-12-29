@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { STAR_TYPES, STAR_TYPE_ORDER, type StarType } from "../components/Starry/types/starry.ts";
 import type { DeviceInfo } from "./useDeviceInfo";
 
 interface Star {
@@ -13,7 +14,20 @@ interface Star {
   driftY: number;
   driftSpeed: number;
   driftPhase: number;
+  type: StarType;
 }
+
+const pickStarType = () => {
+  const totalWeight = STAR_TYPE_ORDER.reduce((sum, type) => sum + STAR_TYPES[type].weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const type of STAR_TYPE_ORDER) {
+    roll -= STAR_TYPES[type].weight;
+    if (roll <= 0) return type;
+  }
+  return "standard";
+};
+
+const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 
 interface StarfieldOptions {
   showConstellations: boolean;
@@ -38,26 +52,24 @@ export default function useStarfieldCanvas({
       const stars: Star[] = [];
 
       for (let i = 0; i < starCount; i++) {
-        const magnitude = Math.random() * 6;
-        const radius =
-          magnitude < 2
-            ? Math.random() * 1.5 + 1.5
-            : magnitude < 4
-              ? Math.random() * 1 + 0.8
-              : Math.random() * 0.5 + 0.3;
+        const type = pickStarType();
+        const profile = STAR_TYPES[type];
+        const radius = randomBetween(profile.radiusMin, profile.radiusMax);
+        const baseOpacity = randomBetween(profile.opacityMin, profile.opacityMax);
 
         stars.push({
           x: Math.random() * width,
           y: Math.random() * height,
           radius,
-          opacity: Math.random() * 0.3 + 0.5,
-          baseOpacity: Math.random() * 0.3 + 0.5,
-          twinkleSpeed: Math.random() * 0.0005 + 0.0002,
+          opacity: baseOpacity,
+          baseOpacity,
+          twinkleSpeed: randomBetween(profile.twinkleMin, profile.twinkleMax),
           twinklePhase: Math.random() * Math.PI * 2,
-          driftX: (Math.random() - 0.5) * 0.3,
-          driftY: (Math.random() - 0.5) * 0.2,
-          driftSpeed: Math.random() * 0.00008 + 0.00003,
-          driftPhase: Math.random() * Math.PI * 2
+          driftX: (Math.random() - 0.5) * profile.driftXMax,
+          driftY: (Math.random() - 0.5) * profile.driftYMax,
+          driftSpeed: randomBetween(profile.driftSpeedMin, profile.driftSpeedMax),
+          driftPhase: Math.random() * Math.PI * 2,
+          type
         });
       }
 
