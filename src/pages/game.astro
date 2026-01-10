@@ -1,102 +1,371 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
-import GameCanvas from "../game/GameCanvas.tsx";
 ---
 
-<BaseLayout title="Game | My Portfolio">
-  <section class="py-12 max-w-4xl mx-auto">
-    <div data-scroll class="opacity-0">
-      <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
-        <TypeWriter 
-          client:load 
-          text="90's‐Style 2D Game" 
-          speed={100} 
-          delay={300}
-        />
-      </h1>
-      <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
-    </div>
-    
-    <!-- Development Notice Banner -->
-    <div data-scroll data-scroll-delay="0.05" class="opacity-0 bg-red-900/80 border border-red-500 text-white rounded-lg p-4 mb-6 shadow-lg flex items-center">
-      <div class="flex-shrink-0 mr-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
+<BaseLayout title="Game Arcade | My Portfolio">
+  <section class="arcade-section">
+    <div class="container">
+      <div class="hero-header">
+        <TypeWriter text="Game Arcade" className="hero-title" client:load />
+        <p class="hero-subtitle">
+          Pick a world, press start, and jump into experimental game prototypes
+        </p>
       </div>
-      <div>
-        <p class="font-medium mb-1">Development In Progress</p>
-        <p class="text-sm text-red-100/90">This game is still under active development. Expect bugs, incomplete features, and gameplay adjustments.</p>
+
+      <div class="games-grid">
+        <a class="game-card live" href="/game/mystic-ruins">
+          <div class="card-header ruins-bg">
+            <span class="status-badge live-badge">✦ Live Now</span>
+          </div>
+          <div class="card-content">
+            <h3 class="game-title">Mystic Ruins</h3>
+            <p class="game-description">
+              Turn-based battles, pixel ambiance, and a cursed dungeon crawl
+            </p>
+            <div class="game-tags">
+              <span class="tag">Keyboard</span>
+              <span class="tag">Single Player</span>
+            </div>
+          </div>
+          <div class="card-glow"></div>
+        </a>
+
+        <div class="game-card coming-soon">
+          <div class="card-header neon-bg">
+            <span class="status-badge soon-badge">Coming Soon</span>
+          </div>
+          <div class="card-content">
+            <h3 class="game-title">Neon Drift</h3>
+            <p class="game-description">
+              Time-trial hover racer across a synthwave skyline
+            </p>
+            <div class="game-tags">
+              <span class="tag">Controller</span>
+              <span class="tag">Prototype</span>
+            </div>
+          </div>
+          <div class="card-glow"></div>
+        </div>
+
+        <div class="game-card coming-soon">
+          <div class="card-header sky-bg">
+            <span class="status-badge soon-badge">Coming Soon</span>
+          </div>
+          <div class="card-content">
+            <h3 class="game-title">Skybound Tactics</h3>
+            <p class="game-description">
+              Squad strategy in floating islands with wind-powered weapons
+            </p>
+            <div class="game-tags">
+              <span class="tag">Turn-Based</span>
+              <span class="tag">In Design</span>
+            </div>
+          </div>
+          <div class="card-glow"></div>
+        </div>
       </div>
-    </div>
-    
-    <div data-scroll data-scroll-delay="0.1" class="opacity-0 bg-base-200 p-4 rounded-xl shadow-lg mb-6">
-      <GameCanvas client:only="react" />
-    </div>
-    
-    <div data-scroll data-scroll-delay="0.2" class="opacity-0 text-center mt-6">
-      <p class="mb-4">Use the arrow keys to control the game.</p>
-      <p class="text-secondary-accent font-medium">More game features coming soon!</p>
+
+      <div class="info-note">
+        <p>✨ New game prototypes drop here first. Stay tuned for updates!</p>
+      </div>
     </div>
   </section>
-
-  <script>
-    // Scroll animations for elements with data-scroll attribute
-    document.addEventListener('DOMContentLoaded', () => {
-      const scrollElements = document.querySelectorAll('[data-scroll]');
-      
-      const elementInView = (el, scrollOffset = 0) => {
-        const elementTop = el.getBoundingClientRect().top;
-        return (
-          elementTop <= 
-          (window.innerHeight || document.documentElement.clientHeight) * 0.8
-        );
-      };
-      
-      const displayScrollElement = (element) => {
-        const delay = element.dataset.scrollDelay || 0;
-        setTimeout(() => {
-          element.classList.add('motion-safe:animate-fadeIn');
-          element.style.opacity = 1;
-          element.style.transform = 'translateY(0)';
-        }, delay * 1000);
-      };
-      
-      const hideScrollElement = (element) => {
-        element.style.opacity = 0;
-        element.style.transform = 'translateY(20px)';
-      };
-      
-      const handleScrollAnimation = () => {
-        scrollElements.forEach((el) => {
-          if (elementInView(el, 100)) {
-            displayScrollElement(el);
-          } else {
-            hideScrollElement(el);
-          }
-        });
-      };
-      
-      // Add smooth transition for scroll elements
-      scrollElements.forEach(el => {
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      });
-      
-      window.addEventListener('scroll', () => {
-        handleScrollAnimation();
-      });
-      
-      // Initial check
-      handleScrollAnimation();
-    });
-  </script>
 </BaseLayout>
 
 <style>
-  [data-scroll] {
+  .arcade-section {
+    min-height: 100vh;
+    padding: 8rem 1.5rem 4rem;
+    position: relative;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  :global(.hero-title) {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-dark-bg);
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .game-card {
+    position: relative;
+    background: rgba(var(--primary-bg-rgb), 0.6);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 0.8s ease-out backwards;
+  }
+
+  .game-card:nth-child(1) { animation-delay: 0.1s; }
+  .game-card:nth-child(2) { animation-delay: 0.2s; }
+  .game-card:nth-child(3) { animation-delay: 0.3s; }
+
+  .game-card.live:hover {
+    transform: translateY(-8px);
+    border-color: rgba(var(--primary-accent-rgb), 0.6);
+    box-shadow: 
+      0 20px 60px rgba(var(--primary-accent-rgb), 0.3),
+      0 0 40px rgba(var(--primary-accent-rgb), 0.1);
+  }
+
+  .game-card.coming-soon {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .game-card.coming-soon:hover {
+    transform: translateY(-4px);
+    opacity: 0.8;
+  }
+
+  .card-header {
+    height: 200px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ruins-bg {
+    background: linear-gradient(135deg, 
+      rgba(var(--primary-accent-rgb), 0.3) 0%, 
+      rgba(var(--secondary-accent-rgb), 0.2) 50%, 
+      rgba(var(--primary-bg-rgb), 0.8) 100%
+    );
+  }
+
+  .neon-bg {
+    background: linear-gradient(135deg, 
+      rgba(199, 146, 234, 0.4) 0%, 
+      rgba(255, 111, 225, 0.2) 50%, 
+      rgba(var(--primary-bg-rgb), 0.8) 100%
+    );
+  }
+
+  .sky-bg {
+    background: linear-gradient(135deg, 
+      rgba(94, 159, 255, 0.4) 0%, 
+      rgba(154, 248, 255, 0.2) 50%, 
+      rgba(var(--primary-bg-rgb), 0.8) 100%
+    );
+  }
+
+  .card-header::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.03) 10px,
+      rgba(255, 255, 255, 0.03) 20px
+    );
+    animation: shimmer 20s linear infinite;
+  }
+
+  .status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+  }
+
+  .live-badge {
+    background: rgba(var(--primary-accent-rgb), 0.3);
+    border: 1px solid var(--primary-accent);
+    color: var(--primary-accent);
+    box-shadow: 0 0 20px rgba(var(--primary-accent-rgb), 0.4);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .soon-badge {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(var(--text-dark-bg), 0.8);
+  }
+
+  .card-content {
+    padding: 2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .game-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-dark-bg);
+  }
+
+  .game-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(var(--text-dark-bg), 0.7);
+    margin: 0;
+    flex: 1;
+  }
+
+  .game-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  .tag {
+    padding: 0.4rem 0.8rem;
+    background: rgba(var(--primary-accent-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.3);
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary-accent);
+  }
+
+  .card-glow {
+    position: absolute;
+    inset: 0;
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    background: radial-gradient(
+      circle at center,
+      rgba(var(--primary-accent-rgb), 0.1) 0%,
+      transparent 70%
+    );
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .game-card.live:hover .card-glow {
+    opacity: 1;
+  }
+
+  .info-note {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(var(--primary-accent-rgb), 0.05);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+    border-radius: 15px;
+    animation: fadeInUp 0.8s ease-out 0.4s backwards;
+  }
+
+  .info-note p {
+    margin: 0;
+    color: rgba(var(--text-dark-bg), 0.8);
+    font-size: 0.95rem;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(var(--primary-accent-rgb), 0.4);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(var(--primary-accent-rgb), 0.6);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    100% {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .arcade-section {
+      padding: 6rem 1rem 3rem;
+    }
+
+    .hero-header {
+      margin-bottom: 3rem;
+    }
+
+    .games-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .card-header {
+      height: 150px;
+    }
+
+    .card-content {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .game-card,
+    .hero-header,
+    .info-note,
+    .card-header::before {
+      animation: none;
+    }
+
+    .game-card {
+      transition: none;
+    }
   }
 </style>

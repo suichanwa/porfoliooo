@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import Phaser from 'phaser';
 import { createBattleScene } from './scenes/BattleScene';
-import { GameStateData } from './types/gameTypes';
+import type { GameStateData } from './types/gameTypes';
 import StatusBar from './components/StatusBar';
 import MessageBox from './components/MessageBox';
 import ResultModal from './components/ResultModal';

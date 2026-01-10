@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GameState, EnemyType } from '../constants';
-import { GameStateData } from '../types/gameTypes';
+import { GameState } from '../constants';
+import type { EnemyType } from '../constants';
+import type { GameStateData } from '../types/gameTypes';
 
 // Simple interfaces for the battle scene
 interface BattleSceneDependencies {

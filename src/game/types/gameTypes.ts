@@ -1,4 +1,4 @@
-import { GameState, EnemyType } from '../constants';
+import { GameState } from '../constants';
 
 export interface GameStateData {
   playerHP: number;
