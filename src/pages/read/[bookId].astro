@@ -16,6 +16,13 @@ interface Props {
 }
 
 const { book } = Astro.props;
+
+// Add type definition for window.bookData
+declare global {
+  interface Window {
+    bookData?: Book;
+  }
+}
 ---
 
 <BaseLayout title={`Reading ${book.title} | My Portfolio`}>

@@ -2,29 +2,42 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
 
+// Define types for diary entries
+interface DiaryEntryData {
+  id: string;
+  title: string;
+  date: Date;
+  coverImage?: string;
+  tags: string[];
+  content: string;
+}
+
 // Create a function to import markdown files dynamically
-// This is an async function that will read all markdown files from the directory
-async function importDiaryEntries() {
-  // Use Astro's import.meta.glob to get all markdown files
-  const markdownFiles = import.meta.glob('../content/diary/*.md');
-  const entries = [];
+async function importDiaryEntries(): Promise<DiaryEntryData[]> {
+  const markdownFiles = import.meta.glob<{
+    frontmatter: {
+      title: string;
+      date: string;
+      coverImage?: string;
+      tags?: string[];
+    };
+    compiledContent: () => string;
+  }>('../content/diary/*.md');
+  
+  const entries: DiaryEntryData[] = [];
 
   for (const path in markdownFiles) {
     const module = await markdownFiles[path]();
-    const filename = path.split('/').pop().replace('.md', '');
+    const filename = path.split('/').pop()?.replace('.md', '') || '';
     
     // Extract metadata and content from the markdown file
-    const { frontmatter, Content } = module;
-
-    // Add entry with metadata from frontmatter
     entries.push({
-      id: filename.toLowerCase().replace(/\s+/g, '-'), // Generate ID from filename
-      title: frontmatter.title || "Untitled Entry",
-      date: new Date(frontmatter.date || Date.now()),
-      content: Content, // This is the rendered markdown content component
-      mood: frontmatter.mood || "neutral",
-      coverImage: frontmatter.coverImage,
-      tags: frontmatter.tags || []
+      id: filename,
+      title: module.frontmatter.title || filename,
+      date: new Date(module.frontmatter.date),
+      coverImage: module.frontmatter.coverImage,
+      tags: module.frontmatter.tags || [],
+      content: module.compiledContent()
     });
   }
 
@@ -42,330 +55,231 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
 
 <BaseLayout title="My Diary | My Portfolio">
   <section class="relative py-12 px-4">
-    <!-- Side panel navigation (moved to left side) -->
-    <div class="fixed top-24 left-0 z-20 transition-all duration-300" id="sidebar">
-      <div class="bg-base-200 rounded-r-lg shadow-md overflow-hidden flex">
-        <!-- Collapsed sidebar for mobile (always visible) -->
-        <div class="w-10 md:hidden flex flex-col items-center py-4 bg-secondary-bg">
-          <button id="expand-sidebar" class="mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--primary-accent)">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <div class="writing-mode-vertical text-xs font-medium" style="color: var(--primary-accent)">Diary Entries</div>
-          <div class="mt-4 flex flex-col space-y-3">
-            {diaryEntries.map((entry, index) => (
-              <a 
-                href={`?entry=${entry.id}#${entry.id}`}
-                class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  currentEntryId === entry.id
-                    ? "bg-base-300 hover:bg-base-100"
-                    : "bg-base-300 hover:bg-base-100"
-                }`}
-                style={currentEntryId === entry.id ? 
-                  `background-color: var(--primary-accent); color: var(--base-100);` : 
-                  ``}
-              >
-                {index + 1}
-              </a>
-            ))}
-          </div>
-        </div>
-        
-        <!-- Full sidebar (default on desktop, expandable on mobile) -->
-        <div class="w-64 hidden md:block" id="expanded-sidebar">
-          <div class="bg-secondary-bg py-3 px-4 border-b border-base-300 flex justify-between items-center">
-            <h3 class="font-medium" style="color: var(--primary-accent)">Diary Entries</h3>
-            <button id="collapse-sidebar" class="md:hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--primary-accent)">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-          
-          <div class="max-h-[70vh] overflow-y-auto p-2">
-            <ul class="space-y-1">
-              {diaryEntries.map(entry => (
-                <li>
-                  <a 
-                    href={`?entry=${entry.id}#${entry.id}`} 
-                    class={`block px-3 py-2 rounded-md text-sm transition ${
-                      currentEntryId === entry.id
-                        ? "hover:bg-base-300"
-                        : "hover:bg-base-300"
-                    }`}
-                    style={currentEntryId === entry.id ? 
-                      `background-color: rgba(var(--primary-accent-rgb), 0.2); color: var(--primary-accent);` : 
-                      ``}
-                  >
-                    <div class="font-medium mb-1">{entry.title}</div>
-                    <div class="text-xs opacity-70">{entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div class="flex flex-wrap gap-1 mt-1">
-                        {entry.tags.slice(0, 2).map(tag => (
-                          <span class="text-xs bg-base-300 px-1.5 py-0.5 rounded">{tag}</span>
-                        ))}
-                        {entry.tags.length > 2 && <span class="text-xs">+{entry.tags.length - 2}</span>}
-                      </div>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="max-w-3xl mx-auto md:ml-64">
-      <div data-scroll class="opacity-0 text-center">
-        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
+    <div class="container mx-auto max-w-6xl">
+      <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold mb-4 min-h-[3rem]">
           <TypeWriter 
             client:load 
             text="My Developer Diary" 
-            speed={100} 
-            delay={300}
+            speed={80} 
+            delay={500}
+            className="bg-gradient-to-r from-primary-accent to-secondary-accent bg-clip-text text-transparent"
           />
         </h1>
-        <div class="w-24 h-1 mx-auto mb-8" style="background-color: var(--primary-accent)"></div>
-        
-        <p class="text-base-content/70 mb-12">
-          Personal thoughts, learnings, and reflections on my journey as a developer.
-        </p>
+        <p class="text-base-content/70">Documenting my coding journey and thoughts</p>
       </div>
-      
-      <div data-scroll data-scroll-delay="0.2" class="opacity-0 mt-8">
-        {diaryEntries.map((entry, index) => {
-          const currentEntry = diaryEntries.find(e => e.id === currentEntryId) || diaryEntries[0];
-          return (
-            <div 
-              id={entry.id} 
-              data-entry-index={index}
-              data-entry-id={entry.id}
-              class={`diary-entry-content ${currentEntryId === entry.id ? "" : "hidden"}`}
-            >
-              <article class="diary-entry bg-base-200 rounded-xl shadow-lg overflow-hidden mb-8">
-                {entry.coverImage && (
-                  <div class="w-full h-64 relative">
-                    <img 
-                      src={entry.coverImage} 
-                      alt={`Cover for ${entry.title}`} 
-                      class="w-full h-full object-cover" 
-                    />
-                    <div class="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent"></div>
+
+      <div class="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar - Entry List */}
+        <aside class="lg:w-1/3">
+          <div class="bg-base-200 rounded-xl p-4 sticky top-24">
+            <h2 class="font-bold text-lg mb-4">Recent Entries</h2>
+            <div class="space-y-2 max-h-[60vh] overflow-y-auto">
+              {diaryEntries.map((entry) => (
+                <a
+                  href={`/diary?entry=${entry.id}`}
+                  class={`block p-3 rounded-lg transition-all hover:bg-base-300 ${
+                    entry.id === currentEntryId ? 'bg-primary/20 border-l-4 border-primary' : ''
+                  }`}
+                  data-entry-index={entry.id}
+                >
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="font-medium text-sm flex-1">{entry.title}</h3>
                   </div>
-                )}
-                
-                <div class="p-8">
-                  <div class="flex justify-between items-center mb-4">
-                    <time class="text-sm text-base-content/70">
-                      {entry.date.toLocaleDateString("en-US", { 
-                        weekday: "long", 
-                        month: "long", 
-                        day: "numeric", 
-                        year: "numeric" 
-                      })}
-                    </time>
-                    {entry.mood && (
-                      <div class="text-2xl" title={`Mood: ${entry.mood}`}>
-                        {entry.mood === "happy" ? "😊" :
-                         entry.mood === "creative" ? "💡" :
-                         entry.mood === "reflective" ? "🤔" :
-                         entry.mood === "excited" ? "🤩" :
-                         "😐"}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <h2 class="text-2xl md:text-3xl font-bold mb-6" style="color: var(--primary-accent)">{entry.title}</h2>
-                  
-                  <div class="diary-content text-lg">
-                    <entry.content />
-                  </div>
-                  
-                  {entry.tags && entry.tags.length > 0 && (
-                    <div class="flex flex-wrap gap-2 mt-6 pt-4 border-t border-base-300">
-                      {entry.tags.map(tag => (
-                        <span class="px-3 py-1 bg-base-300 text-sm rounded-full" style="color: var(--secondary-accent)">
-                          #{tag}
+                  <p class="text-xs text-base-content/60">
+                    {entry.date.toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  {entry.tags.length > 0 && (
+                    <div class="flex flex-wrap gap-1 mt-2">
+                      {entry.tags.map((tag: string) => (
+                        <span class="text-xs px-2 py-0.5 bg-primary/10 rounded-full text-primary">
+                          {tag}
                         </span>
                       ))}
                     </div>
                   )}
+                </a>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content - Selected Entry */}
+        <main class="lg:w-2/3">
+          {diaryEntries.map((entry) => (
+            <article
+              class={`diary-entry-content ${entry.id === currentEntryId ? 'block' : 'hidden'}`}
+              data-entry-id={entry.id}
+            >
+              {/* Cover Image */}
+              {entry.coverImage && (
+                <div class="w-full h-64 mb-6 rounded-xl overflow-hidden">
+                  <img 
+                    src={entry.coverImage} 
+                    alt={entry.title}
+                    class="w-full h-full object-cover"
+                  />
                 </div>
-              </article>
-            </div>
-          )
-        })}
+              )}
 
-        {diaryEntries.length === 0 && (
-          <div class="text-center p-12 bg-base-200 rounded-xl">
-            <p class="text-xl text-base-content/70">No diary entries yet. Check back soon!</p>
-          </div>
-        )}
-      </div>
+              {/* Entry Header */}
+              <header class="mb-6">
+                <div class="flex items-center gap-3 mb-3">
+                  <div>
+                    <h1 class="text-3xl font-bold">{entry.title}</h1>
+                    <p class="text-base-content/60">
+                      {entry.date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
 
-      <!-- Add this to your existing diary page, in the blog posts section -->
-      <div class="grid md:grid-cols-2 gap-6 mt-12">
-        <!-- Physics: Motion Card -->
-        <a 
-          href="/diary/motion"
-          class="block bg-gradient-to-br from-blue-950/40 to-indigo-950/40 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-1"
-        >
-          <div class="flex items-start gap-4 mb-4">
-            <div class="bg-blue-500/20 p-3 rounded-lg">
-              <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-md">Physics</span>
-                <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-md">Interactive</span>
-              </div>
-              <h3 class="text-xl font-bold text-blue-300 mb-2">Understanding Motion</h3>
-              <p class="text-base-content/70 text-sm mb-3">
-                An interactive exploration of speed, velocity, and acceleration with live demonstrations
-              </p>
-              <div class="flex items-center gap-3 text-xs text-base-content/50">
-                <span>Today</span>
-                <span>•</span>
-                <span>10 min read</span>
-              </div>
-            </div>
-          </div>
-        </a>
-        
-        <!-- Add more diary entries here -->
+                {/* Tags */}
+                {entry.tags.length > 0 && (
+                  <div class="flex flex-wrap gap-2">
+                    {entry.tags.map((tag: string) => (
+                      <span class="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </header>
+
+              {/* Entry Content */}
+              <div class="diary-content prose prose-invert max-w-none" set:html={entry.content} />
+            </article>
+          ))}
+        </main>
       </div>
     </div>
   </section>
 
   <script>
-    // Animation for the content
+    // Add smooth scroll behavior for entry navigation
     document.addEventListener('DOMContentLoaded', () => {
-      // Sidebar mobile toggle functionality
-      const expandButton = document.getElementById('expand-sidebar');
-      const collapseButton = document.getElementById('collapse-sidebar');
-      const expandedSidebar = document.getElementById('expanded-sidebar');
+      const entryLinks = document.querySelectorAll('[data-entry-index]');
       
-      expandButton?.addEventListener('click', () => {
-        expandedSidebar?.classList.remove('hidden');
-      });
-      
-      collapseButton?.addEventListener('click', () => {
-        if (window.innerWidth < 768) {
-          expandedSidebar?.classList.add('hidden');
-        }
-      });
-      
-      // Handle window resize
-      window.addEventListener('resize', () => {
-        if (window.innerWidth >= 768) {
-          expandedSidebar?.classList.remove('hidden');
-        }
-      });
-
-      const scrollElements = document.querySelectorAll('[data-scroll]');
-      
-      setTimeout(() => {
-        scrollElements.forEach(el => {
-          el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
-        });
-      }, 100);
-      
-      // Add scroll animations for diary entries
-      const entries = document.querySelectorAll('[data-entry-index]');
-      
-      const observerOptions = {
-        root: null,
-        threshold: 0.1,
-        rootMargin: '0px'
-      };
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
+      entryLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const entryId = (link as HTMLElement).getAttribute('data-entry-index');
+          
+          // Hide all entries
+          document.querySelectorAll('.diary-entry-content').forEach((entry) => {
+            (entry as HTMLElement).style.display = 'none';
+          });
+          
+          // Show selected entry with animation
+          const selectedEntry = document.querySelector(`[data-entry-id="${entryId}"]`);
+          if (selectedEntry) {
+            (selectedEntry as HTMLElement).style.display = 'block';
+            (selectedEntry as HTMLElement).style.opacity = '0';
+            (selectedEntry as HTMLElement).style.transform = 'translateY(20px)';
+            
+            requestAnimationFrame(() => {
+              (selectedEntry as HTMLElement).style.transition = 'all 0.3s ease';
+              (selectedEntry as HTMLElement).style.opacity = '1';
+              (selectedEntry as HTMLElement).style.transform = 'translateY(0)';
+            });
           }
+          
+          // Update URL without page reload
+          const url = new URL(window.location.href);
+          url.searchParams.set('entry', entryId || '');
+          window.history.pushState({}, '', url);
         });
-      }, observerOptions);
-      
-      entries.forEach(entry => {
-        observer.observe(entry);
       });
     });
   </script>
 </BaseLayout>
 
 <style is:global>
-  /* Custom styling for markdown content - FIXED VERSION */
+  /* Custom styling for markdown content */
   .diary-content {
-    @apply prose max-w-none;
+    color: var(--text-dark-bg);
   }
   
   .diary-content h1, 
   .diary-content h2, 
   .diary-content h3, 
   .diary-content h4 {
-    @apply font-bold;
     color: var(--primary-accent);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
   }
   
   .diary-content a {
     color: var(--secondary-accent);
+    text-decoration: underline;
   }
   
   .diary-content p {
-    @apply text-base-content;
+    margin-bottom: 1rem;
+    line-height: 1.7;
   }
   
   .diary-content hr {
-    @apply border-base-300;
+    border-color: rgba(var(--primary-accent-rgb), 0.3);
+    margin: 2rem 0;
   }
   
   .diary-content blockquote {
-    @apply bg-base-300/50 py-1 px-4 rounded-r-md italic;
-    border-left: 4px solid rgba(var(--primary-accent-rgb), 0.5);
+    border-left: 4px solid var(--primary-accent);
+    padding-left: 1rem;
+    font-style: italic;
+    color: rgba(var(--text-dark-bg), 0.8);
   }
   
   .diary-content code {
-    @apply bg-base-300 px-1 py-0.5 rounded before:content-none after:content-none;
+    background: rgba(var(--primary-accent-rgb), 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
   }
   
-  /* Code block styling */
   .diary-content pre {
-    @apply bg-base-300 p-4 rounded-md overflow-x-auto border border-base-content/10;
+    background: rgba(var(--primary-bg-rgb), 0.8);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
   }
   
-  /* List styling */
   .diary-content ul li::marker {
     color: var(--primary-accent);
   }
   
   .diary-content ol li::marker {
     color: var(--primary-accent);
-    @apply font-bold;
   }
   
-  /* Image styling */
   .diary-content img {
-    @apply rounded-lg shadow-md mx-auto my-6;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
   }
   
-  /* Table styling */
   .diary-content table {
-    @apply border-collapse my-6 w-full;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
   }
   
   .diary-content th {
-    @apply bg-base-300 p-2 border border-base-content/20;
+    background: rgba(var(--primary-accent-rgb), 0.2);
+    padding: 0.75rem;
+    text-align: left;
   }
   
   .diary-content td {
-    @apply p-2 border border-base-content/10;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(var(--primary-accent-rgb), 0.1);
   }
 </style>
 
@@ -373,12 +287,11 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
   }
   
   [data-entry-index] {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
+    transition: all 0.2s ease;
   }
   
   [data-entry-index].is-visible {
@@ -387,13 +300,18 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
   }
   
   .diary-entry-content {
-    transition: opacity 0.5s ease;
+    animation: fadeIn 0.3s ease;
   }
   
-  .writing-mode-vertical {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    padding: 1rem 0;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>
+
