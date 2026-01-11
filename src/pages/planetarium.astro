@@ -1,0 +1,103 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Planetarium | My Portfolio">
+  <section class="planetarium-section">
+    <div class="container">
+      <div class="hero-header">
+        <h1 class="hero-title">Planetarium</h1>
+        <p class="hero-subtitle">
+          Explore the cosmos from your browser
+        </p>
+      </div>
+
+      <div class="planetarium-content">
+        <p class="text-center text-white/70">
+          Coming soon: An interactive journey through our solar system
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .planetarium-section {
+    min-height: 100vh;
+    padding: 8rem 1.5rem 4rem;
+    position: relative;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .hero-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-dark-bg);
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .planetarium-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: rgba(var(--primary-bg-rgb), 0.6);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    padding: 3rem;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .planetarium-section {
+      padding: 6rem 1rem 3rem;
+    }
+
+    .hero-header {
+      margin-bottom: 3rem;
+    }
+
+    .planetarium-content {
+      padding: 2rem 1rem;
+      min-height: 300px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-header {
+      animation: none;
+    }
+  }
+</style>

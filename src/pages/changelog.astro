@@ -1,0 +1,367 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from 'astro:content';
+
+// Import changelog entries
+const changelogEntries = (await getCollection('changelog')).sort(
+  (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+);
+---
+
+<BaseLayout title="Changelog | My Portfolio">
+  <section class="changelog-section">
+    <div class="container">
+      <div class="hero-header">
+        <h1 class="hero-title">Changelog</h1>
+        <p class="hero-subtitle">
+          Track updates, new features, and improvements to the portfolio
+        </p>
+      </div>
+
+      <div class="timeline">
+        {changelogEntries.map((entry) => (
+          <article class="changelog-entry">
+            <div class="entry-header">
+              <time class="entry-date" datetime={entry.data.date.toISOString()}>
+                {entry.data.date.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </time>
+              <span class={`version-badge ${entry.data.type}`}>
+                {entry.data.version}
+              </span>
+            </div>
+            
+            <h2 class="entry-title">{entry.data.title}</h2>
+            
+            {entry.data.description && (
+              <p class="entry-description">{entry.data.description}</p>
+            )}
+
+            <div class="changes-grid">
+              {entry.data.added && entry.data.added.length > 0 && (
+                <div class="change-category added">
+                  <h3 class="category-title">
+                    <span class="category-icon">✨</span>
+                    Added
+                  </h3>
+                  <ul class="change-list">
+                    {entry.data.added.map((item) => (
+                      <li>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {entry.data.improved && entry.data.improved.length > 0 && (
+                <div class="change-category improved">
+                  <h3 class="category-title">
+                    <span class="category-icon">🚀</span>
+                    Improved
+                  </h3>
+                  <ul class="change-list">
+                    {entry.data.improved.map((item) => (
+                      <li>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {entry.data.fixed && entry.data.fixed.length > 0 && (
+                <div class="change-category fixed">
+                  <h3 class="category-title">
+                    <span class="category-icon">🔧</span>
+                    Fixed
+                  </h3>
+                  <ul class="change-list">
+                    {entry.data.fixed.map((item) => (
+                      <li>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {entry.data.removed && entry.data.removed.length > 0 && (
+                <div class="change-category removed">
+                  <h3 class="category-title">
+                    <span class="category-icon">🗑️</span>
+                    Removed
+                  </h3>
+                  <ul class="change-list">
+                    {entry.data.removed.map((item) => (
+                      <li>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .changelog-section {
+    min-height: 100vh;
+    padding: 8rem 1.5rem 4rem;
+    position: relative;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .hero-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-dark-bg);
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--primary-accent),
+      var(--secondary-accent)
+    );
+    opacity: 0.3;
+  }
+
+  .changelog-entry {
+    position: relative;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    background: rgba(var(--primary-bg-rgb), 0.6);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.2);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.8s ease-out backwards;
+  }
+
+  .changelog-entry::before {
+    content: "";
+    position: absolute;
+    left: -2.5rem;
+    top: 2.5rem;
+    width: 12px;
+    height: 12px;
+    background: var(--primary-accent);
+    border: 3px solid var(--primary-bg);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(var(--primary-accent-rgb), 0.2);
+  }
+
+  .changelog-entry:hover {
+    transform: translateX(8px);
+    border-color: rgba(var(--primary-accent-rgb), 0.4);
+    box-shadow: 0 10px 40px rgba(var(--primary-accent-rgb), 0.15);
+  }
+
+  .entry-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .entry-date {
+    font-size: 0.9rem;
+    color: rgba(var(--text-dark-bg), 0.6);
+    font-weight: 500;
+  }
+
+  .version-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .version-badge.major {
+    background: rgba(var(--primary-accent-rgb), 0.2);
+    border: 1px solid var(--primary-accent);
+    color: var(--primary-accent);
+  }
+
+  .version-badge.minor {
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    border: 1px solid var(--secondary-accent);
+    color: var(--secondary-accent);
+  }
+
+  .version-badge.patch {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(var(--text-dark-bg), 0.8);
+  }
+
+  .entry-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark-bg);
+    margin-bottom: 0.5rem;
+  }
+
+  .entry-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(var(--text-dark-bg), 0.7);
+    margin-bottom: 1.5rem;
+  }
+
+  .changes-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .change-category {
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 3px solid;
+  }
+
+  .change-category.added {
+    background: rgba(52, 211, 153, 0.05);
+    border-left-color: #34d399;
+  }
+
+  .change-category.improved {
+    background: rgba(96, 165, 250, 0.05);
+    border-left-color: #60a5fa;
+  }
+
+  .change-category.fixed {
+    background: rgba(251, 191, 36, 0.05);
+    border-left-color: #fbbf24;
+  }
+
+  .change-category.removed {
+    background: rgba(248, 113, 113, 0.05);
+    border-left-color: #f87171;
+  }
+
+  .category-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-dark-bg);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .category-icon {
+    font-size: 1.1rem;
+  }
+
+  .change-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .change-list li {
+    padding-left: 1.5rem;
+    position: relative;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(var(--text-dark-bg), 0.8);
+  }
+
+  .change-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--primary-accent);
+    font-weight: 600;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .changelog-section {
+      padding: 6rem 1rem 3rem;
+    }
+
+    .timeline {
+      padding-left: 1.5rem;
+    }
+
+    .changelog-entry {
+      padding: 1.5rem;
+    }
+
+    .changelog-entry::before {
+      left: -2rem;
+    }
+
+    .entry-title {
+      font-size: 1.25rem;
+    }
+
+    .changes-grid {
+      gap: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .changelog-entry {
+      animation: none;
+    }
+
+    .changelog-entry:hover {
+      transform: none;
+    }
+  }
+</style>

@@ -174,7 +174,16 @@ declare module 'astro:content' {
 	>;
 
 	type ContentEntryMap = {
-		"diary": {
+		"changelog": {
+"2025-01-01.md": {
+	id: "2025-01-01.md";
+  slug: "2025-01-01";
+  body: string;
+  collection: "changelog";
+  data: InferEntrySchema<"changelog">
+} & { render(): Render[".md"] };
+};
+"diary": {
 "test.md": {
 	id: "test.md";
   slug: "test";
@@ -192,5 +201,5 @@ declare module 'astro:content' {
 
 	type AnyEntryMap = ContentEntryMap & DataEntryMap;
 
-	type ContentConfig = never;
+	type ContentConfig = typeof import("../src/content/config");
 }

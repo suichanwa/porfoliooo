@@ -1,13 +1,14 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import TypeWriter from "../components/TypeWriter.tsx";
+import { backgroundsscroll } from "../game/utils/backgroundsscroll";
+
+const previewBackground = backgroundsscroll();
 ---
 
 <BaseLayout title="Game Arcade | My Portfolio">
   <section class="arcade-section">
     <div class="container">
       <div class="hero-header">
-        <TypeWriter text="Game Arcade" className="hero-title" client:load />
         <p class="hero-subtitle">
           Pick a world, press start, and jump into experimental game prototypes
         </p>
@@ -15,8 +16,8 @@ import TypeWriter from "../components/TypeWriter.tsx";
 
       <div class="games-grid">
         <a class="game-card live" href="/game/mystic-ruins">
-          <div class="card-header ruins-bg">
-            <span class="status-badge live-badge">✦ Live Now</span>
+          <div class="card-header" style={`background-image: url(${previewBackground});`}>
+            <span class="status-badge live-badge">Play Now</span>
           </div>
           <div class="card-content">
             <h3 class="game-title">Mystic Ruins</h3>
@@ -30,40 +31,6 @@ import TypeWriter from "../components/TypeWriter.tsx";
           </div>
           <div class="card-glow"></div>
         </a>
-
-        <div class="game-card coming-soon">
-          <div class="card-header neon-bg">
-            <span class="status-badge soon-badge">Coming Soon</span>
-          </div>
-          <div class="card-content">
-            <h3 class="game-title">Neon Drift</h3>
-            <p class="game-description">
-              Time-trial hover racer across a synthwave skyline
-            </p>
-            <div class="game-tags">
-              <span class="tag">Controller</span>
-              <span class="tag">Prototype</span>
-            </div>
-          </div>
-          <div class="card-glow"></div>
-        </div>
-
-        <div class="game-card coming-soon">
-          <div class="card-header sky-bg">
-            <span class="status-badge soon-badge">Coming Soon</span>
-          </div>
-          <div class="card-content">
-            <h3 class="game-title">Skybound Tactics</h3>
-            <p class="game-description">
-              Squad strategy in floating islands with wind-powered weapons
-            </p>
-            <div class="game-tags">
-              <span class="tag">Turn-Based</span>
-              <span class="tag">In Design</span>
-            </div>
-          </div>
-          <div class="card-glow"></div>
-        </div>
       </div>
 
       <div class="info-note">
@@ -89,16 +56,6 @@ import TypeWriter from "../components/TypeWriter.tsx";
     text-align: center;
     margin-bottom: 4rem;
     animation: fadeInUp 0.8s ease-out;
-  }
-
-  :global(.hero-title) {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1rem;
   }
 
   .hero-subtitle {
@@ -132,8 +89,6 @@ import TypeWriter from "../components/TypeWriter.tsx";
   }
 
   .game-card:nth-child(1) { animation-delay: 0.1s; }
-  .game-card:nth-child(2) { animation-delay: 0.2s; }
-  .game-card:nth-child(3) { animation-delay: 0.3s; }
 
   .game-card.live:hover {
     transform: translateY(-8px);
@@ -141,16 +96,6 @@ import TypeWriter from "../components/TypeWriter.tsx";
     box-shadow: 
       0 20px 60px rgba(var(--primary-accent-rgb), 0.3),
       0 0 40px rgba(var(--primary-accent-rgb), 0.1);
-  }
-
-  .game-card.coming-soon {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .game-card.coming-soon:hover {
-    transform: translateY(-4px);
-    opacity: 0.8;
   }
 
   .card-header {
@@ -161,30 +106,8 @@ import TypeWriter from "../components/TypeWriter.tsx";
     padding: 1.5rem;
     position: relative;
     overflow: hidden;
-  }
-
-  .ruins-bg {
-    background: linear-gradient(135deg, 
-      rgba(var(--primary-accent-rgb), 0.3) 0%, 
-      rgba(var(--secondary-accent-rgb), 0.2) 50%, 
-      rgba(var(--primary-bg-rgb), 0.8) 100%
-    );
-  }
-
-  .neon-bg {
-    background: linear-gradient(135deg, 
-      rgba(199, 146, 234, 0.4) 0%, 
-      rgba(255, 111, 225, 0.2) 50%, 
-      rgba(var(--primary-bg-rgb), 0.8) 100%
-    );
-  }
-
-  .sky-bg {
-    background: linear-gradient(135deg, 
-      rgba(94, 159, 255, 0.4) 0%, 
-      rgba(154, 248, 255, 0.2) 50%, 
-      rgba(var(--primary-bg-rgb), 0.8) 100%
-    );
+    background-size: cover;
+    background-position: center;
   }
 
   .card-header::before {
@@ -217,17 +140,26 @@ import TypeWriter from "../components/TypeWriter.tsx";
   }
 
   .live-badge {
-    background: rgba(var(--primary-accent-rgb), 0.3);
-    border: 1px solid var(--primary-accent);
-    color: var(--primary-accent);
-    box-shadow: 0 0 20px rgba(var(--primary-accent-rgb), 0.4);
-    animation: pulse 2s ease-in-out infinite;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(var(--text-dark-bg), 0.9);
+    opacity: 0.9;
+    box-shadow:
+      0 0 18px rgba(120, 180, 255, 0.25),
+      inset 0 0 10px rgba(255, 255, 255, 0.08);
+    text-transform: none;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+    animation: starPulse 2.8s ease-in-out infinite;
   }
 
-  .soon-badge {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: rgba(var(--text-dark-bg), 0.8);
+  .game-card:hover .live-badge {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:
+      0 0 26px rgba(120, 180, 255, 0.45),
+      inset 0 0 12px rgba(255, 255, 255, 0.12);
   }
 
   .card-content {
@@ -321,6 +253,17 @@ import TypeWriter from "../components/TypeWriter.tsx";
     }
     50% {
       box-shadow: 0 0 30px rgba(var(--primary-accent-rgb), 0.6);
+    }
+  }
+
+  @keyframes starPulse {
+    0%, 100% {
+      opacity: 0.85;
+      transform: translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-1px);
     }
   }
 
