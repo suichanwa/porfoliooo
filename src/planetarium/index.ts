@@ -1,3 +1,17 @@
 export { default as PlanetariumCanvas } from "./PlanetariumCanvas";
 export { default as PlanetariumPage } from "./PlanetariumPage";
+export { default as PlanetariumScene } from "./PlanetariumScene";
 export { default as CameraRig } from "./CameraRig";
+export { PLANETS } from "./data/planets";
+export { PLANET_TEXTURES } from "./data/textures";
+export { usePlanetTexture } from "./hooks/usePlanetTexture";
+export { useFocusTarget } from "./hooks/useFocusTarget";
+export { default as Sun } from "./bodies/Sun";
+export { default as Planet } from "./bodies/Planet";
+export { scalePlanetRadius } from "./utils/scale";
+export { scaleOrbitRadius } from "./utils/scale";
+export { useSimulationTime } from "./hooks/useSimulationTime";
+export { getOrbitPosition } from "./orbits/orbitMath";
+export { default as OrbitPath } from "./orbits/OrbitPath";
+export { default as Labels } from "./ui/Labels";
+export { default as InfoPanel } from "./ui/InfoPanel";

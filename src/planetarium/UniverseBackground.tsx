@@ -75,7 +75,65 @@ function StarLayer({
   );
 }
 
-export default function UniverseBackground() {
+interface UniverseBackgroundProps {
+  isLowEnd?: boolean;
+  prefersReducedMotion?: boolean;
+}
+
+export default function UniverseBackground({
+  isLowEnd = false,
+  prefersReducedMotion = false
+}: UniverseBackgroundProps) {
+  const layers = useMemo(() => {
+    if (isLowEnd || prefersReducedMotion) {
+      return [
+        {
+          count: 420,
+          radius: 240,
+          size: 0.6,
+          opacity: 0.75,
+          baseColor: "#dfe7ff",
+          brightnessJitter: 0.55
+        },
+        {
+          count: 260,
+          radius: 280,
+          size: 0.45,
+          opacity: 0.5,
+          baseColor: "#b6c3d9",
+          brightnessJitter: 0.7
+        }
+      ];
+    }
+
+    return [
+      {
+        count: 900,
+        radius: 260,
+        size: 0.8,
+        opacity: 0.8,
+        baseColor: "#dfe7ff",
+        brightnessJitter: 0.5
+      },
+      {
+        count: 700,
+        radius: 320,
+        size: 0.5,
+        opacity: 0.55,
+        baseColor: "#b6c3d9",
+        brightnessJitter: 0.65
+      },
+      {
+        count: 220,
+        radius: 200,
+        size: 1.4,
+        opacity: 0.15,
+        baseColor: "#6a5a8a",
+        brightnessJitter: 0.4
+      }
+    ];
+  }, [isLowEnd, prefersReducedMotion]);
+
   return (
     <>
       <mesh frustumCulled={false}>
@@ -108,30 +166,17 @@ export default function UniverseBackground() {
         />
       </mesh>
 
-      <StarLayer
-        count={900}
-        radius={260}
-        size={0.8}
-        opacity={0.8}
-        baseColor="#dfe7ff"
-        brightnessJitter={0.5}
-      />
-      <StarLayer
-        count={700}
-        radius={320}
-        size={0.5}
-        opacity={0.55}
-        baseColor="#b6c3d9"
-        brightnessJitter={0.65}
-      />
-      <StarLayer
-        count={220}
-        radius={200}
-        size={1.4}
-        opacity={0.15}
-        baseColor="#6a5a8a"
-        brightnessJitter={0.4}
-      />
+      {layers.map((layer, index) => (
+        <StarLayer
+          key={`${layer.count}-${index}`}
+          count={layer.count}
+          radius={layer.radius}
+          size={layer.size}
+          opacity={layer.opacity}
+          baseColor={layer.baseColor}
+          brightnessJitter={layer.brightnessJitter}
+        />
+      ))}
     </>
   );
 }
