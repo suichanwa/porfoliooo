@@ -187,10 +187,25 @@ const stats = [
             {(project.stars !== undefined || project.forks !== undefined) && (
               <div class="flex gap-4 mt-4 text-sm text-base-content/60">
                 {project.stars !== undefined && (
-                  <span>⭐ {project.stars}</span>
+                  <span class="inline-flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-primary-accent">
+                      <path fill-rule="evenodd" d="M10.788 3.21a.75.75 0 0 1 1.424 0l1.778 5.51 5.791.043a.75.75 0 0 1 .442 1.346l-4.694 3.42 1.694 5.534a.75.75 0 0 1-1.147.84L12 16.897l-4.076 3.006a.75.75 0 0 1-1.147-.84l1.694-5.534-4.694-3.42a.75.75 0 0 1 .442-1.346l5.79-.043 1.78-5.51Z" clip-rule="evenodd" />
+                    </svg>
+                    {project.stars}
+                  </span>
                 )}
                 {project.forks !== undefined && (
-                  <span>🔱 {project.forks}</span>
+                  <span class="inline-flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-secondary-accent">
+                      <circle cx="6" cy="4" r="2"></circle>
+                      <circle cx="18" cy="4" r="2"></circle>
+                      <circle cx="12" cy="20" r="2"></circle>
+                      <path d="M12 18V9"></path>
+                      <path d="M12 9C12 7.343 10.657 6 9 6H6"></path>
+                      <path d="M12 9C12 7.343 13.343 6 15 6H18"></path>
+                    </svg>
+                    {project.forks}
+                  </span>
                 )}
               </div>
             )}
@@ -203,7 +218,12 @@ const stats = [
   <!-- Neptune Widget Section -->
   <section id="neptune-widget" class="py-16 relative overflow-hidden">
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
-      <h2 class="text-3xl font-bold text-center mb-12 text-primary-accent">
+      <h2 class="text-3xl font-bold text-center mb-12 text-primary-accent inline-flex items-center justify-center gap-3 w-full">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-secondary-accent">
+          <circle cx="12" cy="12" r="6"></circle>
+          <path d="M4 12c2.5-2.5 6-4 8-4s5.5 1.5 8 4"></path>
+          <path d="M4 12c2.5 2.5 6 4 8 4s5.5-1.5 8-4"></path>
+        </svg>
         Neptune Widget
       </h2>
       <Neptune client:load />
