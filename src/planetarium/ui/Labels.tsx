@@ -3,6 +3,7 @@ import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Group, Vector3 } from "three";
 import type { PlanetData } from "../data/types";
+import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import { getOrbitPosition } from "../orbits/orbitMath";
 
 interface LabelsProps {
@@ -10,6 +11,8 @@ interface LabelsProps {
   timeRef: React.MutableRefObject<number>;
   showLabels: boolean;
   hoveredRef?: React.MutableRefObject<boolean>;
+  scaleMode: DistanceScaleMode;
+  scaleParams: DistanceScaleParams;
 }
 
 const LABEL_DISTANCE = 22;
@@ -18,18 +21,28 @@ export default function Labels({
   data,
   timeRef,
   showLabels,
-  hoveredRef
+  hoveredRef,
+  scaleMode,
+  scaleParams
 }: LabelsProps) {
   const groupRef = useRef<Group>(null);
   const { camera } = useThree();
   const initialPosition = useMemo(
-    () => (data.orbit ? getOrbitPosition(data.orbit, 0) : new Vector3()),
-    [data.orbit]
+    () =>
+      data.orbit
+        ? getOrbitPosition(data.orbit, 0, scaleMode, scaleParams)
+        : new Vector3(),
+    [data.orbit, scaleMode, scaleParams]
   );
 
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
-    const position = getOrbitPosition(data.orbit, timeRef.current);
+    const position = getOrbitPosition(
+      data.orbit,
+      timeRef.current,
+      scaleMode,
+      scaleParams
+    );
     groupRef.current.position.copy(position);
 
     const distance = camera.position.distanceTo(position);

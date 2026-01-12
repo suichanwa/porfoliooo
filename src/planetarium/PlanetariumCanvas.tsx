@@ -1,5 +1,17 @@
-import type { ReactNode } from "react";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
+import { useEffect, type ReactNode } from "react";
+import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+
+function RendererTuning() {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.2;
+  }, [gl]);
+
+  return null;
+}
 
 interface PlanetariumCanvasProps {
   children?: ReactNode;
@@ -30,6 +42,7 @@ export default function PlanetariumCanvas({
         onPointerMissed={onPointerMissed}
       >
         <color attach="background" args={["#05070d"]} />
+        <RendererTuning />
         {children}
       </Canvas>
     </div>

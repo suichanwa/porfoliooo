@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group, Object3D, Vector3 } from "three";
 import type { PlanetData, PlanetId } from "../data/types";
+import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import Planet from "../bodies/Planet";
 import { getOrbitPosition } from "./orbitMath";
 import Labels from "../ui/Labels";
@@ -13,6 +14,8 @@ interface OrbitingPlanetProps {
   showLabels?: boolean;
   onSelect?: (id: PlanetId | null) => void;
   onObjectRef?: (id: PlanetId, object: Object3D | null) => void;
+  scaleMode: DistanceScaleMode;
+  scaleParams: DistanceScaleParams;
 }
 
 export default function OrbitingPlanet({
@@ -21,18 +24,28 @@ export default function OrbitingPlanet({
   atmosphere = false,
   showLabels = false,
   onSelect,
-  onObjectRef
+  onObjectRef,
+  scaleMode,
+  scaleParams
 }: OrbitingPlanetProps) {
   const groupRef = useRef<Group>(null);
   const hoveredRef = useRef(false);
   const initialPosition = useMemo(
-    () => (data.orbit ? getOrbitPosition(data.orbit, 0) : new Vector3()),
-    [data.orbit]
+    () =>
+      data.orbit
+        ? getOrbitPosition(data.orbit, 0, scaleMode, scaleParams)
+        : new Vector3(),
+    [data.orbit, scaleMode, scaleParams]
   );
 
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
-    const position = getOrbitPosition(data.orbit, timeRef.current);
+    const position = getOrbitPosition(
+      data.orbit,
+      timeRef.current,
+      scaleMode,
+      scaleParams
+    );
     groupRef.current.position.copy(position);
   });
 
@@ -66,6 +79,8 @@ export default function OrbitingPlanet({
           timeRef={timeRef}
           showLabels={showLabels}
           hoveredRef={hoveredRef}
+          scaleMode={scaleMode}
+          scaleParams={scaleParams}
         />
       )}
     </>

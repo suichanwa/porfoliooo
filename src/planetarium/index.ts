@@ -9,9 +9,15 @@ export { useFocusTarget } from "./hooks/useFocusTarget";
 export { default as Sun } from "./bodies/Sun";
 export { default as Planet } from "./bodies/Planet";
 export { scalePlanetRadius } from "./utils/scale";
-export { scaleOrbitRadius } from "./utils/scale";
 export { useSimulationTime } from "./hooks/useSimulationTime";
 export { getOrbitPosition } from "./orbits/orbitMath";
 export { default as OrbitPath } from "./orbits/OrbitPath";
 export { default as Labels } from "./ui/Labels";
-export { default as InfoPanel } from "./ui/InfoPanel";
+export { PLANET_INFO } from "./data/planetInfo";
+export { default as PlanetInfoPanel } from "./ui/PlanetInfoPanel";
+export { default as PlanetPicker } from "./ui/PlanetPicker";
+export {
+  computeRenderOrbitRadius,
+  DEFAULT_DISTANCE_SCALE_MODE,
+  DEFAULT_DISTANCE_SCALE_PARAMS
+} from "./utils/distanceScale";

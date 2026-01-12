@@ -10,6 +10,7 @@ import { PLANETS } from "./data/planets";
 import type { PlanetId } from "./data/types";
 import { useSimulationTime } from "./hooks/useSimulationTime";
 import { useFocusTarget } from "./hooks/useFocusTarget";
+import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
 
 interface PlanetariumSceneProps {
   showOrbits: boolean;
@@ -19,6 +20,9 @@ interface PlanetariumSceneProps {
   onSelect: (id: PlanetId | null) => void;
   isLowEnd?: boolean;
   prefersReducedMotion?: boolean;
+  onFocusChange?: (focused: boolean) => void;
+  distanceScaleMode: DistanceScaleMode;
+  distanceScaleParams: DistanceScaleParams;
 }
 
 export default function PlanetariumScene({
@@ -28,7 +32,10 @@ export default function PlanetariumScene({
   resetSignal,
   onSelect,
   isLowEnd = false,
-  prefersReducedMotion = false
+  prefersReducedMotion = false,
+  onFocusChange,
+  distanceScaleMode,
+  distanceScaleParams
 }: PlanetariumSceneProps) {
   const { timeRef } = useSimulationTime(10);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -62,7 +69,8 @@ export default function PlanetariumScene({
     resetSignal,
     controlsRef,
     planetRefs,
-    planetData: planetDataMap
+    planetData: planetDataMap,
+    onFocusChange
   });
 
   return (
@@ -71,18 +79,14 @@ export default function PlanetariumScene({
         isLowEnd={isLowEnd}
         prefersReducedMotion={prefersReducedMotion}
       />
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={0.08} />
+      <hemisphereLight intensity={0.1} color="#1a2336" groundColor="#000000" />
       <pointLight
         position={[0, 0, 0]}
-        intensity={1.8}
-        distance={160}
+        intensity={2.5}
+        distance={0}
         decay={2}
         color="#f9d27b"
-      />
-      <directionalLight
-        position={[12, 6, 18]}
-        intensity={0.15}
-        color="#9fb8ff"
       />
       <Sun
         meshRef={sunRef}
@@ -97,6 +101,8 @@ export default function PlanetariumScene({
               key={`${planet.id}-orbit`}
               orbit={planet.orbit}
               segments={orbitSegments}
+              scaleMode={distanceScaleMode}
+              scaleParams={distanceScaleParams}
             />
           ) : null
         )}
@@ -111,6 +117,8 @@ export default function PlanetariumScene({
           onObjectRef={(id, object) => {
             planetRefs.current[id] = object;
           }}
+          scaleMode={distanceScaleMode}
+          scaleParams={distanceScaleParams}
         />
       ))}
       <CameraRig controlsRef={controlsRef} />

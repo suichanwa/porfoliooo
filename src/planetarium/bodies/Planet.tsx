@@ -1,6 +1,8 @@
 import { useMemo, useRef, type Ref } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
+  AdditiveBlending,
+  Color,
   Group,
   MathUtils,
   Mesh,
@@ -41,14 +43,34 @@ export default function Planet({
 
   const geometry = useMemo(() => new SphereGeometry(radius, 48, 32), [radius]);
 
+  const glowColor = useMemo(() => {
+    const base = new Color(data.colorFallback);
+    return base.lerp(new Color("#ffffff"), 0.35);
+  }, [data.colorFallback]);
+
+  const glowOpacity = data.type === "dwarf" ? 0.06 : 0.1;
+  const glowScale = data.type === "dwarf" ? 1.08 : 1.06;
+
   const material = useMemo(
     () =>
       new MeshStandardMaterial({
         map: texture,
-        roughness: 0.9,
+        roughness: 0.85,
         metalness: 0
       }),
     [texture]
+  );
+
+  const glowMaterial = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        color: glowColor,
+        transparent: true,
+        opacity: glowOpacity,
+        blending: AdditiveBlending,
+        depthWrite: false
+      }),
+    [glowColor, glowOpacity]
   );
 
   const atmosphereMaterial = useMemo(
@@ -87,8 +109,15 @@ export default function Planet({
           geometry={geometry}
           material={atmosphereMaterial}
           scale={1.035}
+          raycast={() => null}
         />
       )}
+      <mesh
+        geometry={geometry}
+        material={glowMaterial}
+        scale={glowScale}
+        raycast={() => null}
+      />
     </group>
   );
 }

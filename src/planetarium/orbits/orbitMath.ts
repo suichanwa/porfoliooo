@@ -1,6 +1,10 @@
 import { MathUtils, Vector3 } from "three";
 import type { OrbitElements } from "../data/types";
-import { scaleOrbitRadius } from "../utils/scale";
+import {
+  computeRenderOrbitRadius,
+  type DistanceScaleMode,
+  type DistanceScaleParams
+} from "../utils/distanceScale";
 
 const solveKepler = (meanAnomaly: number, eccentricity: number) => {
   let eccentricAnomaly = meanAnomaly;
@@ -13,9 +17,15 @@ const solveKepler = (meanAnomaly: number, eccentricity: number) => {
 
 export const getOrbitPosition = (
   orbit: OrbitElements,
-  timeDays: number
+  timeDays: number,
+  scaleMode: DistanceScaleMode,
+  scaleParams: DistanceScaleParams
 ) => {
-  const semiMajor = scaleOrbitRadius(orbit.semiMajorAxisAU);
+  const semiMajor = computeRenderOrbitRadius(
+    orbit.semiMajorAxisAU,
+    scaleMode,
+    scaleParams
+  );
   const meanAnomaly =
     (timeDays / orbit.orbitalPeriodDays) * Math.PI * 2;
 

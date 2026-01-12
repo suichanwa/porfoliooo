@@ -15,6 +15,7 @@ interface FocusTargetOptions {
   planetRefs: React.MutableRefObject<Record<PlanetId, Object3D | null>>;
   planetData: Record<PlanetId, PlanetData>;
   onDistanceTarget?: (value: number | null) => void;
+  onFocusChange?: (focused: boolean) => void;
 }
 
 export const useFocusTarget = ({
@@ -23,10 +24,12 @@ export const useFocusTarget = ({
   controlsRef,
   planetRefs,
   planetData,
-  onDistanceTarget
+  onDistanceTarget,
+  onFocusChange
 }: FocusTargetOptions) => {
   const resetTokenRef = useRef(resetSignal);
   const isResettingRef = useRef(false);
+  const focusStateRef = useRef(false);
 
   useEffect(() => {
     if (resetSignal !== resetTokenRef.current) {
@@ -44,7 +47,7 @@ export const useFocusTarget = ({
   const minDistanceRef = useRef<number | null>(null);
   const maxDistanceRef = useRef<number | null>(null);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
 
@@ -75,12 +78,20 @@ export const useFocusTarget = ({
       onDistanceTarget?.(null);
       shouldUpdate = true;
     } else {
+      if (focusStateRef.current) {
+        focusStateRef.current = false;
+        onFocusChange?.(false);
+      }
       return;
     }
     if (!shouldUpdate) return;
 
-    camera.position.lerp(desiredPosition, 0.08);
-    controls.target.lerp(target, 0.12);
+    const positionEase = 1 - Math.exp(-delta * 3.5);
+    const targetEase = 1 - Math.exp(-delta * 5);
+
+    camera.up.set(0, 1, 0);
+    camera.position.lerp(desiredPosition, positionEase);
+    controls.target.lerp(target, targetEase);
 
     const minDistance = selectedId
       ? Math.max(scalePlanetRadius(planetData[selectedId].radiusKm) * 3, 1.8)
@@ -106,6 +117,19 @@ export const useFocusTarget = ({
       farRef.current = nextFar;
     }
     controls.update();
+
+    if (selectedId) {
+      const isFocused =
+        camera.position.distanceTo(desiredPosition) < 0.2 &&
+        controls.target.distanceTo(target) < 0.2;
+      if (focusStateRef.current !== isFocused) {
+        focusStateRef.current = isFocused;
+        onFocusChange?.(isFocused);
+      }
+    } else if (focusStateRef.current) {
+      focusStateRef.current = false;
+      onFocusChange?.(false);
+    }
 
     if (isResettingRef.current && camera.position.distanceTo(DEFAULT_POSITION) < 0.2) {
       isResettingRef.current = false;
