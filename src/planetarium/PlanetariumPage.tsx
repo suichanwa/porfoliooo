@@ -23,6 +23,7 @@ export default function PlanetariumPage() {
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
+  const [controlsOpen, setControlsOpen] = useState(true);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
@@ -120,116 +121,135 @@ export default function PlanetariumPage() {
           }}
         />
       </div>
-      <div className="pointer-events-none absolute left-4 top-24 z-20 flex w-full max-w-xs justify-start">
-        <div className="pointer-events-auto flex flex-col gap-4 rounded-2xl border border-white/10 bg-base-100/10 px-4 py-3 text-xs text-white/80 shadow-lg backdrop-blur-sm">
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                Distance scale
-              </span>
-              <select
-                className="select select-sm border-white/10 bg-base-100/10 text-white"
-                value={distanceScaleMode}
-                onChange={(event) =>
-                  setDistanceScaleMode(event.target.value as DistanceScaleMode)
-                }
-              >
-                <option value="power">Power</option>
-                <option value="log">Log</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                Spacing
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={distanceScaleSpacing}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setViewMode("custom");
-                  setSpacingTarget(value);
-                  setDistanceScaleSpacing(value);
-                }}
-                className="range range-xs"
-              />
-            </label>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
-              {distanceScaleMode} - {Math.round(distanceScaleSpacing)}
-            </div>
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/50">
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode("overview");
-                  setSpacingTarget(overviewSpacing);
-                }}
-                className={`rounded-full border px-3 py-1 transition ${
-                  viewMode === "overview"
-                    ? "border-primary-accent text-primary-accent"
-                    : "border-white/10 text-white/60 hover:border-white/30"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode("explore");
-                  setSpacingTarget(exploreSpacing);
-                }}
-                className={`rounded-full border px-3 py-1 transition ${
-                  viewMode === "explore"
-                    ? "border-primary-accent text-primary-accent"
-                    : "border-white/10 text-white/60 hover:border-white/30"
-                }`}
-              >
-                Explore
-              </button>
-            </div>
+      <div className="pointer-events-none absolute left-2 right-2 bottom-20 top-auto z-20 flex w-full max-w-none justify-start sm:left-4 sm:right-auto sm:top-24 sm:bottom-auto sm:max-w-xs">
+        <div className="pointer-events-auto flex w-full flex-col gap-4 rounded-2xl border border-white/10 bg-base-100/10 px-3 py-3 text-[11px] text-white/80 shadow-lg backdrop-blur-sm sm:px-4 sm:text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">
+              Controls
+            </span>
+            <button
+              type="button"
+              onClick={() => setControlsOpen((prev) => !prev)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
+              aria-expanded={controlsOpen}
+            >
+              {controlsOpen ? "Hide" : "Show"}
+            </button>
           </div>
-          <div className="h-px bg-white/10" />
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              className="toggle toggle-sm"
-              checked={showOrbits}
-              onChange={(event) => setShowOrbits(event.target.checked)}
+          <div
+            className={`flex flex-col gap-4 overflow-hidden transition-all duration-300 ${
+              controlsOpen ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+                  Distance scale
+                </span>
+                <select
+                  className="select select-sm border-white/10 bg-base-100/10 text-white"
+                  value={distanceScaleMode}
+                  onChange={(event) =>
+                    setDistanceScaleMode(event.target.value as DistanceScaleMode)
+                  }
+                >
+                  <option value="power">Power</option>
+                  <option value="log">Log</option>
+                  <option value="hybrid">Hybrid</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+                  Spacing
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={distanceScaleSpacing}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setViewMode("custom");
+                    setSpacingTarget(value);
+                    setDistanceScaleSpacing(value);
+                  }}
+                  className="range range-xs"
+                />
+              </label>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                {distanceScaleMode} - {Math.round(distanceScaleSpacing)}
+              </div>
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode("overview");
+                    setSpacingTarget(overviewSpacing);
+                  }}
+                  className={`rounded-full border px-3 py-1 transition ${
+                    viewMode === "overview"
+                      ? "border-primary-accent text-primary-accent"
+                      : "border-white/10 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode("explore");
+                    setSpacingTarget(exploreSpacing);
+                  }}
+                  className={`rounded-full border px-3 py-1 transition ${
+                    viewMode === "explore"
+                      ? "border-primary-accent text-primary-accent"
+                      : "border-white/10 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  Explore
+                </button>
+              </div>
+            </div>
+            <div className="h-px bg-white/10" />
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="toggle toggle-sm"
+                checked={showOrbits}
+                onChange={(event) => setShowOrbits(event.target.checked)}
+              />
+              <span className="tracking-wide">Orbit paths</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="toggle toggle-sm"
+                checked={showLabels}
+                onChange={(event) => setShowLabels(event.target.checked)}
+              />
+              <span className="tracking-wide">Planet labels</span>
+            </label>
+            <div className="h-px bg-white/10" />
+            <PlanetPicker
+              planets={filteredPlanets}
+              query={pickerQuery}
+              selectedId={selectedId}
+              isOpen={pickerOpen}
+              onQueryChange={setPickerQuery}
+              onToggle={() => setPickerOpen((prev) => !prev)}
+              onSelect={(id) => {
+                setSelectedId(id);
+                setIsFocused(false);
+                setPickerOpen(false);
+              }}
+              onOverview={() => {
+                setSelectedId(null);
+                setIsFocused(false);
+                setResetSignal((prev) => prev + 1);
+                setPickerOpen(false);
+              }}
             />
-            <span className="tracking-wide">Orbit paths</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              className="toggle toggle-sm"
-              checked={showLabels}
-              onChange={(event) => setShowLabels(event.target.checked)}
-            />
-            <span className="tracking-wide">Planet labels</span>
-          </label>
-          <div className="h-px bg-white/10" />
-          <PlanetPicker
-            planets={filteredPlanets}
-            query={pickerQuery}
-            selectedId={selectedId}
-            isOpen={pickerOpen}
-            onQueryChange={setPickerQuery}
-            onToggle={() => setPickerOpen((prev) => !prev)}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setIsFocused(false);
-              setPickerOpen(false);
-            }}
-            onOverview={() => {
-              setSelectedId(null);
-              setIsFocused(false);
-              setResetSignal((prev) => prev + 1);
-              setPickerOpen(false);
-            }}
-          />
+          </div>
         </div>
       </div>
       <div className="pointer-events-none absolute bottom-6 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/40">

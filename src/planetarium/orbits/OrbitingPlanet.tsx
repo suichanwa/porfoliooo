@@ -4,6 +4,7 @@ import { Group, Object3D, Vector3 } from "three";
 import type { PlanetData, PlanetId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import Planet from "../bodies/Planet";
+import Pluton from "../planets_render/pluton";
 import { getOrbitPosition } from "./orbitMath";
 import Labels from "../ui/Labels";
 
@@ -56,23 +57,42 @@ export default function OrbitingPlanet({
     };
   }, [data.id, onObjectRef]);
 
+  const isPluto = data.id === "pluto";
+
   return (
     <>
-      <Planet
-        data={data}
-        position={initialPosition}
-        atmosphere={atmosphere}
-        groupRef={groupRef}
-        onPointerOver={() => {
-          hoveredRef.current = true;
-        }}
-        onPointerOut={() => {
-          hoveredRef.current = false;
-        }}
-        onClick={() => {
-          onSelect?.(data.id);
-        }}
-      />
+      {isPluto ? (
+        <Pluton
+          data={data}
+          position={initialPosition}
+          groupRef={groupRef}
+          onPointerOver={() => {
+            hoveredRef.current = true;
+          }}
+          onPointerOut={() => {
+            hoveredRef.current = false;
+          }}
+          onClick={() => {
+            onSelect?.(data.id);
+          }}
+        />
+      ) : (
+        <Planet
+          data={data}
+          position={initialPosition}
+          atmosphere={atmosphere}
+          groupRef={groupRef}
+          onPointerOver={() => {
+            hoveredRef.current = true;
+          }}
+          onPointerOut={() => {
+            hoveredRef.current = false;
+          }}
+          onClick={() => {
+            onSelect?.(data.id);
+          }}
+        />
+      )}
       {showLabels && (
         <Labels
           data={data}
