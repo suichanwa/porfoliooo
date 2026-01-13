@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Perf } from "r3f-perf";
 import { Mesh, Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import UniverseBackground from "./UniverseBackground";
@@ -20,6 +19,7 @@ import {
   type GravitySettings,
   getMassScaleForVisuals
 } from "./gravity/gravityField";
+import PerfOverlay from "./ui/PerfOverlay";
 
 interface PlanetariumSceneProps {
   showOrbits: boolean;
@@ -157,9 +157,7 @@ export default function PlanetariumScene({
           prefersReducedMotion={prefersReducedMotion}
         />
       )}
-      {showPerf && (
-        <Perf position="top-right" minimal className="pointer-events-none" />
-      )}
+      <PerfOverlay enabled={showPerf} />
       {showGrid && (
         <SpacetimeGrid
           bodies={gravityBodies}

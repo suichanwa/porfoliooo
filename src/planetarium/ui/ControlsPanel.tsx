@@ -25,6 +25,8 @@ interface ControlsPanelProps {
   onShowGridChange: (value: boolean) => void;
   showLensing: boolean;
   onShowLensingChange: (value: boolean) => void;
+  showPerf: boolean;
+  onShowPerfChange: (value: boolean) => void;
   planets: PlanetData[];
   pickerQuery: string;
   onPickerQueryChange: (value: string) => void;
@@ -53,6 +55,8 @@ export default function ControlsPanel({
   onShowGridChange,
   showLensing,
   onShowLensingChange,
+  showPerf,
+  onShowPerfChange,
   planets,
   pickerQuery,
   onPickerQueryChange,
@@ -288,6 +292,19 @@ export default function ControlsPanel({
               onChange={(event) => onShowLensingChange(event.target.checked)}
             />
             <span className="tracking-wide">Gravitational lensing</span>
+          </label>
+          <div className="h-px bg-white/10" />
+          <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+            Performance
+          </div>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              className="toggle toggle-sm"
+              checked={showPerf}
+              onChange={(event) => onShowPerfChange(event.target.checked)}
+            />
+            <span className="tracking-wide">Perf graph</span>
           </label>
           <div className="h-px bg-white/10" />
           <PlanetPicker

@@ -33,8 +33,7 @@ export default function PlanetariumPage() {
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
-  const [showPerf, setShowPerf] = useState(true);
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const [showPerf, setShowPerf] = useState(false);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
@@ -120,19 +119,19 @@ export default function PlanetariumPage() {
         showGrid={showGrid}
         showLensing={showLensing}
         selectedId={selectedId}
-          resetSignal={resetSignal}
-          onSelect={(id) => {
-            setSelectedId(id);
-            setIsFocused(false);
-          }}
-          isLowEnd={deviceInfo.isLowEnd}
-          prefersReducedMotion={deviceInfo.prefersReducedMotion}
+        resetSignal={resetSignal}
+        onSelect={(id) => {
+          setSelectedId(id);
+          setIsFocused(false);
+        }}
+        isLowEnd={deviceInfo.isLowEnd}
+        prefersReducedMotion={deviceInfo.prefersReducedMotion}
         onFocusChange={setIsFocused}
         distanceScaleMode={distanceScaleMode}
         distanceScaleParams={distanceScaleParams}
         gravitySettings={gravitySettings}
         debugGravity={debugGravity}
-        showPerf
+        showPerf={showPerf}
       />
       </PlanetariumCanvas>
       <div className="pointer-events-none absolute right-4 top-24 z-20 flex w-full max-w-sm justify-end">
@@ -173,6 +172,8 @@ export default function PlanetariumPage() {
         onShowGridChange={setShowGrid}
         showLensing={showLensing}
         onShowLensingChange={setShowLensing}
+        showPerf={showPerf}
+        onShowPerfChange={setShowPerf}
         planets={filteredPlanets}
         pickerQuery={pickerQuery}
         onPickerQueryChange={setPickerQuery}
