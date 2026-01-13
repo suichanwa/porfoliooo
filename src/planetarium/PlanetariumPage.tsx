@@ -9,6 +9,7 @@ import { PLANET_INFO } from "./data/planetInfo";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
+import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
 import {
   DEFAULT_DISTANCE_SCALE_MODE,
   computeDistanceScaleParams,
@@ -94,6 +95,11 @@ export default function PlanetariumPage() {
     frame = window.requestAnimationFrame(animate);
     return () => window.cancelAnimationFrame(frame);
   }, [spacingTarget]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    preloadPlanetTextures(PLANETS.map((planet) => planet.textureUrl));
+  }, [isClient]);
 
   useEffect(() => {
     if (!isClient) return;
