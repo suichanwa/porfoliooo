@@ -39,6 +39,24 @@ interface ControlsPanelProps {
 
 const DEFAULT_POSITION = { x: 16, y: 96 };
 
+const useMediaQuery = (query: string) => {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [query]);
+
+  return matches;
+};
+
 export default function ControlsPanel({
   distanceScaleMode,
   onDistanceScaleModeChange,
@@ -68,6 +86,7 @@ export default function ControlsPanel({
 }: ControlsPanelProps) {
   const [controlsOpen, setControlsOpen] = useState(true);
   const [position, setPosition] = useState(DEFAULT_POSITION);
+  const isMobile = useMediaQuery("(max-width: 639px)");
   const panelRef = useRef<HTMLDivElement | null>(null);
   const isPositionedRef = useRef(false);
   const dragStateRef = useRef({
@@ -93,26 +112,22 @@ export default function ControlsPanel({
   }, []);
 
   useEffect(() => {
-    if (isPositionedRef.current || !panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    const isMobile = window.innerWidth < 640;
-    const initialX = isMobile ? 8 : DEFAULT_POSITION.x;
-    const initialY = isMobile
-      ? window.innerHeight - rect.height - 96
-      : DEFAULT_POSITION.y;
-    setPosition(clampPosition(initialX, initialY));
+    if (isMobile || isPositionedRef.current || !panelRef.current) return;
+    setPosition(clampPosition(DEFAULT_POSITION.x, DEFAULT_POSITION.y));
     isPositionedRef.current = true;
-  }, [clampPosition]);
+  }, [clampPosition, isMobile]);
 
   useEffect(() => {
+    if (isMobile) return;
     const handleResize = () => {
       setPosition((current) => clampPosition(current.x, current.y));
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [clampPosition]);
+  }, [clampPosition, isMobile]);
 
   useEffect(() => {
+    if (isMobile) return;
     const handlePointerMove = (event: PointerEvent) => {
       const state = dragStateRef.current;
       if (!state.active || state.pointerId !== event.pointerId) return;
@@ -135,10 +150,11 @@ export default function ControlsPanel({
       window.removeEventListener("pointerup", stopDrag);
       window.removeEventListener("pointercancel", stopDrag);
     };
-  }, [clampPosition]);
+  }, [clampPosition, isMobile]);
 
   const handleDragStart = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (isMobile) return;
       if (event.button !== 0 && event.pointerType === "mouse") return;
       event.preventDefault();
       const next = clampPosition(position.x, position.y);
@@ -152,7 +168,7 @@ export default function ControlsPanel({
       };
       event.currentTarget.setPointerCapture?.(event.pointerId);
     },
-    [clampPosition, position]
+    [clampPosition, isMobile, position]
   );
 
   return (
@@ -160,7 +176,11 @@ export default function ControlsPanel({
       ref={panelRef}
       className="pointer-events-auto fixed z-20"
       style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
+        left: isMobile ? 8 : undefined,
+        bottom: isMobile ? 96 : undefined,
+        right: isMobile ? "auto" : undefined,
+        top: isMobile ? "auto" : undefined,
         width: "min(92vw, 20rem)"
       }}
     >

@@ -218,6 +218,3 @@ export default function PlanetariumPage() {
     </div>
   );
 }
-
-
-

@@ -1,6 +1,7 @@
 import { useMemo, useRef, type Ref } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
+  Color,
   CanvasTexture,
   DataTexture,
   Group,
@@ -231,7 +232,10 @@ export default function Pluton({
       new MeshStandardMaterial({
         map: texture,
         roughness: 0.95,
-        metalness: 0
+        metalness: 0,
+        emissive: new Color("#f3d4a6"),
+        emissiveIntensity: 0.08,
+        emissiveMap: texture
       }),
     [texture]
   );

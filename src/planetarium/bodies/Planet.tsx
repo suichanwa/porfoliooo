@@ -1,6 +1,7 @@
 import { useMemo, useRef, type Ref } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
+  Color,
   Group,
   MathUtils,
   Mesh,
@@ -46,9 +47,12 @@ export default function Planet({
       new MeshStandardMaterial({
         map: texture,
         roughness: 0.85,
-        metalness: 0
+        metalness: 0,
+        emissive: new Color("#f3d4a6"),
+        emissiveIntensity: data.type === "dwarf" ? 0.08 : 0.12,
+        emissiveMap: texture
       }),
-    [texture]
+    [data.type, texture]
   );
 
   const atmosphereMaterial = useMemo(
