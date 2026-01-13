@@ -7,22 +7,33 @@ import useIsClient from "../hooks/useIsClient";
 import { PLANETS } from "./data/planets";
 import { PLANET_INFO } from "./data/planetInfo";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
-import PlanetPicker from "./ui/PlanetPicker";
+import ControlsPanel from "./ui/ControlsPanel";
+import GravityPanel from "./ui/GravityPanel";
 import {
   DEFAULT_DISTANCE_SCALE_MODE,
   computeDistanceScaleParams,
   computeRenderOrbitRadius,
   type DistanceScaleMode
 } from "./utils/distanceScale";
+import {
+  DEFAULT_GRAVITY_SETTINGS,
+  type GravitySettings
+} from "./gravity/gravityField";
 
 export default function PlanetariumPage() {
   const [showOrbits, setShowOrbits] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [showLensing, setShowLensing] = useState(false);
+  const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
+    DEFAULT_GRAVITY_SETTINGS
+  );
   const [selectedId, setSelectedId] = useState<PlanetId | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
+  const [showPerf, setShowPerf] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(true);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
@@ -34,6 +45,7 @@ export default function PlanetariumPage() {
   );
   const [distanceScaleSpacing, setDistanceScaleSpacing] = useState(overviewSpacing);
   const [spacingTarget, setSpacingTarget] = useState(overviewSpacing);
+  const [debugGravity, setDebugGravity] = useState(false);
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
   const canvasDpr = deviceInfo.isLowEnd ? 1 : 1.5;
@@ -84,6 +96,15 @@ export default function PlanetariumPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [spacingTarget]);
 
+  useEffect(() => {
+    if (!isClient) return;
+    const params = new URLSearchParams(window.location.search);
+    setDebugGravity(params.get("debugGravity") === "1");
+    if (params.has("perf")) {
+      setShowPerf(params.get("perf") === "1");
+    }
+  }, [isClient]);
+
   return (
     <div className="relative min-h-screen">
       <PlanetariumCanvas
@@ -93,10 +114,12 @@ export default function PlanetariumPage() {
           setIsFocused(false);
         }}
       >
-        <PlanetariumScene
-          showOrbits={showOrbits}
-          showLabels={showLabels}
-          selectedId={selectedId}
+      <PlanetariumScene
+        showOrbits={showOrbits}
+        showLabels={showLabels}
+        showGrid={showGrid}
+        showLensing={showLensing}
+        selectedId={selectedId}
           resetSignal={resetSignal}
           onSelect={(id) => {
             setSelectedId(id);
@@ -104,10 +127,13 @@ export default function PlanetariumPage() {
           }}
           isLowEnd={deviceInfo.isLowEnd}
           prefersReducedMotion={deviceInfo.prefersReducedMotion}
-          onFocusChange={setIsFocused}
-          distanceScaleMode={distanceScaleMode}
-          distanceScaleParams={distanceScaleParams}
-        />
+        onFocusChange={setIsFocused}
+        distanceScaleMode={distanceScaleMode}
+        distanceScaleParams={distanceScaleParams}
+        gravitySettings={gravitySettings}
+        debugGravity={debugGravity}
+        showPerf
+      />
       </PlanetariumCanvas>
       <div className="pointer-events-none absolute right-4 top-24 z-20 flex w-full max-w-sm justify-end">
         <PlanetInfoPanel
@@ -121,140 +147,67 @@ export default function PlanetariumPage() {
           }}
         />
       </div>
-      <div className="pointer-events-none absolute left-2 right-2 bottom-20 top-auto z-20 flex w-full max-w-none justify-start sm:left-4 sm:right-auto sm:top-24 sm:bottom-auto sm:max-w-xs">
-        <div className="pointer-events-auto flex w-full flex-col gap-4 rounded-2xl border border-white/10 bg-base-100/10 px-3 py-3 text-[11px] text-white/80 shadow-lg backdrop-blur-sm sm:px-4 sm:text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">
-              Controls
-            </span>
-            <button
-              type="button"
-              onClick={() => setControlsOpen((prev) => !prev)}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
-              aria-expanded={controlsOpen}
-            >
-              {controlsOpen ? "Hide" : "Show"}
-            </button>
-          </div>
-          <div
-            className={`flex flex-col gap-4 overflow-hidden transition-all duration-300 ${
-              controlsOpen ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
-            }`}
-          >
-            <div className="flex flex-col gap-3">
-              <label className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                  Distance scale
-                </span>
-                <select
-                  className="select select-sm border-white/10 bg-base-100/10 text-white"
-                  value={distanceScaleMode}
-                  onChange={(event) =>
-                    setDistanceScaleMode(event.target.value as DistanceScaleMode)
-                  }
-                >
-                  <option value="power">Power</option>
-                  <option value="log">Log</option>
-                  <option value="hybrid">Hybrid</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                  Spacing
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={distanceScaleSpacing}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setViewMode("custom");
-                    setSpacingTarget(value);
-                    setDistanceScaleSpacing(value);
-                  }}
-                  className="range range-xs"
-                />
-              </label>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
-                {distanceScaleMode} - {Math.round(distanceScaleSpacing)}
-              </div>
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewMode("overview");
-                    setSpacingTarget(overviewSpacing);
-                  }}
-                  className={`rounded-full border px-3 py-1 transition ${
-                    viewMode === "overview"
-                      ? "border-primary-accent text-primary-accent"
-                      : "border-white/10 text-white/60 hover:border-white/30"
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewMode("explore");
-                    setSpacingTarget(exploreSpacing);
-                  }}
-                  className={`rounded-full border px-3 py-1 transition ${
-                    viewMode === "explore"
-                      ? "border-primary-accent text-primary-accent"
-                      : "border-white/10 text-white/60 hover:border-white/30"
-                  }`}
-                >
-                  Explore
-                </button>
-              </div>
-            </div>
-            <div className="h-px bg-white/10" />
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                className="toggle toggle-sm"
-                checked={showOrbits}
-                onChange={(event) => setShowOrbits(event.target.checked)}
-              />
-              <span className="tracking-wide">Orbit paths</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                className="toggle toggle-sm"
-                checked={showLabels}
-                onChange={(event) => setShowLabels(event.target.checked)}
-              />
-              <span className="tracking-wide">Planet labels</span>
-            </label>
-            <div className="h-px bg-white/10" />
-            <PlanetPicker
-              planets={filteredPlanets}
-              query={pickerQuery}
-              selectedId={selectedId}
-              isOpen={pickerOpen}
-              onQueryChange={setPickerQuery}
-              onToggle={() => setPickerOpen((prev) => !prev)}
-              onSelect={(id) => {
-                setSelectedId(id);
-                setIsFocused(false);
-                setPickerOpen(false);
-              }}
-              onOverview={() => {
-                setSelectedId(null);
-                setIsFocused(false);
-                setResetSignal((prev) => prev + 1);
-                setPickerOpen(false);
-              }}
-            />
-          </div>
+      <ControlsPanel
+        distanceScaleMode={distanceScaleMode}
+        onDistanceScaleModeChange={setDistanceScaleMode}
+        distanceScaleSpacing={distanceScaleSpacing}
+        onSpacingChange={(value) => {
+          setViewMode("custom");
+          setSpacingTarget(value);
+          setDistanceScaleSpacing(value);
+        }}
+        viewMode={viewMode}
+        onSetOverview={() => {
+          setViewMode("overview");
+          setSpacingTarget(overviewSpacing);
+        }}
+        onSetExplore={() => {
+          setViewMode("explore");
+          setSpacingTarget(exploreSpacing);
+        }}
+        showOrbits={showOrbits}
+        onShowOrbitsChange={setShowOrbits}
+        showLabels={showLabels}
+        onShowLabelsChange={setShowLabels}
+        showGrid={showGrid}
+        onShowGridChange={setShowGrid}
+        showLensing={showLensing}
+        onShowLensingChange={setShowLensing}
+        planets={filteredPlanets}
+        pickerQuery={pickerQuery}
+        onPickerQueryChange={setPickerQuery}
+        pickerOpen={pickerOpen}
+        onPickerToggle={() => setPickerOpen((prev) => !prev)}
+        selectedId={selectedId}
+        onSelectPlanet={(id) => {
+          setSelectedId(id);
+          setIsFocused(false);
+          setPickerOpen(false);
+        }}
+        onOverview={() => {
+          setSelectedId(null);
+          setIsFocused(false);
+          setResetSignal((prev) => prev + 1);
+          setPickerOpen(false);
+        }}
+      />
+      <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">
+        <GravityPanel settings={gravitySettings} onChange={setGravitySettings} />
+      </div>
+      <div className="pointer-events-none absolute bottom-6 left-4 z-20 flex flex-col gap-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
+        <div>
+          {distanceScaleMode} scale - 1 AU ~{" "}
+          {computeRenderOrbitRadius(1, distanceScaleMode, distanceScaleParams).toFixed(2)} units
+        </div>
+        <div>
+          Quality: DPR {canvasDpr.toFixed(2)} - Post {showLensing ? "On" : "Off"}
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-6 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/40">
-        {distanceScaleMode} scale - 1 AU ~ {computeRenderOrbitRadius(1, distanceScaleMode, distanceScaleParams).toFixed(2)} units
-      </div>
+      {debugGravity && (
+        <div className="pointer-events-none absolute bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
+          Gravity debug
+        </div>
+      )}
     </div>
   );
 }

@@ -57,11 +57,11 @@ export default function OrbitingPlanet({
     };
   }, [data.id, onObjectRef]);
 
-  const isPluto = data.id === "pluto";
+  const usePlutoFallback = data.id === "pluto" && !data.textureUrl;
 
   return (
     <>
-      {isPluto ? (
+      {usePlutoFallback ? (
         <Pluton
           data={data}
           position={initialPosition}

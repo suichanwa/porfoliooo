@@ -94,7 +94,7 @@ export const useFocusTarget = ({
     controls.target.lerp(target, targetEase);
 
     const minDistance = selectedId
-      ? Math.max(scalePlanetRadius(planetData[selectedId].radiusKm) * 3, 1.8)
+      ? Math.max(scalePlanetRadius(planetData[selectedId].radiusKm) * 1.2, 0.4)
       : 8;
     const maxDistance = selectedId ? Math.max(minDistance * 10, 70) : 140;
 

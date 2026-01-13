@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Mesh, Object3D } from "three";
+import { useFrame } from "@react-three/fiber";
+import { Perf } from "r3f-perf";
+import { Mesh, Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import UniverseBackground from "./UniverseBackground";
 import CameraRig from "./CameraRig";
@@ -11,10 +13,19 @@ import type { PlanetId } from "./data/types";
 import { useSimulationTime } from "./hooks/useSimulationTime";
 import { useFocusTarget } from "./hooks/useFocusTarget";
 import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
+import SpacetimeGrid from "./gravity/SpacetimeGrid";
+import BackgroundPass from "./gravity/BackgroundPass";
+import {
+  DEFAULT_MASS_SCALE_PARAMS,
+  type GravitySettings,
+  getMassScaleForVisuals
+} from "./gravity/gravityField";
 
 interface PlanetariumSceneProps {
   showOrbits: boolean;
   showLabels: boolean;
+  showGrid: boolean;
+  showLensing: boolean;
   selectedId: PlanetId | null;
   resetSignal: number;
   onSelect: (id: PlanetId | null) => void;
@@ -23,11 +34,16 @@ interface PlanetariumSceneProps {
   onFocusChange?: (focused: boolean) => void;
   distanceScaleMode: DistanceScaleMode;
   distanceScaleParams: DistanceScaleParams;
+  gravitySettings: GravitySettings;
+  debugGravity?: boolean;
+  showPerf?: boolean;
 }
 
 export default function PlanetariumScene({
   showOrbits,
   showLabels,
+  showGrid,
+  showLensing,
   selectedId,
   resetSignal,
   onSelect,
@@ -35,7 +51,10 @@ export default function PlanetariumScene({
   prefersReducedMotion = false,
   onFocusChange,
   distanceScaleMode,
-  distanceScaleParams
+  distanceScaleParams,
+  gravitySettings,
+  debugGravity = false,
+  showPerf = true
 }: PlanetariumSceneProps) {
   const { timeRef } = useSimulationTime(10);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -59,10 +78,53 @@ export default function PlanetariumScene({
   }, []);
   const orbitingPlanets = PLANETS.filter((planet) => planet.id !== "sun");
   const orbitSegments = isLowEnd ? 120 : 180;
+  const gridDivisions = isLowEnd ? 120 : 200;
+  const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
+  const lensingSoftening = gravitySettings.softening * 0.03;
+  const perfSampleRef = useRef({ elapsed: 0, frames: 0, logged: false });
+  const gravityBodies = useMemo(
+    () =>
+      PLANETS.map((planet) => ({
+        id: planet.id,
+        massKg: planet.massKg,
+        radiusKm: planet.radiusKm,
+        visualMass: getMassScaleForVisuals(
+          planet.massKg,
+          DEFAULT_MASS_SCALE_PARAMS
+        ),
+        position: new Vector3()
+      })),
+    []
+  );
 
   useEffect(() => {
     planetRefs.current.sun = sunRef.current;
   }, []);
+
+  useEffect(() => {
+    perfSampleRef.current = { elapsed: 0, frames: 0, logged: false };
+  }, [showPerf]);
+
+  useFrame(() => {
+    if (!showGrid && !showLensing) return;
+    gravityBodies.forEach((body) => {
+      const object = planetRefs.current[body.id];
+      if (object) {
+        object.getWorldPosition(body.position);
+      }
+    });
+  });
+
+  useFrame((_, delta) => {
+    if (!showPerf || perfSampleRef.current.logged) return;
+    perfSampleRef.current.elapsed += delta;
+    perfSampleRef.current.frames += 1;
+    if (perfSampleRef.current.elapsed >= 3) {
+      const fps = perfSampleRef.current.frames / perfSampleRef.current.elapsed;
+      console.info(`[Planetarium] baseline fps: ${fps.toFixed(1)}`);
+      perfSampleRef.current.logged = true;
+    }
+  });
 
   useFocusTarget({
     selectedId,
@@ -75,10 +137,39 @@ export default function PlanetariumScene({
 
   return (
     <>
-      <UniverseBackground
-        isLowEnd={isLowEnd}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      {showLensing ? (
+        <BackgroundPass
+          bodies={gravityBodies}
+          strength={gravitySettings.lensingStrength}
+          softening={lensingSoftening}
+          maxInfluence={gravitySettings.maxInfluence}
+          resolutionScale={lensingScale}
+          debug={debugGravity}
+        >
+          <UniverseBackground
+            isLowEnd={isLowEnd}
+            prefersReducedMotion={prefersReducedMotion}
+          />
+        </BackgroundPass>
+      ) : (
+        <UniverseBackground
+          isLowEnd={isLowEnd}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      )}
+      {showPerf && (
+        <Perf position="top-right" minimal className="pointer-events-none" />
+      )}
+      {showGrid && (
+        <SpacetimeGrid
+          bodies={gravityBodies}
+          divisions={gridDivisions}
+          strength={gravitySettings.gridStrength}
+          softening={gravitySettings.softening}
+          maxInfluence={gravitySettings.maxInfluence}
+          debug={debugGravity}
+        />
+      )}
       <ambientLight intensity={0.08} />
       <hemisphereLight intensity={0.1} color="#1a2336" groundColor="#000000" />
       <pointLight
@@ -121,7 +212,7 @@ export default function PlanetariumScene({
           scaleParams={distanceScaleParams}
         />
       ))}
-      <CameraRig controlsRef={controlsRef} />
+      <CameraRig controlsRef={controlsRef} isInspecting={Boolean(selectedId)} />
     </>
   );
 }

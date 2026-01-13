@@ -12,6 +12,7 @@ import uranusTexture from "../../assets/planetarium/2k_uranus.jpg";
 import neptuneTexture from "../../assets/planetarium/2k_neptune.jpg";
 import ceresTexture from "../../assets/planetarium/2k_ceres_fictional.jpg";
 import starfieldTexture from "../../assets/planetarium/2k_stars.jpg";
+import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 
 type TextureAsset = string | { src: string };
 
@@ -31,7 +32,7 @@ export const PLANET_TEXTURES: Record<PlanetId, string | null> = {
   uranus: toUrl(uranusTexture),
   neptune: toUrl(neptuneTexture),
   ceres: toUrl(ceresTexture),
-  pluto: null
+  pluto: toUrl(plutoTexture)
 };
 
 export const VENUS_ATMOSPHERE_TEXTURE = toUrl(venusAtmosphereTexture);

@@ -1,14 +1,12 @@
 import { useMemo, useRef, type Ref } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
-  AdditiveBlending,
   CanvasTexture,
   DataTexture,
   Group,
   LinearFilter,
   MathUtils,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   RepeatWrapping,
   RGBAFormat,
@@ -238,18 +236,6 @@ export default function Pluton({
     [texture]
   );
 
-  const glowMaterial = useMemo(
-    () =>
-      new MeshBasicMaterial({
-        color: "#e1c6a3",
-        transparent: true,
-        opacity: 0.08,
-        blending: AdditiveBlending,
-        depthWrite: false
-      }),
-    []
-  );
-
   useFrame((_, delta) => {
     if (!meshRef.current) return;
     const rotationRate =
@@ -269,12 +255,6 @@ export default function Pluton({
           event.stopPropagation();
           onClick?.(event);
         }}
-      />
-      <mesh
-        geometry={geometry}
-        material={glowMaterial}
-        scale={1.06}
-        raycast={() => null}
       />
     </group>
   );

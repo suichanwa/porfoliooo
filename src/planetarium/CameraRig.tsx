@@ -7,12 +7,14 @@ interface CameraRigProps {
   controlsRef?: Ref<OrbitControlsImpl>;
   minDistance?: number;
   maxDistance?: number;
+  isInspecting?: boolean;
 }
 
 export default function CameraRig({
   controlsRef,
   minDistance = 8,
-  maxDistance = 140
+  maxDistance = 140,
+  isInspecting = false
 }: CameraRigProps) {
   const localControlsRef = useRef<OrbitControlsImpl | null>(null);
   const offsetRef = useRef(new Vector3());
@@ -142,10 +144,10 @@ export default function CameraRig({
       enableZoom
       enableDamping
       dampingFactor={0.08}
-      rotateSpeed={0.6}
-      zoomSpeed={0.8}
-      minDistance={minDistance}
-      maxDistance={maxDistance}
+      rotateSpeed={isInspecting ? 0.65 : 0.6}
+      zoomSpeed={isInspecting ? 1.1 : 0.8}
+      minDistance={isInspecting ? 0.4 : minDistance}
+      maxDistance={isInspecting ? Math.max(maxDistance, 140) : maxDistance}
       minPolarAngle={0.25}
       maxPolarAngle={Math.PI - 0.35}
     />

@@ -23,6 +23,8 @@ export interface PlanetData {
   name: string;
   type: "star" | "planet" | "dwarf";
   radiusKm: number;
+  massKg: number;
+  mu?: number;
   axialTiltDeg: number;
   rotationPeriodHours: number;
   colorFallback: string;
