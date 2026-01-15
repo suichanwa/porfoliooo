@@ -1,8 +1,9 @@
-import type { PlanetData } from "../data/types";
+import type { BodyData } from "../data/types";
+import { kmToAu } from "../utils/units";
 import type { PlanetInfo } from "../data/planetInfo";
 
 interface PlanetInfoPanelProps {
-  planet: PlanetData | null;
+  planet: BodyData | null;
   info: PlanetInfo | null;
   isVisible: boolean;
   onClose: () => void;
@@ -51,7 +52,7 @@ export default function PlanetInfoPanel({
             Distance
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet?.orbit ? `${planet.orbit.semiMajorAxisAU.toFixed(2)} AU` : "-"}
+            {planet?.orbit ? `${kmToAu(planet.orbit.semiMajorAxisKm).toFixed(2)} AU` : "-"}
           </div>
         </div>
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">
@@ -59,7 +60,7 @@ export default function PlanetInfoPanel({
             Radius
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet ? `${formatNumber(planet.radiusKm)} km` : "-"}
+            {planet ? `${formatNumber(planet.render.radiusKm)} km` : "-"}
           </div>
         </div>
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">
@@ -75,7 +76,7 @@ export default function PlanetInfoPanel({
             Tilt
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet ? `${planet.axialTiltDeg.toFixed(1)} deg` : "-"}
+            {planet ? `${planet.rotation.axialTiltDeg.toFixed(1)} deg` : "-"}
           </div>
         </div>
       </div>

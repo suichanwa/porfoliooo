@@ -15,11 +15,11 @@ import {
   SRGBColorSpace,
   Vector3
 } from "three";
-import type { PlanetData } from "../data/types";
+import type { BodyData } from "../data/types";
 import { scalePlanetRadius } from "../utils/scale";
 
 interface PlutonProps {
-  data: PlanetData;
+  data: BodyData;
   position: Vector3;
   atmosphere?: boolean;
   timeScale?: number;
@@ -223,8 +223,13 @@ export default function Pluton({
 }: PlutonProps) {
   const meshRef = useRef<Mesh>(null);
   const texture = useMemo(() => createPlutoTexture(1337), []);
-  const radius = useMemo(() => scalePlanetRadius(data.radiusKm), [data.radiusKm]);
-  const tilt = MathUtils.degToRad(data.axialTiltDeg);
+  const radius = useMemo(
+    () => scalePlanetRadius(data.render.radiusKm),
+    [data.render.radiusKm]
+  );
+  const tilt = MathUtils.degToRad(data.rotation.axialTiltDeg);
+  const glowColor = data.render.glowPreset?.color ?? "#f3d4a6";
+  const glowIntensity = data.render.glowPreset?.intensity ?? 0.08;
   const geometry = useMemo(() => new SphereGeometry(radius, 48, 32), [radius]);
 
   const material = useMemo(
@@ -233,17 +238,17 @@ export default function Pluton({
         map: texture,
         roughness: 0.95,
         metalness: 0,
-        emissive: new Color("#f3d4a6"),
-        emissiveIntensity: 0.08,
+        emissive: new Color(glowColor),
+        emissiveIntensity: glowIntensity,
         emissiveMap: texture
       }),
-    [texture]
+    [glowColor, glowIntensity, texture]
   );
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
     const rotationRate =
-      (2 * Math.PI) / (data.rotationPeriodHours * 3600);
+      (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
     meshRef.current.rotation.y += delta * rotationRate * timeScale;
   });
 

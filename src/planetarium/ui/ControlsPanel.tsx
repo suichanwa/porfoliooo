@@ -5,7 +5,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent
 } from "react";
-import type { PlanetData, PlanetId } from "../data/types";
+import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode } from "../utils/distanceScale";
 import PlanetPicker from "./PlanetPicker";
 
@@ -27,13 +27,13 @@ interface ControlsPanelProps {
   onShowLensingChange: (value: boolean) => void;
   showPerf: boolean;
   onShowPerfChange: (value: boolean) => void;
-  planets: PlanetData[];
+  planets: BodyData[];
   pickerQuery: string;
   onPickerQueryChange: (value: string) => void;
   pickerOpen: boolean;
   onPickerToggle: () => void;
-  selectedId: PlanetId | null;
-  onSelectPlanet: (id: PlanetId) => void;
+  selectedId: BodyId | null;
+  onSelectPlanet: (id: BodyId) => void;
   onOverview: () => void;
 }
 

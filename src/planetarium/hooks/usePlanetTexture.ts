@@ -3,6 +3,7 @@ import {
   Color,
   DataTexture,
   LinearFilter,
+  type ColorSpace,
   RGBAFormat,
   SRGBColorSpace,
   Texture,
@@ -13,7 +14,10 @@ const textureCache = new Map<string, Texture>();
 const pendingLoads = new Map<string, Promise<Texture>>();
 const loader = new TextureLoader();
 
-const createFallbackTexture = (hex: string) => {
+const cacheKey = (url: string, colorSpace: ColorSpace) =>
+  `${url}::${colorSpace}`;
+
+const createFallbackTexture = (hex: string, colorSpace: ColorSpace) => {
   const color = new Color(hex);
   const data = new Uint8Array([
     Math.round(color.r * 255),
@@ -25,16 +29,18 @@ const createFallbackTexture = (hex: string) => {
   texture.needsUpdate = true;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
+  texture.colorSpace = colorSpace;
   return texture;
 };
 
-const loadTexture = (url: string) => {
-  const cached = textureCache.get(url);
+const loadTexture = (url: string, colorSpace: ColorSpace) => {
+  const key = cacheKey(url, colorSpace);
+  const cached = textureCache.get(key);
   if (cached) {
     return Promise.resolve(cached);
   }
 
-  const pending = pendingLoads.get(url);
+  const pending = pendingLoads.get(key);
   if (pending) {
     return pending;
   }
@@ -43,45 +49,56 @@ const loadTexture = (url: string) => {
     loader.load(
       url,
       (loaded) => {
-        loaded.colorSpace = SRGBColorSpace;
+        loaded.colorSpace = colorSpace;
         loaded.needsUpdate = true;
-        textureCache.set(url, loaded);
-        pendingLoads.delete(url);
+        textureCache.set(key, loaded);
+        pendingLoads.delete(key);
         resolve(loaded);
       },
       undefined,
       (error) => {
-        pendingLoads.delete(url);
+        pendingLoads.delete(key);
         reject(error);
       }
     );
   });
 
-  pendingLoads.set(url, promise);
+  pendingLoads.set(key, promise);
   return promise;
 };
 
-export const preloadPlanetTextures = (
-  urls: Array<string | null | undefined>
+const preloadTextures = (
+  urls: Array<string | null | undefined>,
+  colorSpace: ColorSpace
 ) => {
   const validUrls = urls.filter(
     (url): url is string => typeof url === "string" && url.length > 0
   );
 
   validUrls.forEach((url) => {
-    void loadTexture(url);
+    void loadTexture(url, colorSpace);
   });
 };
 
-export const usePlanetTexture = (
+export const preloadPlanetTextures = (
+  urls: Array<string | null | undefined>
+) => preloadTextures(urls, SRGBColorSpace);
+
+type TextureOptions = {
+  fallbackColor?: string;
+  colorSpace?: ColorSpace;
+};
+
+export const useTextureAsset = (
   textureUrl: string | null | undefined,
-  fallbackColor: string
+  options: TextureOptions = {}
 ) => {
+  const { fallbackColor, colorSpace = SRGBColorSpace } = options;
   const fallbackTexture = useMemo(
-    () => createFallbackTexture(fallbackColor),
-    [fallbackColor]
+    () => (fallbackColor ? createFallbackTexture(fallbackColor, colorSpace) : null),
+    [fallbackColor, colorSpace]
   );
-  const [texture, setTexture] = useState<Texture>(fallbackTexture);
+  const [texture, setTexture] = useState<Texture | null>(fallbackTexture);
 
   useEffect(() => {
     if (!textureUrl) {
@@ -91,11 +108,12 @@ export const usePlanetTexture = (
 
     let isActive = true;
 
-    const cached = textureCache.get(textureUrl);
+    const key = cacheKey(textureUrl, colorSpace);
+    const cached = textureCache.get(key);
     if (cached) {
       setTexture(cached);
     } else {
-      loadTexture(textureUrl)
+      loadTexture(textureUrl, colorSpace)
         .then((loaded) => {
           if (!isActive) return;
           setTexture(loaded);
@@ -109,7 +127,12 @@ export const usePlanetTexture = (
     return () => {
       isActive = false;
     };
-  }, [textureUrl, fallbackTexture]);
+  }, [textureUrl, fallbackTexture, colorSpace]);
 
   return texture;
 };
+
+export const usePlanetTexture = (
+  textureUrl: string | null | undefined,
+  fallbackColor: string
+) => useTextureAsset(textureUrl, { fallbackColor, colorSpace: SRGBColorSpace });

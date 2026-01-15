@@ -1,11 +1,11 @@
-import type { PlanetId } from "./types";
+import type { BodyId } from "./types";
 
 export interface PlanetInfo {
   summary: string;
   facts: string[];
 }
 
-export const PLANET_INFO: Record<PlanetId, PlanetInfo> = {
+export const PLANET_INFO: Record<BodyId, PlanetInfo> = {
   sun: {
     summary: "The star that anchors the entire solar system.",
     facts: [

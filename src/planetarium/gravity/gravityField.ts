@@ -1,8 +1,8 @@
 import { Vector3 } from "three";
-import type { PlanetId } from "../data/types";
+import type { BodyId } from "../data/types";
 
 export interface GravityBody {
-  id: PlanetId;
+  id: BodyId;
   position: Vector3;
   massKg: number;
   radiusKm: number;

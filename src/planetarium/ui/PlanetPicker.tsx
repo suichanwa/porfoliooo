@@ -1,13 +1,13 @@
-import type { PlanetData, PlanetId } from "../data/types";
+import type { BodyData, BodyId } from "../data/types";
 
 interface PlanetPickerProps {
-  planets: PlanetData[];
+  planets: BodyData[];
   query: string;
-  selectedId: PlanetId | null;
+  selectedId: BodyId | null;
   isOpen: boolean;
   onQueryChange: (value: string) => void;
   onToggle: () => void;
-  onSelect: (id: PlanetId) => void;
+  onSelect: (id: BodyId) => void;
   onOverview: () => void;
 }
 
@@ -57,7 +57,7 @@ export default function PlanetPicker({
             >
               <span>{planet.name}</span>
               <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">
-                {planet.type}
+                {planet.kind}
               </span>
             </button>
           ))}

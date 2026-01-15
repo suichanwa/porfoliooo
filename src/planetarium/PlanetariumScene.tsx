@@ -8,7 +8,7 @@ import Sun from "./bodies/Sun";
 import OrbitingPlanet from "./orbits/OrbitingPlanet";
 import OrbitPath from "./orbits/OrbitPath";
 import { PLANETS } from "./data/planets";
-import type { PlanetId } from "./data/types";
+import type { BodyId } from "./data/types";
 import { useSimulationTime } from "./hooks/useSimulationTime";
 import { useFocusTarget } from "./hooks/useFocusTarget";
 import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
@@ -26,9 +26,9 @@ interface PlanetariumSceneProps {
   showLabels: boolean;
   showGrid: boolean;
   showLensing: boolean;
-  selectedId: PlanetId | null;
+  selectedId: BodyId | null;
   resetSignal: number;
-  onSelect: (id: PlanetId | null) => void;
+  onSelect: (id: BodyId | null) => void;
   isLowEnd?: boolean;
   prefersReducedMotion?: boolean;
   onFocusChange?: (focused: boolean) => void;
@@ -58,7 +58,7 @@ export default function PlanetariumScene({
 }: PlanetariumSceneProps) {
   const { timeRef } = useSimulationTime(10);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
-  const planetRefs = useRef<Record<PlanetId, Object3D | null>>({
+  const planetRefs = useRef<Record<BodyId, Object3D | null>>({
     sun: null,
     mercury: null,
     venus: null,
@@ -74,9 +74,9 @@ export default function PlanetariumScene({
   const sunRef = useRef<Mesh | null>(null);
   const planetDataMap = useMemo(() => {
     const entries = PLANETS.map((planet) => [planet.id, planet]);
-    return Object.fromEntries(entries) as Record<PlanetId, (typeof PLANETS)[number]>;
+    return Object.fromEntries(entries) as Record<BodyId, (typeof PLANETS)[number]>;
   }, []);
-  const orbitingPlanets = PLANETS.filter((planet) => planet.id !== "sun");
+  const orbitingPlanets = PLANETS.filter((planet) => planet.parentId === "sun");
   const orbitSegments = isLowEnd ? 120 : 180;
   const gridDivisions = isLowEnd ? 120 : 200;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
@@ -87,7 +87,7 @@ export default function PlanetariumScene({
       PLANETS.map((planet) => ({
         id: planet.id,
         massKg: planet.massKg,
-        radiusKm: planet.radiusKm,
+        radiusKm: planet.render.radiusKm,
         visualMass: getMassScaleForVisuals(
           planet.massKg,
           DEFAULT_MASS_SCALE_PARAMS

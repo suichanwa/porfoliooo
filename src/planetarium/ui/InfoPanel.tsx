@@ -1,7 +1,8 @@
-import type { PlanetData } from "../data/types";
+import type { BodyData } from "../data/types";
+import { kmToAu } from "../utils/units";
 
 interface InfoPanelProps {
-  planet: PlanetData | null;
+  planet: BodyData | null;
   onReset: () => void;
 }
 
@@ -9,7 +10,7 @@ const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-US").format(Math.round(value));
 
 export default function InfoPanel({ planet, onReset }: InfoPanelProps) {
-  const distanceAU = planet?.orbit?.semiMajorAxisAU;
+  const distanceAU = planet?.orbit ? kmToAu(planet.orbit.semiMajorAxisKm) : null;
   const periodDays = planet?.orbit?.orbitalPeriodDays;
 
   return (
@@ -46,7 +47,7 @@ export default function InfoPanel({ planet, onReset }: InfoPanelProps) {
             Radius
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet ? `${formatNumber(planet.radiusKm)} km` : "-"}
+            {planet ? `${formatNumber(planet.render.radiusKm)} km` : "-"}
           </div>
         </div>
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">
@@ -62,7 +63,7 @@ export default function InfoPanel({ planet, onReset }: InfoPanelProps) {
             Tilt
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet ? `${planet.axialTiltDeg.toFixed(1)} deg` : "-"}
+            {planet ? `${planet.rotation.axialTiltDeg.toFixed(1)} deg` : "-"}
           </div>
         </div>
       </div>

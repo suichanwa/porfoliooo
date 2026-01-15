@@ -5,6 +5,7 @@ import {
   type DistanceScaleMode,
   type DistanceScaleParams
 } from "../utils/distanceScale";
+import { kmToAu } from "../utils/units";
 
 const solveKepler = (meanAnomaly: number, eccentricity: number) => {
   let eccentricAnomaly = meanAnomaly;
@@ -22,12 +23,13 @@ export const getOrbitPosition = (
   scaleParams: DistanceScaleParams
 ) => {
   const semiMajor = computeRenderOrbitRadius(
-    orbit.semiMajorAxisAU,
+    kmToAu(orbit.semiMajorAxisKm),
     scaleMode,
     scaleParams
   );
+  const phase = orbit.phaseAtEpoch ?? 0;
   const meanAnomaly =
-    (timeDays / orbit.orbitalPeriodDays) * Math.PI * 2;
+    (timeDays / orbit.orbitalPeriodDays) * Math.PI * 2 + phase;
 
   const eccentricAnomaly = solveKepler(meanAnomaly, orbit.eccentricity);
   const cosE = Math.cos(eccentricAnomaly);

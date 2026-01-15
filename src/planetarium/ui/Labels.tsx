@@ -2,12 +2,12 @@ import { useMemo, useRef } from "react";
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Group, Vector3 } from "three";
-import type { PlanetData } from "../data/types";
+import type { BodyData } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import { getOrbitPosition } from "../orbits/orbitMath";
 
 interface LabelsProps {
-  data: PlanetData;
+  data: BodyData;
   timeRef: React.MutableRefObject<number>;
   showLabels: boolean;
   hoveredRef?: React.MutableRefObject<boolean>;

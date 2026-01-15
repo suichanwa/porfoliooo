@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
-import type { PlanetId } from "./data/types";
+import type { BodyId } from "./data/types";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
 import { PLANETS } from "./data/planets";
@@ -29,7 +29,7 @@ export default function PlanetariumPage() {
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
-  const [selectedId, setSelectedId] = useState<PlanetId | null>(null);
+  const [selectedId, setSelectedId] = useState<BodyId | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -98,7 +98,7 @@ export default function PlanetariumPage() {
 
   useEffect(() => {
     if (!isClient) return;
-    preloadPlanetTextures(PLANETS.map((planet) => planet.textureUrl));
+    preloadPlanetTextures(PLANETS.map((planet) => planet.render.textureUrl));
   }, [isClient]);
 
   useEffect(() => {

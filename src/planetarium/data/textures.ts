@@ -1,4 +1,4 @@
-import type { PlanetId } from "./types";
+import type { BodyId } from "./types";
 
 import sunTexture from "../../assets/planetarium/2k_sun.jpg";
 import mercuryTexture from "../../assets/planetarium/2k_mercury.jpg";
@@ -21,7 +21,7 @@ const toUrl = (asset: TextureAsset | null | undefined) => {
   return typeof asset === "string" ? asset : asset.src;
 };
 
-export const PLANET_TEXTURES: Record<PlanetId, string | null> = {
+export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   sun: toUrl(sunTexture),
   mercury: toUrl(mercuryTexture),
   venus: toUrl(venusSurfaceTexture),

@@ -2,18 +2,18 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import type { PlanetData, PlanetId } from "../data/types";
+import type { BodyData, BodyId } from "../data/types";
 import { scalePlanetRadius } from "../utils/scale";
 
 const DEFAULT_TARGET = new Vector3(0, 0, 0);
 const DEFAULT_POSITION = new Vector3(0, 0, 28);
 
 interface FocusTargetOptions {
-  selectedId: PlanetId | null;
+  selectedId: BodyId | null;
   resetSignal: number;
   controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
-  planetRefs: React.MutableRefObject<Record<PlanetId, Object3D | null>>;
-  planetData: Record<PlanetId, PlanetData>;
+  planetRefs: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  planetData: Record<BodyId, BodyData>;
   onDistanceTarget?: (value: number | null) => void;
   onFocusChange?: (focused: boolean) => void;
 }
@@ -59,7 +59,7 @@ export const useFocusTarget = ({
       if (!focusObject) return;
       focusObject.getWorldPosition(target);
 
-      const radius = scalePlanetRadius(planetData[selectedId].radiusKm);
+      const radius = scalePlanetRadius(planetData[selectedId].render.radiusKm);
       const desiredDistance = Math.max(radius * 10, 4.5);
 
       direction.copy(camera.position).sub(controls.target);
@@ -94,7 +94,7 @@ export const useFocusTarget = ({
     controls.target.lerp(target, targetEase);
 
     const minDistance = selectedId
-      ? Math.max(scalePlanetRadius(planetData[selectedId].radiusKm) * 1.2, 0.4)
+      ? Math.max(scalePlanetRadius(planetData[selectedId].render.radiusKm) * 1.2, 0.4)
       : 8;
     const maxDistance = selectedId ? Math.max(minDistance * 10, 70) : 140;
 
