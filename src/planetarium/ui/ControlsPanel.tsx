@@ -310,8 +310,13 @@ export default function ControlsPanel({
               className="toggle toggle-sm"
               checked={showLensing}
               onChange={(event) => onShowLensingChange(event.target.checked)}
+              disabled
+              aria-disabled="true"
+              title="Temporarily disabled"
             />
-            <span className="tracking-wide">Gravitational lensing</span>
+            <span className="tracking-wide text-white/40">
+              Gravitational lensing (disabled)
+            </span>
           </label>
           <div className="h-px bg-white/10" />
           <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">

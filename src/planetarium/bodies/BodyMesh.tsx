@@ -17,6 +17,7 @@ import {
 import type { BodyData, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
 import { useTextureAsset } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
+import RingSystem from "../../components/planetarium/rings/RingSystem";
 
 interface BodyMeshProps {
   data: BodyData;
@@ -78,6 +79,10 @@ export default function BodyMesh({
           : glowPreset.rim ?? null;
 
   const geometry = useMemo(() => new SphereGeometry(radius, 48, 32), [radius]);
+  const ringPresets = useMemo(() => {
+    if (!data.rings) return null;
+    return Array.isArray(data.rings) ? data.rings : [data.rings];
+  }, [data.rings]);
 
   const material = useMemo(
     () =>
@@ -151,6 +156,13 @@ export default function BodyMesh({
           material={rimMaterial}
           scale={rimPreset?.scale ?? 1.04}
           raycast={() => null}
+        />
+      )}
+      {ringPresets && ringPresets.length > 0 && (
+        <RingSystem
+          planetRadiusKm={data.render.radiusKm}
+          renderRadius={radius}
+          rings={ringPresets}
         />
       )}
     </group>

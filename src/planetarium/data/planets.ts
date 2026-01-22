@@ -147,6 +147,14 @@ export const PLANETS: BodyData[] = [
       materialPreset: DEFAULT_MATERIAL,
       glowPreset: PLANET_GLOW
     },
+    rings: {
+      innerRadiusKm: 100000,
+      outerRadiusKm: 130000,
+      color: "#bca987",
+      opacity: 0.18,
+      patternSeed: 11,
+      bandDensity: 0.35
+    },
     orbit: {
       semiMajorAxisKm: auToKm(5.204),
       eccentricity: 0.0489,
@@ -176,7 +184,11 @@ export const PLANETS: BodyData[] = [
       ? {
           innerRadiusKm: 74500,
           outerRadiusKm: 140220,
-          textureUrl: SATURN_RING_ALPHA_TEXTURE
+          textureUrl: SATURN_RING_ALPHA_TEXTURE,
+          color: "#d8c7a4",
+          opacity: 0.65,
+          patternSeed: 5,
+          bandDensity: 0.7
         }
       : undefined,
     orbit: {
@@ -204,6 +216,14 @@ export const PLANETS: BodyData[] = [
       materialPreset: DEFAULT_MATERIAL,
       glowPreset: PLANET_GLOW
     },
+    rings: {
+      innerRadiusKm: 38000,
+      outerRadiusKm: 51100,
+      color: "#9aa7b6",
+      opacity: 0.28,
+      patternSeed: 23,
+      bandDensity: 0.8
+    },
     orbit: {
       semiMajorAxisKm: auToKm(19.201),
       eccentricity: 0.0472,
@@ -229,6 +249,53 @@ export const PLANETS: BodyData[] = [
       materialPreset: DEFAULT_MATERIAL,
       glowPreset: PLANET_GLOW
     },
+    rings: [
+      {
+        name: "Galle",
+        innerRadiusKm: 40900,
+        outerRadiusKm: 42900,
+        color: "#4a4f63",
+        opacity: 0.08,
+        patternSeed: 41,
+        bandDensity: 0.25
+      },
+      {
+        name: "Le Verrier",
+        innerRadiusKm: 53143.5,
+        outerRadiusKm: 53256.5,
+        color: "#5a5567",
+        opacity: 0.3,
+        patternSeed: 52,
+        bandDensity: 0.75
+      },
+      {
+        name: "Lassell",
+        innerRadiusKm: 53200,
+        outerRadiusKm: 57200,
+        color: "#43485a",
+        opacity: 0.04,
+        patternSeed: 63,
+        bandDensity: 0.2
+      },
+      {
+        name: "Arago",
+        innerRadiusKm: 57160,
+        outerRadiusKm: 57240,
+        color: "#5f5a6d",
+        opacity: 0.18,
+        patternSeed: 74,
+        bandDensity: 0.6
+      },
+      {
+        name: "Adams",
+        innerRadiusKm: 63912.5,
+        outerRadiusKm: 63947.5,
+        color: "#6a5f73",
+        opacity: 0.32,
+        patternSeed: 85,
+        bandDensity: 0.82
+      }
+    ],
     orbit: {
       semiMajorAxisKm: auToKm(30.047),
       eccentricity: 0.0086,

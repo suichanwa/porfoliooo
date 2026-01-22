@@ -54,7 +54,7 @@ export default function LensingQuad({
         uniforms,
         depthWrite: false,
         depthTest: false,
-        transparent: true,
+        transparent: false,
         vertexShader: `
           varying vec2 vUv;
           void main() {
@@ -146,7 +146,8 @@ export default function LensingQuad({
       geometry={geometry}
       material={material}
       frustumCulled={false}
-      renderOrder={-20}
+      renderOrder={-100}
+      raycast={() => null}
     />
   );
 }

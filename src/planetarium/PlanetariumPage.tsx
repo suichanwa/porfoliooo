@@ -25,7 +25,7 @@ export default function PlanetariumPage() {
   const [showOrbits, setShowOrbits] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [showLensing, setShowLensing] = useState(false);
+  const showLensing = false;
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
@@ -177,7 +177,7 @@ export default function PlanetariumPage() {
         showGrid={showGrid}
         onShowGridChange={setShowGrid}
         showLensing={showLensing}
-        onShowLensingChange={setShowLensing}
+        onShowLensingChange={() => {}}
         showPerf={showPerf}
         onShowPerfChange={setShowPerf}
         planets={filteredPlanets}

@@ -55,9 +55,14 @@ export interface RenderPreset {
 }
 
 export interface RingPreset {
+  name?: string;
   innerRadiusKm: number;
   outerRadiusKm: number;
-  textureUrl: string;
+  textureUrl?: string | null;
+  color?: string;
+  opacity?: number;
+  patternSeed?: number;
+  bandDensity?: number;
 }
 
 export interface BodyData {
@@ -70,5 +75,5 @@ export interface BodyData {
   orbit?: OrbitElements;
   rotation: RotationElements;
   render: RenderPreset;
-  rings?: RingPreset;
+  rings?: RingPreset | RingPreset[];
 }
