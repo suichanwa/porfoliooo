@@ -162,14 +162,14 @@ const stats = [
               </div>
             )}
             
-            <div class="flex gap-4 items-center">
+            <div class="project-actions">
               <a 
                 href={project.githubUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                class="btn btn-sm btn-primary"
+                class="project-action project-action--primary"
               >
-                View on GitHub
+                <span class="project-action__label">View on GitHub</span>
               </a>
               
               {project.liveUrl && (
@@ -177,9 +177,9 @@ const stats = [
                   href={project.liveUrl} 
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="btn btn-sm btn-ghost"
+                  class="project-action project-action--ghost"
                 >
-                  Live Demo
+                  <span class="project-action__label">Live Demo</span>
                 </a>
               )}
             </div>
@@ -232,6 +232,110 @@ const stats = [
 </BaseLayout>
 
 <style>
+  .project-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    --action-surface: rgba(255, 255, 255, 0.9);
+    --action-surface-soft: rgba(255, 255, 255, 0.6);
+    --action-shadow: rgba(15, 17, 35, 0.12);
+    --action-border: rgba(15, 17, 35, 0.08);
+    --action-underline: linear-gradient(90deg, rgba(var(--primary-accent-rgb), 0.7), rgba(var(--secondary-accent-rgb), 0.7));
+  }
+
+  .project-action {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1.15rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    color: var(--text-light-bg);
+    border: 1px solid var(--action-border);
+    background: linear-gradient(180deg, var(--action-surface), var(--action-surface-soft));
+    box-shadow: 0 10px 22px var(--action-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
+  }
+
+  .project-action__label {
+    position: relative;
+    z-index: 1;
+  }
+
+  .project-action::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    background: radial-gradient(140% 120% at 80% 0%, rgba(var(--primary-accent-rgb), 0.22), transparent 60%);
+    transition: opacity 180ms ease;
+    pointer-events: none;
+  }
+
+  .project-action::after {
+    content: "";
+    position: absolute;
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: 0.3rem;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--action-underline);
+    z-index: 0;
+    opacity: 0;
+    transform: scaleX(0.35);
+    transform-origin: left;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .project-action:focus-visible {
+    outline: 2px solid rgba(var(--primary-accent-rgb), 0.7);
+    outline-offset: 2px;
+  }
+
+  .project-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(15, 17, 35, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .project-action:hover::before {
+    opacity: 1;
+  }
+
+  .project-action:hover::after {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+
+  .project-action:active {
+    transform: translateY(0);
+  }
+
+  .project-action--primary {
+    color: var(--primary-accent);
+    border-color: rgba(var(--primary-accent-rgb), 0.35);
+  }
+
+  .project-action--ghost {
+    color: var(--text-light-bg);
+    border-color: rgba(var(--secondary-accent-rgb), 0.28);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.45));
+  }
+
+  .project-action--ghost:hover {
+    color: var(--secondary-accent);
+    border-color: rgba(var(--secondary-accent-rgb), 0.5);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       animation-duration: 0.01ms !important;
