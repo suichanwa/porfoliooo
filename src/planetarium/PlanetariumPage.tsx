@@ -31,10 +31,12 @@ export default function PlanetariumPage() {
   );
   const [selectedId, setSelectedId] = useState<BodyId | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [infoHidden, setInfoHidden] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
   const [showPerf, setShowPerf] = useState(false);
+  const [orbitSpeed, setOrbitSpeed] = useState(10);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
@@ -62,6 +64,8 @@ export default function PlanetariumPage() {
     () => (selectedId ? PLANET_INFO[selectedId] : null),
     [selectedId]
   );
+  const isInfoVisible = Boolean(selectedPlanet && isFocused && !infoHidden);
+  const shouldHideControls = isInfoVisible;
   const filteredPlanets = useMemo(() => {
     const query = pickerQuery.trim().toLowerCase();
     if (!query) return PLANETS;
@@ -79,6 +83,10 @@ export default function PlanetariumPage() {
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, []);
+
+  useEffect(() => {
+    setInfoHidden(false);
+  }, [selectedId]);
 
   useEffect(() => {
     let frame = 0;
@@ -129,6 +137,7 @@ export default function PlanetariumPage() {
         onSelect={(id) => {
           setSelectedId(id);
           setIsFocused(false);
+          setInfoHidden(false);
         }}
         isLowEnd={deviceInfo.isLowEnd}
         prefersReducedMotion={deviceInfo.prefersReducedMotion}
@@ -138,19 +147,33 @@ export default function PlanetariumPage() {
         gravitySettings={gravitySettings}
         debugGravity={debugGravity}
         showPerf={showPerf}
+        orbitSpeed={orbitSpeed}
       />
       </PlanetariumCanvas>
-      <div className="pointer-events-none absolute right-4 top-24 z-20 flex w-full max-w-sm justify-end">
+      <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
         <PlanetInfoPanel
           planet={selectedPlanet}
           info={selectedInfo}
-          isVisible={Boolean(selectedPlanet && isFocused)}
+          isVisible={isInfoVisible}
+          onHide={() => setInfoHidden(true)}
           onClose={() => {
             setSelectedId(null);
             setIsFocused(false);
+            setInfoHidden(false);
             setResetSignal((prev) => prev + 1);
           }}
         />
+        {selectedPlanet && isFocused && infoHidden && (
+          <div className="pointer-events-auto ml-auto">
+            <button
+              type="button"
+              onClick={() => setInfoHidden(false)}
+              className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 shadow-lg backdrop-blur-sm transition hover:border-white/30 hover:text-white"
+            >
+              Show details
+            </button>
+          </div>
+        )}
       </div>
       <ControlsPanel
         distanceScaleMode={distanceScaleMode}
@@ -180,6 +203,8 @@ export default function PlanetariumPage() {
         onShowLensingChange={() => {}}
         showPerf={showPerf}
         onShowPerfChange={setShowPerf}
+        orbitSpeed={orbitSpeed}
+        onOrbitSpeedChange={setOrbitSpeed}
         planets={filteredPlanets}
         pickerQuery={pickerQuery}
         onPickerQueryChange={setPickerQuery}
@@ -189,14 +214,17 @@ export default function PlanetariumPage() {
         onSelectPlanet={(id) => {
           setSelectedId(id);
           setIsFocused(false);
+          setInfoHidden(false);
           setPickerOpen(false);
         }}
         onOverview={() => {
           setSelectedId(null);
           setIsFocused(false);
+          setInfoHidden(false);
           setResetSignal((prev) => prev + 1);
           setPickerOpen(false);
         }}
+        isHidden={shouldHideControls}
       />
       <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">
         <GravityPanel settings={gravitySettings} onChange={setGravitySettings} />

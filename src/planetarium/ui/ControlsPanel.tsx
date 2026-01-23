@@ -27,6 +27,8 @@ interface ControlsPanelProps {
   onShowLensingChange: (value: boolean) => void;
   showPerf: boolean;
   onShowPerfChange: (value: boolean) => void;
+  orbitSpeed: number;
+  onOrbitSpeedChange: (value: number) => void;
   planets: BodyData[];
   pickerQuery: string;
   onPickerQueryChange: (value: string) => void;
@@ -35,6 +37,7 @@ interface ControlsPanelProps {
   selectedId: BodyId | null;
   onSelectPlanet: (id: BodyId) => void;
   onOverview: () => void;
+  isHidden?: boolean;
 }
 
 const DEFAULT_POSITION = { x: 16, y: 96 };
@@ -75,6 +78,8 @@ export default function ControlsPanel({
   onShowLensingChange,
   showPerf,
   onShowPerfChange,
+  orbitSpeed,
+  onOrbitSpeedChange,
   planets,
   pickerQuery,
   onPickerQueryChange,
@@ -82,7 +87,8 @@ export default function ControlsPanel({
   onPickerToggle,
   selectedId,
   onSelectPlanet,
-  onOverview
+  onOverview,
+  isHidden = false
 }: ControlsPanelProps) {
   const [controlsOpen, setControlsOpen] = useState(true);
   const [position, setPosition] = useState(DEFAULT_POSITION);
@@ -174,7 +180,11 @@ export default function ControlsPanel({
   return (
     <div
       ref={panelRef}
-      className="pointer-events-auto fixed z-20"
+      className={`pointer-events-auto fixed z-20 max-h-[calc(100vh-2rem)] transition-opacity duration-300 ${
+        isHidden
+          ? "opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto"
+          : "opacity-100"
+      }`}
       style={{
         transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
         left: isMobile ? 8 : undefined,
@@ -184,7 +194,7 @@ export default function ControlsPanel({
         width: "min(92vw, 20rem)"
       }}
     >
-      <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-base-100/10 px-3 py-3 text-[11px] text-white/80 shadow-lg backdrop-blur-sm sm:px-4 sm:text-xs">
+      <div className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-base-100/10 px-3 py-3 text-[11px] text-white/80 shadow-lg backdrop-blur-sm sm:px-4 sm:text-xs">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
@@ -210,9 +220,12 @@ export default function ControlsPanel({
           </button>
         </div>
         <div
-          className={`flex flex-col gap-4 overflow-hidden transition-all duration-300 ${
-            controlsOpen ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+          className={`flex min-h-0 flex-col gap-4 pr-1 transition-all duration-300 ${
+            controlsOpen
+              ? "max-h-[calc(100vh-12rem)] opacity-100 overflow-y-auto"
+              : "max-h-0 opacity-0 overflow-y-hidden"
           }`}
+          style={{ scrollbarGutter: "stable" }}
         >
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-2">
@@ -244,8 +257,25 @@ export default function ControlsPanel({
                 className="range range-xs"
               />
             </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+                Orbit speed
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={0.5}
+                value={orbitSpeed}
+                onChange={(event) => onOrbitSpeedChange(Number(event.target.value))}
+                className="range range-xs"
+              />
+            </label>
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
               {distanceScaleMode} - {Math.round(distanceScaleSpacing)}
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+              Speed {orbitSpeed.toFixed(1)}x
             </div>
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/50">
               <button

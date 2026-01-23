@@ -37,6 +37,7 @@ interface PlanetariumSceneProps {
   gravitySettings: GravitySettings;
   debugGravity?: boolean;
   showPerf?: boolean;
+  orbitSpeed?: number;
 }
 
 export default function PlanetariumScene({
@@ -54,9 +55,14 @@ export default function PlanetariumScene({
   distanceScaleParams,
   gravitySettings,
   debugGravity = false,
-  showPerf = true
+  showPerf = true,
+  orbitSpeed = 10
 }: PlanetariumSceneProps) {
-  const { timeRef } = useSimulationTime(10);
+  const startEpochDays = useMemo(() => {
+    const epoch = Date.UTC(2000, 0, 1, 12, 0, 0);
+    return (Date.now() - epoch) / 86400000;
+  }, []);
+  const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const planetRefs = useRef<Record<BodyId, Object3D | null>>({
     sun: null,

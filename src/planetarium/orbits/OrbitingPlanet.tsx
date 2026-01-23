@@ -34,9 +34,9 @@ export default function OrbitingPlanet({
   const initialPosition = useMemo(
     () =>
       data.orbit
-        ? getOrbitPosition(data.orbit, 0, scaleMode, scaleParams)
+        ? getOrbitPosition(data.orbit, timeRef.current, scaleMode, scaleParams)
         : new Vector3(),
-    [data.orbit, scaleMode, scaleParams]
+    [data.orbit, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {

@@ -7,6 +7,7 @@ interface PlanetInfoPanelProps {
   info: PlanetInfo | null;
   isVisible: boolean;
   onClose: () => void;
+  onHide?: () => void;
 }
 
 const formatNumber = (value: number) =>
@@ -16,16 +17,18 @@ export default function PlanetInfoPanel({
   planet,
   info,
   isVisible,
-  onClose
+  onClose,
+  onHide
 }: PlanetInfoPanelProps) {
   return (
     <div
-      className={`pointer-events-auto w-full max-w-sm rounded-2xl border border-white/10 bg-base-100/10 p-5 text-sm text-white/80 shadow-xl backdrop-blur-sm transition-all duration-500 ease-out ${
+      className={`pointer-events-auto w-full max-w-none rounded-2xl border border-white/10 bg-base-100/10 p-4 text-[13px] text-white/80 shadow-xl backdrop-blur-sm transition-all duration-500 ease-out sm:max-w-sm sm:p-5 sm:text-sm max-h-[60vh] overflow-y-auto sm:max-h-none sm:overflow-visible ${
         isVisible ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"
       }`}
       style={{ pointerEvents: isVisible ? "auto" : "none" }}
+      aria-hidden={!isVisible}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
             Planet details
@@ -37,16 +40,27 @@ export default function PlanetInfoPanel({
             {info?.summary ?? "Click a planet to learn more."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
-        >
-          Close
-        </button>
+        <div className="flex items-center gap-2 self-end sm:self-auto sm:flex-col sm:items-end">
+          {onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
+            >
+              Hide
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
+          >
+            Close
+          </button>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-[11px]">
+      <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] sm:gap-3">
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">
           <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
             Distance
