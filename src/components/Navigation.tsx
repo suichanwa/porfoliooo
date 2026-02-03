@@ -102,7 +102,6 @@ export default function Navigation() {
     }
   };
 
-  // Main navigation items (always visible)
   const mainNavItems = [
     { 
       name: "Home", 
@@ -151,7 +150,6 @@ export default function Navigation() {
     },
   ];
 
-  // Dropdown items (hidden in "More" menu)
   const moreNavItems = [
     { 
       name: "Manage Books", 
