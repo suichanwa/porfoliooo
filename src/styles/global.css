@@ -1,3 +1,4 @@
+@import "./colors.css";
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
@@ -5,7 +6,15 @@
 @tailwind utilities;
 
 @layer base {
+  html,
   body {
     font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--primary-bg);
+    color: var(--text-dark-bg);
+    min-height: 100%;
+  }
+
+  body.starry-body {
+    color: var(--text-dark-bg);
   }
 }

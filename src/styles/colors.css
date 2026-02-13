@@ -5,6 +5,7 @@
   
   /* Light background for content areas */
   --secondary-bg: #f1f2f8;
+  --secondary-bg-rgb: 241, 242, 248;
   
   /* Star-like bright blue accent */
   --primary-accent: #5e9fff;

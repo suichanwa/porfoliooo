@@ -2,11 +2,13 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import Phaser from 'phaser';
 import { createBattleScene } from './scenes/BattleScene';
 import type { GameStateData } from './types/gameTypes';
+import type { CharacterCreationData } from './types/characterTypes';
 import StatusBar from './components/StatusBar';
 import MessageBox from './components/MessageBox';
 import ResultModal from './components/ResultModal';
 import SettingsButton from './components/SettingsButton';
 import SettingsPanel from './utils/SettingsPanel';
+import CharacterCreationScene from './scenes/ClassCreation';
 import { SettingsSystem } from './systems/SettingsSystem';
 import { MenuSystem } from './systems/MenuSystem';
 
@@ -248,18 +250,11 @@ function createMainMenuScene() {
     }
 
     private startGame() {
-      debugLog('MainMenuScene', 'Starting game transition');
+      debugLog('MainMenuScene', 'Opening character creation scene');
       
       try {
-        this.cameras.main.fadeOut(500, 0, 0, 0);
-        
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          debugLog('MainMenuScene', 'Fade out complete, starting battle scene');
-          this.scene.start('MysticRuinsBattleScene', {
-            enemyType: 'SLIME',
-            difficulty: 'Normal'
-          });
-        });
+        this.game.events.emit('open-character-creation');
+        this.scene.pause();
       } catch (error) {
         debugLog('MainMenuScene', 'Error starting game:', error);
       }
@@ -331,6 +326,8 @@ export default function GameCanvas() {
   const [gameLoaded, setGameLoaded] = useState(false);
   const [gameState, setGameState] = useState<GameStateData | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCharacterCreation, setShowCharacterCreation] = useState(false);
+  const [createdCharacter, setCreatedCharacter] = useState<CharacterCreationData | null>(null);
   const [gameInstance, setGameInstance] = useState<Phaser.Game | null>(null);
   
   // Create systems
@@ -495,6 +492,24 @@ export default function GameCanvas() {
     };
   }, [gameInstance]);
 
+  useEffect(() => {
+    if (!gameInstance) {
+      return;
+    }
+
+    const openCharacterCreation = () => {
+      debugLog('GameCanvas', 'Character creation requested from menu scene');
+      setGameState(null);
+      setShowCharacterCreation(true);
+    };
+
+    gameInstance.events.on('open-character-creation', openCharacterCreation);
+
+    return () => {
+      gameInstance.events.off('open-character-creation', openCharacterCreation);
+    };
+  }, [gameInstance]);
+
   // Handle touch control button clicks
   const handleControlClick = useCallback((action: string) => {
     debugLog('GameCanvas', `Control button clicked: ${action}`);
@@ -511,6 +526,49 @@ export default function GameCanvas() {
     setShowSettings(prev => !prev);
   }, []);
 
+  const handleCharacterCreationComplete = useCallback((character: CharacterCreationData) => {
+    debugLog('GameCanvas', 'Character creation complete', character);
+
+    setCreatedCharacter(character);
+    setShowCharacterCreation(false);
+    setGameState(null);
+
+    if (!gameInstance) {
+      return;
+    }
+
+    try {
+      if (gameInstance.scene.isActive('MainMenuScene') || gameInstance.scene.isPaused('MainMenuScene')) {
+        gameInstance.scene.stop('MainMenuScene');
+      }
+
+      gameInstance.scene.start('MysticRuinsBattleScene', {
+        enemyType: 'SLIME',
+        difficulty: 'Normal',
+        character
+      });
+    } catch (error) {
+      debugLog('GameCanvas', 'Failed to start battle after character creation', error);
+    }
+  }, [gameInstance]);
+
+  const handleCharacterCreationBack = useCallback(() => {
+    debugLog('GameCanvas', 'Character creation canceled, returning to menu');
+    setShowCharacterCreation(false);
+
+    if (!gameInstance) {
+      return;
+    }
+
+    try {
+      if (gameInstance.scene.isPaused('MainMenuScene')) {
+        gameInstance.scene.resume('MainMenuScene');
+      }
+    } catch (error) {
+      debugLog('GameCanvas', 'Failed to resume menu scene', error);
+    }
+  }, [gameInstance]);
+
   // Handle continuing to next level after victory
   const handleContinueJourney = useCallback(() => {
     debugLog('GameCanvas', 'Continue journey requested');
@@ -519,7 +577,8 @@ export default function GameCanvas() {
       if (battleScene) {
         debugLog('GameCanvas', 'Starting new battle scene');
         gameInstance.scene.start('MysticRuinsBattleScene', { 
-          difficulty: 'Normal' 
+          difficulty: 'Normal',
+          character: createdCharacter
         });
       } else {
         debugLog('GameCanvas', 'Warning: Battle scene not found');
@@ -527,7 +586,7 @@ export default function GameCanvas() {
     } else {
       debugLog('GameCanvas', 'Warning: Game instance or state not available for continue');
     }
-  }, [gameInstance, gameState]);
+  }, [createdCharacter, gameInstance, gameState]);
 
   // Handle retrying after defeat
   const handleRetryBattle = useCallback(() => {
@@ -577,7 +636,18 @@ export default function GameCanvas() {
         ref={container} 
         className="relative bg-base-300 rounded-lg overflow-hidden shadow-2xl"
         style={{ aspectRatio: '4/3' }}
-      />
+      >
+        {showCharacterCreation && (
+          <div className="absolute inset-0 z-20 bg-slate-950/90 p-4">
+            <CharacterCreationScene
+              width={800}
+              height={600}
+              onComplete={handleCharacterCreationComplete}
+              onBack={handleCharacterCreationBack}
+            />
+          </div>
+        )}
+      </div>
       
       {/* Settings Button */}
       <SettingsButton onClick={toggleSettings} />
@@ -648,7 +718,8 @@ export default function GameCanvas() {
       <div className="mt-2 text-xs text-base-content/50">
         Game Instance: {gameInstance ? 'Ready' : 'Not Ready'} | 
         Game State: {gameState ? 'Active' : 'Waiting'} | 
-        Settings: {showSettings ? 'Open' : 'Closed'}
+        Settings: {showSettings ? 'Open' : 'Closed'} |
+        Character: {createdCharacter ? `${createdCharacter.name} (${createdCharacter.class})` : 'Not Created'}
       </div>
     </div>
   );

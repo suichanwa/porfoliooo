@@ -199,13 +199,22 @@ export default function Navigation() {
   };
 
   const isMoreActive = moreNavItems.some(item => item.path === activeHash);
+  const desktopNavButtonBase =
+    "flex items-center gap-2 px-3 py-2 rounded-lg border font-medium transition-all duration-200";
+  const desktopNavButtonIdle =
+    "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.34)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.56)] hover:border-slate-500/90 hover:text-white";
+  const desktopNavButtonActive =
+    "border-primary-accent/70 bg-primary-accent/85 text-white shadow-md shadow-primary-accent/30";
+  const mobileNavButtonBase =
+    "flex items-center gap-3 px-3 py-3 rounded-lg border font-medium transition-all duration-200";
 
   return (
     <nav
+      data-theme="dark"
       className={`py-3 shadow-sm sticky top-0 z-[100] transition-all duration-300 ${
         scrolled 
-          ? 'bg-secondary-bg/95 backdrop-blur-sm border-b border-white/10' 
-          : 'bg-secondary-bg'
+          ? 'bg-[rgba(var(--primary-bg-rgb),0.22)] backdrop-blur-lg border-b border-white/20' 
+          : 'bg-[rgba(var(--primary-bg-rgb),0.06)] backdrop-blur-md border-b border-white/10'
       }`}
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
@@ -227,16 +236,16 @@ export default function Navigation() {
           </a>
 
           {/* Mini Player */}
-          <div className="hidden md:flex items-center gap-2 h-8 px-2.5 rounded-full border border-base-300/50 bg-base-100/50 backdrop-blur-sm ml-4 relative">
+          <div className="hidden md:flex items-center gap-2 h-8 px-2.5 rounded-full border border-slate-700/85 bg-[rgba(var(--primary-bg-rgb),0.5)] backdrop-blur-sm ml-4 relative">
             <button
               type="button"
               onClick={toggleBgm}
               aria-pressed={isBgmPlaying}
               aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
-              className={`flex items-center justify-center w-7 h-7 rounded-full border border-base-300/60 transition-all ${
+              className={`flex items-center justify-center w-7 h-7 rounded-full border border-slate-600/80 transition-all ${
                 isBgmPlaying
                   ? "bg-primary-accent/20 text-primary-accent"
-                  : "bg-base-100/60 text-base-content hover:text-primary-accent"
+                  : "bg-[rgba(var(--primary-bg-rgb),0.65)] text-slate-100 hover:text-primary-accent"
               }`}
             >
               {isBgmPlaying ? (
@@ -252,7 +261,7 @@ export default function Navigation() {
             <span className="text-xs text-base-content/80 max-w-[150px] truncate">
               play a song for yourself
             </span>
-            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-base-300/40 rounded-full overflow-hidden">
+            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-slate-700/70 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-accent/70"
                 style={{ width: `${Math.round(bgmProgress * 100)}%` }}
@@ -268,10 +277,10 @@ export default function Navigation() {
             <a
               key={item.path}
               href={item.path}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+              className={`${desktopNavButtonBase} ${
                 activeHash === item.path 
-                  ? 'bg-primary-accent text-white shadow-md' 
-                  : 'text-base-content hover:bg-base-200'
+                  ? desktopNavButtonActive
+                  : desktopNavButtonIdle
               }`}
               onClick={() => setActiveHash(item.path)}
             >
@@ -280,14 +289,13 @@ export default function Navigation() {
             </a>
           ))}
           
-          {/* More Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+              className={`${desktopNavButtonBase} ${
                 isMoreActive 
-                  ? 'bg-primary-accent text-white shadow-md' 
-                  : 'text-base-content hover:bg-base-200'
+                  ? desktopNavButtonActive
+                  : desktopNavButtonIdle
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -307,15 +315,15 @@ export default function Navigation() {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 p-2 bg-base-100/95 backdrop-blur-sm rounded-xl shadow-xl border border-base-300/50 z-[110]">
+              <div className="absolute right-0 mt-2 w-56 p-2 bg-[rgba(var(--primary-bg-rgb),0.92)] backdrop-blur-md rounded-xl shadow-xl border border-slate-700/90 z-[110]">
                 {moreNavItems.map((item) => (
                   <a
                     key={item.path}
                     href={item.path}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
+                    className={`${mobileNavButtonBase} ${
                       activeHash === item.path 
-                        ? 'bg-primary-accent text-white' 
-                        : 'text-base-content hover:bg-base-200'
+                        ? desktopNavButtonActive
+                        : "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white"
                     }`}
                     onClick={() => handleNavClick(item.path)}
                   >
@@ -332,7 +340,7 @@ export default function Navigation() {
             href="https://github.com/suichanwa" 
             target="_blank" 
             rel="noopener" 
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-base-content hover:bg-base-200 transition-all duration-200"
+            className={`${desktopNavButtonBase} ${desktopNavButtonIdle}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -348,7 +356,7 @@ export default function Navigation() {
             aria-expanded={isMenuOpen}
             aria-controls="mobile-nav-panel"
             aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            className={`btn btn-ghost btn-circle ${isMenuOpen ? "relative z-[120]" : ""}`}
+            className={`btn btn-circle border border-slate-700/85 bg-[rgba(var(--primary-bg-rgb),0.55)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.75)] hover:border-slate-500/90 ${isMenuOpen ? "relative z-[120]" : ""}`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -365,7 +373,6 @@ export default function Navigation() {
             </svg>
           </button>
 
-          {/* Mobile Dropdown */}
           {isMenuOpen && (
             <div className="fixed inset-0 z-[110] md:hidden">
               <button
@@ -378,7 +385,7 @@ export default function Navigation() {
                 id="mobile-nav-panel"
                 role="dialog"
                 aria-modal="true"
-                className="absolute left-4 right-4 top-[calc(4rem+env(safe-area-inset-top))] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-base-300/50 bg-base-100/95 p-4 shadow-2xl"
+                className="absolute left-4 right-4 top-[calc(4rem+env(safe-area-inset-top))] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-700/90 bg-[rgba(var(--primary-bg-rgb),0.94)] p-4 shadow-2xl"
               >
                 <div className="space-y-4">
                   <div>
@@ -390,10 +397,10 @@ export default function Navigation() {
                         <a
                           key={item.path}
                           href={item.path}
-                          className={`flex items-center gap-3 px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
+                          className={`${mobileNavButtonBase} ${
                             activeHash === item.path 
-                              ? 'bg-primary-accent text-white' 
-                              : 'text-base-content hover:bg-base-200'
+                              ? desktopNavButtonActive
+                              : "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white"
                           }`}
                           onClick={() => handleNavClick(item.path)}
                         >
@@ -404,7 +411,7 @@ export default function Navigation() {
                     </div>
                   </div>
 
-                  <div className="border-t border-base-300/50 pt-3">
+                  <div className="border-t border-slate-700/90 pt-3">
                     <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
                       Social
                     </h3>
@@ -412,7 +419,7 @@ export default function Navigation() {
                       href="https://github.com/suichanwa" 
                       target="_blank" 
                       rel="noopener" 
-                      className="flex items-center gap-3 px-3 py-3 rounded-lg text-base-content hover:bg-base-200 transition-all duration-200"
+                      className={`${mobileNavButtonBase} border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">

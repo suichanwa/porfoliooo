@@ -86,14 +86,14 @@ const stats = [
 
 <BaseLayout title="Home | My Portfolio" enableNeptuneTransition={true}>
   <!-- Hero Section -->
-  <section id="hero-section" class="py-24 bg-primary-bg min-h-[90vh] flex items-center relative overflow-hidden">
+  <section id="hero-section" class="py-24 bg-transparent min-h-[90vh] flex items-center relative overflow-hidden">
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between gap-12">
         <div class="md:w-2/3 text-center md:text-left">
           <h1 class="text-4xl md:text-6xl font-bold mb-6 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
             <TypeWriter 
               client:load 
-              text="a fullstack code monkey" 
+              text="fullstack developer" 
               speed={80} 
               delay={500}
               className="block bg-gradient-to-r from-primary-accent to-secondary-accent bg-clip-text text-transparent"
@@ -115,19 +115,19 @@ const stats = [
           <!-- Optimized Stats -->
           <div class="flex flex-wrap justify-center md:justify-start gap-6 mb-8">
             {stats.map((stat) => (
-              <div class="flex items-center gap-3 p-4 bg-base-100/20 rounded-lg border border-white/10 min-w-[140px] hover:border-white/20 transition-colors">
+              <div class="hero-stat">
                 {stat.icon === 'clock' ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-accent">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hero-stat__icon">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-accent">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hero-stat__icon">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
                   </svg>
                 )}
                 <div>
-                  <div class="text-2xl font-bold text-primary-accent">{stat.value}</div>
-                  <div class="text-sm text-white/70">{stat.label}</div>
+                  <div class="hero-stat__value">{stat.value}</div>
+                  <div class="hero-stat__label">{stat.label}</div>
                 </div>
               </div>
             ))}
@@ -158,3 +158,51 @@ const stats = [
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .hero-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    min-width: 140px;
+    background: rgba(12, 16, 26, 0.55);
+    border: 1px solid rgba(180, 194, 214, 0.12);
+    box-shadow: 0 12px 22px rgba(2, 4, 10, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
+  }
+
+  .hero-stat__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: rgba(167, 179, 198, 0.7);
+  }
+
+  .hero-stat__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: rgba(238, 244, 255, 0.88);
+    line-height: 1.1;
+  }
+
+  .hero-stat__label {
+    font-size: 0.85rem;
+    color: rgba(198, 206, 222, 0.6);
+  }
+
+  .hero-stat:hover {
+    transform: translateY(-2px);
+    background: rgba(16, 20, 32, 0.6);
+    border-color: rgba(180, 194, 214, 0.2);
+    box-shadow: 0 16px 26px rgba(2, 4, 10, 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-stat {
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
