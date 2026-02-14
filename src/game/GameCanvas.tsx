@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import Phaser from 'phaser';
 import { createBattleScene } from './scenes/BattleScene';
+import { createCityMapScene } from './scenes/CityMapScene';
 import type { GameStateData } from './types/gameTypes';
 import type { CharacterCreationData } from './types/characterTypes';
 import StatusBar from './components/StatusBar';
@@ -414,8 +415,12 @@ export default function GameCanvas() {
         // Create battle scene
         debugLog('GameCanvas', 'Creating battle scene');
         const BattleScene = createBattleScene(Phaser, battleSceneDeps);
+
+        // Create city map scene
+        debugLog('GameCanvas', 'Creating city map scene');
+        const CityMapScene = createCityMapScene(Phaser);
         
-        debugLog('GameCanvas', 'Both scenes created, setting up Phaser config');
+        debugLog('GameCanvas', 'All scenes created, setting up Phaser config');
 
         // Simple Phaser configuration
         const config: Phaser.Types.Core.GameConfig = {
@@ -433,6 +438,7 @@ export default function GameCanvas() {
           },
           scene: [
             MainMenuScene,
+            CityMapScene,
             BattleScene
           ],
           scale: {
@@ -542,13 +548,11 @@ export default function GameCanvas() {
         gameInstance.scene.stop('MainMenuScene');
       }
 
-      gameInstance.scene.start('MysticRuinsBattleScene', {
-        enemyType: 'SLIME',
-        difficulty: 'Normal',
+      gameInstance.scene.start('MysticRuinsCityMapScene', {
         character
       });
     } catch (error) {
-      debugLog('GameCanvas', 'Failed to start battle after character creation', error);
+      debugLog('GameCanvas', 'Failed to start city map after character creation', error);
     }
   }, [gameInstance]);
 
@@ -572,21 +576,16 @@ export default function GameCanvas() {
   // Handle continuing to next level after victory
   const handleContinueJourney = useCallback(() => {
     debugLog('GameCanvas', 'Continue journey requested');
-    if (gameInstance && gameState) {
-      const battleScene = gameInstance.scene.getScene('MysticRuinsBattleScene');
-      if (battleScene) {
-        debugLog('GameCanvas', 'Starting new battle scene');
-        gameInstance.scene.start('MysticRuinsBattleScene', { 
-          difficulty: 'Normal',
-          character: createdCharacter
-        });
-      } else {
-        debugLog('GameCanvas', 'Warning: Battle scene not found');
-      }
+    if (gameInstance) {
+      setGameState(null);
+      debugLog('GameCanvas', 'Returning to city map scene');
+      gameInstance.scene.start('MysticRuinsCityMapScene', {
+        character: createdCharacter
+      });
     } else {
-      debugLog('GameCanvas', 'Warning: Game instance or state not available for continue');
+      debugLog('GameCanvas', 'Warning: Game instance not available for continue');
     }
-  }, [createdCharacter, gameInstance, gameState]);
+  }, [createdCharacter, gameInstance]);
 
   // Handle retrying after defeat
   const handleRetryBattle = useCallback(() => {
