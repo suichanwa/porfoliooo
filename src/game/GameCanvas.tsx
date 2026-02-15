@@ -37,7 +37,6 @@ function createMainMenuScene() {
     preload() {
       debugLog('MainMenuScene', 'Preload started');
       try {
-        // Simulate some preload work
         this.load.once('complete', () => {
           debugLog('MainMenuScene', 'Preload complete event fired');
         });
