@@ -8,21 +8,30 @@ interface CameraRigProps {
   minDistance?: number;
   maxDistance?: number;
   isInspecting?: boolean;
+  onZoomOut?: () => void;
 }
 
 export default function CameraRig({
   controlsRef,
   minDistance = 8,
   maxDistance = 140,
-  isInspecting = false
+  isInspecting = false,
+  onZoomOut
 }: CameraRigProps) {
   const localControlsRef = useRef<OrbitControlsImpl | null>(null);
   const offsetRef = useRef(new Vector3());
   const sphericalRef = useRef(new Spherical());
+  const previousRadiusRef = useRef<number>(0);
 
   const setRefs = useCallback(
     (controls: OrbitControlsImpl | null) => {
       localControlsRef.current = controls;
+      if (controls) {
+        const camera = controls.object;
+        const targetPoint = controls.target;
+        const offset = new Vector3().copy(camera.position).sub(targetPoint);
+        previousRadiusRef.current = offset.length();
+      }
       if (!controlsRef) return;
       if (typeof controlsRef === "function") {
         controlsRef(controls);
@@ -32,6 +41,30 @@ export default function CameraRig({
     },
     [controlsRef]
   );
+
+  useEffect(() => {
+    const controls = localControlsRef.current;
+    if (!controls || !onZoomOut) return;
+
+    const handleChange = () => {
+      const camera = controls.object;
+      const targetPoint = controls.target;
+      const offset = new Vector3().copy(camera.position).sub(targetPoint);
+      const currentRadius = offset.length();
+
+      // Detect zoom out (radius increasing by a meaningful amount)
+      if (currentRadius > previousRadiusRef.current + 0.5) {
+        onZoomOut();
+      }
+
+      previousRadiusRef.current = currentRadius;
+    };
+
+    controls.addEventListener("change", handleChange);
+    return () => {
+      controls.removeEventListener("change", handleChange);
+    };
+  }, [onZoomOut]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -108,6 +141,7 @@ export default function CameraRig({
             minDist,
             maxDist
           );
+          if (onZoomOut) onZoomOut();
           break;
         case "Home":
           sphericalRef.current.phi = controls.minPolarAngle;
@@ -134,7 +168,7 @@ export default function CameraRig({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [minDistance, maxDistance]);
+  }, [minDistance, maxDistance, onZoomOut]);
 
   return (
     <OrbitControls
@@ -153,3 +187,4 @@ export default function CameraRig({
     />
   );
 }
+

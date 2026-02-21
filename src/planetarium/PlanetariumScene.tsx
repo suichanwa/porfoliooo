@@ -216,7 +216,7 @@ export default function PlanetariumScene({
           scaleParams={distanceScaleParams}
         />
       ))}
-      <CameraRig controlsRef={controlsRef} isInspecting={Boolean(selectedId)} />
+      <CameraRig controlsRef={controlsRef} isInspecting={Boolean(selectedId)} onZoomOut={() => onSelect(null)}/>
     </>
   );
 }

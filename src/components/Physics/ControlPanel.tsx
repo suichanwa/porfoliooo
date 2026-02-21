@@ -29,7 +29,12 @@ export default function ControlPanel({
   onSpeedChange,
 }: ControlPanelProps): JSX.Element {
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div
+      className="space-y-3 sm:space-y-4 rounded-2xl border border-slate-700/60 p-3 sm:p-4 shadow-lg backdrop-blur-sm"
+      style={{
+        backgroundColor: 'rgb(15, 23, 42)',
+      }}
+    >
       {/* Control buttons - mobile optimized */}
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-center">
         <IconButton
@@ -65,7 +70,10 @@ export default function ControlPanel({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-base-300/30 p-3 sm:p-4 rounded-lg border border-blue-500/10"
+          className="p-3 sm:p-4 rounded-lg border border-slate-700/40 backdrop-blur-sm"
+          style={{
+            backgroundColor: 'rgba(30, 41, 59, 0.4)',
+          }}
         >
           <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex items-center justify-between">
@@ -81,7 +89,7 @@ export default function ControlPanel({
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs text-base-content/50 w-6 sm:w-8">10</span>
+              <span className="text-xs text-slate-400 w-6 sm:w-8">10</span>
               <input
                 type="range"
                 min="10"
@@ -89,12 +97,12 @@ export default function ControlPanel({
                 step="5"
                 value={speed}
                 onChange={(e) => onSpeedChange(Number(e.target.value))}
-                className="flex-1 h-3 sm:h-2 bg-base-300 rounded-lg appearance-none cursor-pointer accent-blue-500 touch-manipulation"
+                className="flex-1 h-3 sm:h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-blue-500 touch-manipulation"
                 style={{
-                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((speed - 10) / 140) * 100}%, #374151 ${((speed - 10) / 140) * 100}%, #374151 100%)`,
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((speed - 10) / 140) * 100}%, rgba(51, 65, 85, 0.5) ${((speed - 10) / 140) * 100}%, rgba(51, 65, 85, 0.5) 100%)`,
                 }}
               />
-              <span className="text-xs text-base-content/50 w-6 sm:w-8 text-right">150</span>
+              <span className="text-xs text-slate-400 w-6 sm:w-8 text-right">150</span>
             </div>
 
             {/* Mobile-friendly preset buttons */}

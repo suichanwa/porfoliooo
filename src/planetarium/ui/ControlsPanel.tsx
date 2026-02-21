@@ -194,13 +194,21 @@ export default function ControlsPanel({
         width: "min(92vw, 20rem)"
       }}
     >
-      <div className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-700/60 bg-[rgba(15,23,42,0.85)] backdrop-blur-md px-3 py-3 text-[11px] text-slate-100 shadow-lg sm:px-4 sm:text-xs">
+      <div 
+        className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-700/60 px-3 py-3 text-[11px] text-slate-100 shadow-lg sm:px-4 sm:text-xs"
+        style={{
+          backgroundColor: 'rgb(15, 23, 42)'
+        }}
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onPointerDown={handleDragStart}
-              className="flex items-center gap-2 rounded-full border border-slate-700/80 bg-slate-800/50 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300 transition-all duration-200 hover:border-slate-500/90 hover:bg-slate-700/60 hover:text-white cursor-grab active:cursor-grabbing select-none"
+              className="flex items-center gap-2 rounded-full border border-slate-700/80 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300 transition-all duration-200 hover:border-slate-500/90 hover:text-white cursor-grab active:cursor-grabbing select-none"
+              style={{
+                backgroundColor: 'rgb(30, 41, 59)'
+              }}
               aria-label="Drag controls panel"
             >
               <span className="text-[10px] tracking-[0.1em]">:::</span>
@@ -213,7 +221,10 @@ export default function ControlsPanel({
           <button
             type="button"
             onClick={() => setControlsOpen((prev) => !prev)}
-            className="rounded-full border border-slate-700/80 bg-slate-800/50 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:bg-slate-700/60 hover:text-white"
+            className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
+            style={{
+              backgroundColor: 'rgb(30, 41, 59)'
+            }}
             aria-expanded={controlsOpen}
           >
             {controlsOpen ? "Hide" : "Show"}
@@ -233,7 +244,10 @@ export default function ControlsPanel({
                 Distance scale
               </span>
               <select
-                className="select select-sm border-slate-700/80 bg-slate-800/60 text-slate-100 focus:border-primary-accent focus:outline-none"
+                className="select select-sm border-slate-700/80 text-slate-100 focus:border-primary-accent focus:outline-none"
+                style={{
+                  backgroundColor: 'rgb(30, 41, 59)'
+                }}
                 value={distanceScaleMode}
                 onChange={(event) =>
                   onDistanceScaleModeChange(event.target.value as DistanceScaleMode)
@@ -283,9 +297,14 @@ export default function ControlsPanel({
                 onClick={onSetOverview}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
                   viewMode === "overview"
-                    ? "border-primary-accent bg-primary-accent/20 text-primary-accent font-semibold"
-                    : "border-slate-700/80 bg-slate-800/40 text-slate-100 hover:border-slate-500/90 hover:bg-slate-700/50 hover:text-white"
+                    ? "border-primary-accent text-primary-accent font-semibold"
+                    : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
                 }`}
+                style={{
+                  backgroundColor: viewMode === "overview" 
+                    ? 'rgba(59, 130, 246, 0.2)' 
+                    : 'rgb(30, 41, 59)'
+                }}
               >
                 Overview
               </button>
@@ -294,9 +313,14 @@ export default function ControlsPanel({
                 onClick={onSetExplore}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
                   viewMode === "explore"
-                    ? "border-primary-accent bg-primary-accent/20 text-primary-accent font-semibold"
-                    : "border-slate-700/80 bg-slate-800/40 text-slate-100 hover:border-slate-500/90 hover:bg-slate-700/50 hover:text-white"
+                    ? "border-primary-accent text-primary-accent font-semibold"
+                    : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
                 }`}
+                style={{
+                  backgroundColor: viewMode === "explore" 
+                    ? 'rgba(59, 130, 246, 0.2)' 
+                    : 'rgb(30, 41, 59)'
+                }}
               >
                 Explore
               </button>
