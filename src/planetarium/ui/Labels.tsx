@@ -26,26 +26,34 @@ export default function Labels({
   scaleParams
 }: LabelsProps) {
   const groupRef = useRef<Group>(null);
+  const orbitPositionRef = useRef(new Vector3());
   const { camera } = useThree();
   const initialPosition = useMemo(
     () =>
       data.orbit
-        ? getOrbitPosition(data.orbit, timeRef.current, scaleMode, scaleParams)
+        ? getOrbitPosition(
+            data.orbit,
+            timeRef.current,
+            scaleMode,
+            scaleParams,
+            new Vector3()
+          )
         : new Vector3(),
     [data.orbit, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
-    const position = getOrbitPosition(
+    getOrbitPosition(
       data.orbit,
       timeRef.current,
       scaleMode,
-      scaleParams
+      scaleParams,
+      orbitPositionRef.current
     );
-    groupRef.current.position.copy(position);
+    groupRef.current.position.copy(orbitPositionRef.current);
 
-    const distance = camera.position.distanceTo(position);
+    const distance = camera.position.distanceTo(orbitPositionRef.current);
     const isHovered = hoveredRef?.current ?? false;
     groupRef.current.visible =
       showLabels && (isHovered || distance < LABEL_DISTANCE);

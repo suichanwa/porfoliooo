@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
 type Variant = 'accent' | 'primary' | 'danger' | 'subtle' | 'ghost';
 type Size = 'md' | 'sm';
 
-interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type MotionButtonProps = ComponentPropsWithoutRef<typeof motion.button>;
+
+interface IconButtonProps extends Omit<MotionButtonProps, 'children'> {
   label: string;
   icon: ReactNode;
   variant?: Variant;

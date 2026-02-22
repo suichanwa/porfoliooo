@@ -7,6 +7,8 @@ import {
 } from "../utils/distanceScale";
 import { kmToAu } from "../utils/units";
 
+const ORBIT_TILT_AXIS = new Vector3(1, 0, 0);
+
 const solveKepler = (meanAnomaly: number, eccentricity: number) => {
   let eccentricAnomaly = meanAnomaly;
   for (let i = 0; i < 5; i += 1) {
@@ -20,7 +22,8 @@ export const getOrbitPosition = (
   orbit: OrbitElements,
   timeDays: number,
   scaleMode: DistanceScaleMode,
-  scaleParams: DistanceScaleParams
+  scaleParams: DistanceScaleParams,
+  out: Vector3 = new Vector3()
 ) => {
   const semiMajor = computeRenderOrbitRadius(
     kmToAu(orbit.semiMajorAxisKm),
@@ -39,9 +42,6 @@ export const getOrbitPosition = (
   const z =
     semiMajor * Math.sqrt(1 - orbit.eccentricity ** 2) * sinE;
 
-  const position = new Vector3(x, 0, z);
   const inclination = MathUtils.degToRad(orbit.inclinationDeg);
-  position.applyAxisAngle(new Vector3(1, 0, 0), inclination);
-
-  return position;
+  return out.set(x, 0, z).applyAxisAngle(ORBIT_TILT_AXIS, inclination);
 };

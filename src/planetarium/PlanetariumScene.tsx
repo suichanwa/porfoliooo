@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -9,6 +9,11 @@ import OrbitingPlanet from "./orbits/OrbitingPlanet";
 import OrbitPath from "./orbits/OrbitPath";
 import { PLANETS } from "./data/planets";
 import type { BodyId } from "./data/types";
+import {
+  createBodyRefStore,
+  ORBITING_PLANETS,
+  PLANET_BY_ID
+} from "./data/planetRegistry";
 import { useSimulationTime } from "./hooks/useSimulationTime";
 import { useFocusTarget } from "./hooks/useFocusTarget";
 import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
@@ -64,30 +69,20 @@ export default function PlanetariumScene({
   }, []);
   const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
-  const planetRefs = useRef<Record<BodyId, Object3D | null>>({
-    sun: null,
-    mercury: null,
-    venus: null,
-    earth: null,
-    mars: null,
-    jupiter: null,
-    saturn: null,
-    uranus: null,
-    neptune: null,
-    ceres: null,
-    pluto: null
-  });
+  const planetRefs = useRef<Record<BodyId, Object3D | null>>(
+    createBodyRefStore<Object3D | null>(null)
+  );
   const sunRef = useRef<Mesh | null>(null);
-  const planetDataMap = useMemo(() => {
-    const entries = PLANETS.map((planet) => [planet.id, planet]);
-    return Object.fromEntries(entries) as Record<BodyId, (typeof PLANETS)[number]>;
-  }, []);
-  const orbitingPlanets = PLANETS.filter((planet) => planet.parentId === "sun");
   const orbitSegments = isLowEnd ? 120 : 180;
   const gridDivisions = isLowEnd ? 120 : 200;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
   const lensingSoftening = gravitySettings.softening * 0.03;
   const perfSampleRef = useRef({ elapsed: 0, frames: 0, logged: false });
+  const handleSunSelect = useCallback(() => onSelect("sun"), [onSelect]);
+  const handleZoomOut = useCallback(() => onSelect(null), [onSelect]);
+  const handlePlanetRef = useCallback((id: BodyId, object: Object3D | null) => {
+    planetRefs.current[id] = object;
+  }, []);
   const gravityBodies = useMemo(
     () =>
       PLANETS.map((planet) => ({
@@ -137,7 +132,7 @@ export default function PlanetariumScene({
     resetSignal,
     controlsRef,
     planetRefs,
-    planetData: planetDataMap,
+    planetData: PLANET_BY_ID,
     onFocusChange
   });
 
@@ -185,12 +180,10 @@ export default function PlanetariumScene({
       />
       <Sun
         meshRef={sunRef}
-        onClick={() => {
-          onSelect("sun");
-        }}
+        onClick={handleSunSelect}
       />
       {showOrbits &&
-        orbitingPlanets.map((planet) =>
+        ORBITING_PLANETS.map((planet) =>
           planet.orbit ? (
             <OrbitPath
               key={`${planet.id}-orbit`}
@@ -201,7 +194,7 @@ export default function PlanetariumScene({
             />
           ) : null
         )}
-      {orbitingPlanets.map((planet) => (
+      {ORBITING_PLANETS.map((planet) => (
         <OrbitingPlanet
           key={planet.id}
           data={planet}
@@ -209,14 +202,16 @@ export default function PlanetariumScene({
           atmosphere={planet.id === "earth"}
           showLabels={showLabels}
           onSelect={onSelect}
-          onObjectRef={(id, object) => {
-            planetRefs.current[id] = object;
-          }}
+          onObjectRef={handlePlanetRef}
           scaleMode={distanceScaleMode}
           scaleParams={distanceScaleParams}
         />
       ))}
-      <CameraRig controlsRef={controlsRef} isInspecting={Boolean(selectedId)} onZoomOut={() => onSelect(null)}/>
+      <CameraRig
+        controlsRef={controlsRef}
+        isInspecting={Boolean(selectedId)}
+        onZoomOut={handleZoomOut}
+      />
     </>
   );
 }

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
 import type { BodyId } from "./data/types";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
 import { PLANETS } from "./data/planets";
+import { PLANET_BY_ID } from "./data/planetRegistry";
 import { PLANET_INFO } from "./data/planetInfo";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
@@ -20,6 +21,9 @@ import {
   DEFAULT_GRAVITY_SETTINGS,
   type GravitySettings
 } from "./gravity/gravityField";
+
+const OVERVIEW_SPACING = 40;
+const EXPLORE_SPACING = 75;
 
 export default function PlanetariumPage() {
   const [showOrbits, setShowOrbits] = useState(false);
@@ -40,13 +44,11 @@ export default function PlanetariumPage() {
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
-  const overviewSpacing = 40;
-  const exploreSpacing = 75;
   const [viewMode, setViewMode] = useState<"overview" | "explore" | "custom">(
     "overview"
   );
-  const [distanceScaleSpacing, setDistanceScaleSpacing] = useState(overviewSpacing);
-  const [spacingTarget, setSpacingTarget] = useState(overviewSpacing);
+  const [distanceScaleSpacing, setDistanceScaleSpacing] = useState(OVERVIEW_SPACING);
+  const [spacingTarget, setSpacingTarget] = useState(OVERVIEW_SPACING);
   const [debugGravity, setDebugGravity] = useState(false);
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
@@ -56,10 +58,7 @@ export default function PlanetariumPage() {
     () => computeDistanceScaleParams(distanceScaleMode, distanceScaleSpacing),
     [distanceScaleMode, distanceScaleSpacing]
   );
-  const selectedPlanet = useMemo(
-    () => (selectedId ? PLANETS.find((planet) => planet.id === selectedId) ?? null : null),
-    [selectedId]
-  );
+  const selectedPlanet = selectedId ? PLANET_BY_ID[selectedId] ?? null : null;
   const selectedInfo = useMemo(
     () => (selectedId ? PLANET_INFO[selectedId] : null),
     [selectedId]
@@ -71,6 +70,51 @@ export default function PlanetariumPage() {
     if (!query) return PLANETS;
     return PLANETS.filter((planet) => planet.name.toLowerCase().includes(query));
   }, [pickerQuery]);
+  const clearSelection = useCallback(() => {
+    setSelectedId(null);
+    setIsFocused(false);
+    setInfoHidden(false);
+  }, []);
+  const handleSceneSelect = useCallback((id: BodyId | null) => {
+    setSelectedId(id);
+    setIsFocused(false);
+    setInfoHidden(false);
+  }, []);
+  const handlePointerMissed = useCallback(() => {
+    setSelectedId(null);
+    setIsFocused(false);
+  }, []);
+  const handleInfoClose = useCallback(() => {
+    clearSelection();
+    setResetSignal((prev) => prev + 1);
+  }, [clearSelection]);
+  const handleSelectPlanet = useCallback((id: BodyId) => {
+    setSelectedId(id);
+    setIsFocused(false);
+    setInfoHidden(false);
+    setPickerOpen(false);
+  }, []);
+  const handleOverview = useCallback(() => {
+    clearSelection();
+    setResetSignal((prev) => prev + 1);
+    setPickerOpen(false);
+  }, [clearSelection]);
+  const handleSpacingChange = useCallback((value: number) => {
+    setViewMode("custom");
+    setSpacingTarget(value);
+    setDistanceScaleSpacing(value);
+  }, []);
+  const handleSetOverview = useCallback(() => {
+    setViewMode("overview");
+    setSpacingTarget(OVERVIEW_SPACING);
+  }, []);
+  const handleSetExplore = useCallback(() => {
+    setViewMode("explore");
+    setSpacingTarget(EXPLORE_SPACING);
+  }, []);
+  const handlePickerToggle = useCallback(() => {
+    setPickerOpen((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -122,10 +166,7 @@ export default function PlanetariumPage() {
     <div className="relative min-h-screen">
       <PlanetariumCanvas
         dpr={canvasDpr}
-        onPointerMissed={() => {
-          setSelectedId(null);
-          setIsFocused(false);
-        }}
+        onPointerMissed={handlePointerMissed}
       >
       <PlanetariumScene
         showOrbits={showOrbits}
@@ -134,11 +175,7 @@ export default function PlanetariumPage() {
         showLensing={showLensing}
         selectedId={selectedId}
         resetSignal={resetSignal}
-        onSelect={(id) => {
-          setSelectedId(id);
-          setIsFocused(false);
-          setInfoHidden(false);
-        }}
+        onSelect={handleSceneSelect}
         isLowEnd={deviceInfo.isLowEnd}
         prefersReducedMotion={deviceInfo.prefersReducedMotion}
         onFocusChange={setIsFocused}
@@ -156,12 +193,7 @@ export default function PlanetariumPage() {
           info={selectedInfo}
           isVisible={isInfoVisible}
           onHide={() => setInfoHidden(true)}
-          onClose={() => {
-            setSelectedId(null);
-            setIsFocused(false);
-            setInfoHidden(false);
-            setResetSignal((prev) => prev + 1);
-          }}
+          onClose={handleInfoClose}
         />
         {selectedPlanet && isFocused && infoHidden && (
           <div className="pointer-events-auto ml-auto">
@@ -179,20 +211,10 @@ export default function PlanetariumPage() {
         distanceScaleMode={distanceScaleMode}
         onDistanceScaleModeChange={setDistanceScaleMode}
         distanceScaleSpacing={distanceScaleSpacing}
-        onSpacingChange={(value) => {
-          setViewMode("custom");
-          setSpacingTarget(value);
-          setDistanceScaleSpacing(value);
-        }}
+        onSpacingChange={handleSpacingChange}
         viewMode={viewMode}
-        onSetOverview={() => {
-          setViewMode("overview");
-          setSpacingTarget(overviewSpacing);
-        }}
-        onSetExplore={() => {
-          setViewMode("explore");
-          setSpacingTarget(exploreSpacing);
-        }}
+        onSetOverview={handleSetOverview}
+        onSetExplore={handleSetExplore}
         showOrbits={showOrbits}
         onShowOrbitsChange={setShowOrbits}
         showLabels={showLabels}
@@ -209,21 +231,10 @@ export default function PlanetariumPage() {
         pickerQuery={pickerQuery}
         onPickerQueryChange={setPickerQuery}
         pickerOpen={pickerOpen}
-        onPickerToggle={() => setPickerOpen((prev) => !prev)}
+        onPickerToggle={handlePickerToggle}
         selectedId={selectedId}
-        onSelectPlanet={(id) => {
-          setSelectedId(id);
-          setIsFocused(false);
-          setInfoHidden(false);
-          setPickerOpen(false);
-        }}
-        onOverview={() => {
-          setSelectedId(null);
-          setIsFocused(false);
-          setInfoHidden(false);
-          setResetSignal((prev) => prev + 1);
-          setPickerOpen(false);
-        }}
+        onSelectPlanet={handleSelectPlanet}
+        onOverview={handleOverview}
         isHidden={shouldHideControls}
       />
       <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">

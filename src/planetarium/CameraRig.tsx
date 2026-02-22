@@ -11,6 +11,17 @@ interface CameraRigProps {
   onZoomOut?: () => void;
 }
 
+const KEYBOARD_CONTROL_KEYS = new Set([
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "PageUp",
+  "PageDown",
+  "Home",
+  "End"
+]);
+
 export default function CameraRig({
   controlsRef,
   minDistance = 8,
@@ -29,8 +40,8 @@ export default function CameraRig({
       if (controls) {
         const camera = controls.object;
         const targetPoint = controls.target;
-        const offset = new Vector3().copy(camera.position).sub(targetPoint);
-        previousRadiusRef.current = offset.length();
+        offsetRef.current.copy(camera.position).sub(targetPoint);
+        previousRadiusRef.current = offsetRef.current.length();
       }
       if (!controlsRef) return;
       if (typeof controlsRef === "function") {
@@ -49,8 +60,8 @@ export default function CameraRig({
     const handleChange = () => {
       const camera = controls.object;
       const targetPoint = controls.target;
-      const offset = new Vector3().copy(camera.position).sub(targetPoint);
-      const currentRadius = offset.length();
+      offsetRef.current.copy(camera.position).sub(targetPoint);
+      const currentRadius = offsetRef.current.length();
 
       // Detect zoom out (radius increasing by a meaningful amount)
       if (currentRadius > previousRadiusRef.current + 0.5) {
@@ -84,17 +95,7 @@ export default function CameraRig({
       }
 
       const code = event.code;
-      const handledKeys = [
-        "ArrowLeft",
-        "ArrowRight",
-        "ArrowUp",
-        "ArrowDown",
-        "PageUp",
-        "PageDown",
-        "Home",
-        "End"
-      ];
-      if (!handledKeys.includes(code)) return;
+      if (!KEYBOARD_CONTROL_KEYS.has(code)) return;
 
       const controls = localControlsRef.current;
       if (!controls) return;
@@ -187,4 +188,3 @@ export default function CameraRig({
     />
   );
 }
-
