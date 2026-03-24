@@ -211,15 +211,15 @@ export default function Navigation() {
 
   const isMoreActive = moreNavItems.some(item => item.path === activeHash);
   const desktopNavButtonBase =
-    "group relative flex items-center gap-2 px-4 py-2.5 rounded-full border text-[13px] font-semibold tracking-[0.02em] transition-all duration-300";
+    "group relative flex items-center gap-2 px-2.5 py-2 border-b-2 border-transparent text-[12px] font-semibold uppercase tracking-[0.08em] transition-all duration-300";
   const desktopNavButtonIdle =
-    "border-transparent bg-[rgba(var(--primary-bg-rgb),0.12)] text-slate-300 hover:-translate-y-0.5 hover:bg-[rgba(var(--primary-bg-rgb),0.45)] hover:text-white hover:border-slate-600/40";
+    "text-slate-300/90 hover:text-white hover:border-primary-accent/35";
   const desktopNavButtonActive =
-    "border-primary-accent/35 bg-[linear-gradient(130deg,rgba(99,102,241,0.32),rgba(45,65,98,0.78))] text-white shadow-[0_14px_30px_-18px_rgba(99,102,241,0.95)]";
+    "text-white border-primary-accent/65 drop-shadow-[0_0_10px_rgba(99,102,241,0.35)]";
   const mobileNavButtonBase =
-    "group flex items-center gap-3 px-4 py-3 rounded-2xl border text-[14px] font-semibold tracking-[0.01em] transition-all duration-300";
+    "group flex items-center gap-3 px-3.5 py-3 rounded-lg border text-[12px] font-semibold uppercase tracking-[0.07em] transition-all duration-300";
   const mobileNavButtonIdle =
-    "border-slate-700/65 bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.38),rgba(var(--primary-bg-rgb),0.24))] text-slate-200 hover:-translate-y-0.5 hover:border-primary-accent/30 hover:bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.58),rgba(var(--primary-bg-rgb),0.34))] hover:text-white";
+    "border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.18)] text-slate-300 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.36)] hover:text-white";
 
   return (
     <nav
@@ -361,7 +361,7 @@ export default function Navigation() {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-60 p-2 bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.95),rgba(19,28,44,0.86))] backdrop-blur-xl rounded-2xl shadow-2xl border border-primary-accent/20 z-[110]">
+              <div className="absolute right-0 mt-2 w-60 p-2 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.95),rgba(20,28,40,0.84))] backdrop-blur-xl rounded-xl shadow-2xl border border-slate-700/55 z-[110]">
                 {moreNavItems.map((item) => (
                   <a
                     key={item.path}
