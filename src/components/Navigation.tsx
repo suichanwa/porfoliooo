@@ -7,10 +7,33 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [currentPfp, setCurrentPfp] = useState("/images/pfp.jpg");
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
-  const [bgmProgress, setBgmProgress] = useState(0);
+  const [miniPlayerStyleIndex, setMiniPlayerStyleIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  const miniPlayerStyles = [
+    {
+      shell: "border-slate-700/85 bg-[linear-gradient(120deg,rgba(var(--primary-bg-rgb),0.76),rgba(var(--primary-bg-rgb),0.48))]",
+      buttonIdle: "border-slate-600/80 bg-[rgba(var(--primary-bg-rgb),0.66)] text-slate-100 hover:text-primary-accent",
+      buttonActive: "border-primary-accent/60 bg-primary-accent/20 text-primary-accent shadow-md shadow-primary-accent/20",
+      text: "text-slate-100/90"
+    },
+    {
+      shell: "border-cyan-400/25 bg-[linear-gradient(120deg,rgba(7,19,34,0.85),rgba(12,39,64,0.72),rgba(31,67,92,0.58))]",
+      buttonIdle: "border-cyan-300/25 bg-cyan-950/45 text-cyan-100 hover:text-cyan-200",
+      buttonActive: "border-cyan-300/55 bg-cyan-400/20 text-cyan-100 shadow-md shadow-cyan-400/20",
+      text: "text-cyan-50/95"
+    },
+    {
+      shell: "border-amber-300/30 bg-[linear-gradient(120deg,rgba(24,17,28,0.82),rgba(38,28,45,0.74),rgba(61,40,42,0.62))]",
+      buttonIdle: "border-amber-200/25 bg-amber-950/35 text-amber-50 hover:text-amber-200",
+      buttonActive: "border-amber-300/60 bg-amber-300/20 text-amber-100 shadow-md shadow-amber-400/20",
+      text: "text-amber-50/95"
+    }
+  ] as const;
+
+  const miniPlayerStyle = miniPlayerStyles[miniPlayerStyleIndex % miniPlayerStyles.length];
 
   useEffect(() => {
     setActiveHash(window.location.pathname);
@@ -25,30 +48,18 @@ export default function Navigation() {
 
     const handlePlay = () => setIsBgmPlaying(true);
     const handlePause = () => setIsBgmPlaying(false);
-    const handleTimeUpdate = () => {
-      if (!audio.duration) {
-        setBgmProgress(0);
-        return;
-      }
-      setBgmProgress(audio.currentTime / audio.duration);
-    };
     const handleEnded = () => {
       setIsBgmPlaying(false);
-      setBgmProgress(0);
     };
 
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleTimeUpdate);
 
     return () => {
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleTimeUpdate);
     };
   }, []);
 
@@ -236,16 +247,18 @@ export default function Navigation() {
           </a>
 
           {/* Mini Player */}
-          <div className="hidden md:flex items-center gap-2 h-8 px-2.5 rounded-full border border-slate-700/85 bg-[rgba(var(--primary-bg-rgb),0.5)] backdrop-blur-sm ml-4 relative">
+          <div
+            className={`hidden md:flex items-center gap-2 h-10 px-3 rounded-2xl border backdrop-blur-md ml-4 relative shadow-lg transition-all duration-300 ${miniPlayerStyle.shell}`}
+          >
             <button
               type="button"
               onClick={toggleBgm}
               aria-pressed={isBgmPlaying}
               aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
-              className={`flex items-center justify-center w-7 h-7 rounded-full border border-slate-600/80 transition-all ${
+              className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all ${
                 isBgmPlaying
-                  ? "bg-primary-accent/20 text-primary-accent"
-                  : "bg-[rgba(var(--primary-bg-rgb),0.65)] text-slate-100 hover:text-primary-accent"
+                  ? miniPlayerStyle.buttonActive
+                  : miniPlayerStyle.buttonIdle
               }`}
             >
               {isBgmPlaying ? (
@@ -258,15 +271,42 @@ export default function Navigation() {
                 </svg>
               )}
             </button>
-            <span className="text-xs text-base-content/80 max-w-[150px] truncate">
-              play a song for yourself
-            </span>
-            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-slate-700/70 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary-accent/70"
-                style={{ width: `${Math.round(bgmProgress * 100)}%` }}
-              />
+
+            <div className="min-w-0 pr-1">
+              <span className={`text-xs max-w-[170px] truncate block ${miniPlayerStyle.text}`}>
+                play a song for yourself
+              </span>
             </div>
+
+            <div className="flex items-end gap-[2px] h-3 mr-0.5" aria-hidden="true">
+              {[0, 1, 2].map((bar) => (
+                <span
+                  key={bar}
+                  className={`w-[2px] rounded-full transition-all duration-300 ${
+                    isBgmPlaying
+                      ? "bg-primary-accent/80 animate-[pulse_900ms_ease-in-out_infinite]"
+                      : "bg-slate-500/60"
+                  }`}
+                  style={{
+                    height: isBgmPlaying ? `${6 + bar * 2}px` : "4px",
+                    animationDelay: `${bar * 120}ms`
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMiniPlayerStyleIndex((prev) => prev + 1)}
+              aria-label="Switch mini player style"
+              className="flex items-center justify-center w-7 h-7 rounded-full border border-white/15 text-slate-200/85 hover:text-white hover:border-white/35 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+            </button>
+
             <audio ref={bgmRef} src="/song/BGM.mp3" preload="none" />
           </div>
         </div>
