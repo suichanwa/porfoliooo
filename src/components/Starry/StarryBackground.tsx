@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import StarryCanvas from "./StarryCanvas";
 import StarryControlButton from "./StarryControlButton";
 import StarryControlPanel from "./StarryControlPanel";
-import StarryNebulae from "./StarryNebulae";
 import useDeviceInfo from "../../hooks/useDeviceInfo";
 import useIsClient from "../../hooks/useIsClient";
 import useNeptuneBackground from "../../hooks/useNeptuneBackground";
@@ -22,7 +21,6 @@ export default function StarryBackground({
   const [showConstellations, setShowConstellations] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
-  const [enableNebulae, setEnableNebulae] = useState(true);
 
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
@@ -54,10 +52,8 @@ export default function StarryBackground({
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         showConstellations={showConstellations}
-        enableNebulae={enableNebulae}
         hideGUI={hideGUI}
         onToggleConstellations={() => setShowConstellations(!showConstellations)}
-        onToggleNebulae={() => setEnableNebulae(!enableNebulae)}
         onToggleHideGUI={handleHideGUI}
       />
 
@@ -75,7 +71,6 @@ export default function StarryBackground({
           transition: "background 0.3s ease-out"
         }}
       >
-        <StarryNebulae enabled={enableNebulae} isLowEnd={deviceInfo.isLowEnd} />
         <StarryCanvas
           showConstellations={showConstellations}
           deviceInfo={deviceInfo}

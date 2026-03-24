@@ -271,7 +271,6 @@ export interface StarryBackgroundPreferences {
   userId?: string;
   showConstellations: boolean;
   enableTrails: boolean;
-  enableNebulae: boolean;
   hideGUI: boolean;
   starCount: number;
   lastUpdated: any;
@@ -289,7 +288,6 @@ export interface StarryBackgroundAnalytics {
   interactions: {
     constellationToggles: number;
     trailToggles: number;
-    nebulaeToggles: number;
     guiToggles: number;
     panelOpens: number;
   };

@@ -1,15 +1,8 @@
 import StarryCanvas from "../Starry/StarryCanvas";
-import StarryNebulae from "../Starry/StarryNebulae";
 import useDeviceInfo from "../../hooks/useDeviceInfo";
 import useIsClient from "../../hooks/useIsClient";
 
-interface PlanetariumBackgroundProps {
-  enableNebulae?: boolean;
-}
-
-export default function PlanetariumBackground({
-  enableNebulae = true
-}: PlanetariumBackgroundProps) {
+export default function PlanetariumBackground() {
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
 
@@ -31,7 +24,6 @@ export default function PlanetariumBackground({
           "linear-gradient(135deg, #08121f 0%, #0b1a2b 40%, #0a0f1a 100%)"
       }}
     >
-      <StarryNebulae enabled={enableNebulae} isLowEnd={deviceInfo.isLowEnd} />
       <StarryCanvas
         showConstellations={true}
         deviceInfo={deviceInfo}

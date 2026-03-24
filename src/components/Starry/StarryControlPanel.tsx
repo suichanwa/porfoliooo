@@ -1,14 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Telescope, Star, Sparkles, Zap, Target, RefreshCw, Battery } from "lucide-react";
+import { Telescope, Star, Zap, Target, RefreshCw, Battery } from "lucide-react";
 
 interface StarryControlPanelProps {
   isOpen: boolean;
   onClose: () => void;
   showConstellations: boolean;
-  enableNebulae: boolean;
   hideGUI: boolean;
   onToggleConstellations: () => void;
-  onToggleNebulae: () => void;
   onToggleHideGUI: () => void;
 }
 
@@ -16,10 +14,8 @@ export default function StarryControlPanel({
   isOpen,
   onClose,
   showConstellations,
-  enableNebulae,
   hideGUI,
   onToggleConstellations,
-  onToggleNebulae,
   onToggleHideGUI
 }: StarryControlPanelProps) {
   return (
@@ -60,18 +56,6 @@ export default function StarryControlPanel({
                 >
                   <Star className="w-4 h-4" />
                   {showConstellations ? "Hide" : "Show"} Constellations
-                </button>
-
-                <button
-                  onClick={onToggleNebulae}
-                  className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                    enableNebulae
-                      ? "bg-pink-500/30 text-pink-300 border border-pink-400/30"
-                      : "bg-white/10 text-white/80 hover:bg-white/20 border border-white/10"
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {enableNebulae ? "Hide" : "Show"} Nebulae
                 </button>
               </div>
 
