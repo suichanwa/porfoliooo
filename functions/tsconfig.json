@@ -13,6 +13,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "moduleResolution": "nodenext",
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "types": [
+      "node"
+    ]
   }
 }
