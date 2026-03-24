@@ -70,6 +70,7 @@ export default function Navigation() {
   const togglePfp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
     setCurrentPfp(prev => 
       prev === "/images/pfp.jpg" ? "/images/pfp2.jpg" : "/images/pfp.jpg"
     );
