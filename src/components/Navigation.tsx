@@ -211,13 +211,15 @@ export default function Navigation() {
 
   const isMoreActive = moreNavItems.some(item => item.path === activeHash);
   const desktopNavButtonBase =
-    "flex items-center gap-2 px-3 py-2 rounded-lg border font-medium transition-all duration-200";
+    "group relative flex items-center gap-2 px-4 py-2.5 rounded-full border text-[13px] font-semibold tracking-[0.02em] transition-all duration-300";
   const desktopNavButtonIdle =
-    "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.34)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.56)] hover:border-slate-500/90 hover:text-white";
+    "border-transparent bg-[rgba(var(--primary-bg-rgb),0.12)] text-slate-300 hover:-translate-y-0.5 hover:bg-[rgba(var(--primary-bg-rgb),0.45)] hover:text-white hover:border-slate-600/40";
   const desktopNavButtonActive =
-    "border-primary-accent/70 bg-primary-accent/85 text-white shadow-md shadow-primary-accent/30";
+    "border-primary-accent/35 bg-[linear-gradient(130deg,rgba(99,102,241,0.32),rgba(45,65,98,0.78))] text-white shadow-[0_14px_30px_-18px_rgba(99,102,241,0.95)]";
   const mobileNavButtonBase =
-    "flex items-center gap-3 px-3 py-3 rounded-lg border font-medium transition-all duration-200";
+    "group flex items-center gap-3 px-4 py-3 rounded-2xl border text-[14px] font-semibold tracking-[0.01em] transition-all duration-300";
+  const mobileNavButtonIdle =
+    "border-slate-700/65 bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.38),rgba(var(--primary-bg-rgb),0.24))] text-slate-200 hover:-translate-y-0.5 hover:border-primary-accent/30 hover:bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.58),rgba(var(--primary-bg-rgb),0.34))] hover:text-white";
 
   return (
     <nav
@@ -324,8 +326,10 @@ export default function Navigation() {
               }`}
               onClick={() => setActiveHash(item.path)}
             >
-              {item.icon}
-              <span>{item.name}</span>
+              <span className="flex items-center justify-center w-5 h-5 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                {item.icon}
+              </span>
+              <span className="leading-none">{item.name}</span>
             </a>
           ))}
           
@@ -338,24 +342,26 @@ export default function Navigation() {
                   : desktopNavButtonIdle
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-              </svg>
-              <span>More</span>
+              <span className="flex items-center justify-center w-5 h-5 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                </svg>
+              </span>
+              <span className="leading-none">More</span>
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 strokeWidth={2} 
                 stroke="currentColor" 
-                className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 ml-0.5 text-slate-300 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
               </svg>
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 p-2 bg-[rgba(var(--primary-bg-rgb),0.92)] backdrop-blur-md rounded-xl shadow-xl border border-slate-700/90 z-[110]">
+              <div className="absolute right-0 mt-2 w-60 p-2 bg-[linear-gradient(150deg,rgba(var(--primary-bg-rgb),0.95),rgba(19,28,44,0.86))] backdrop-blur-xl rounded-2xl shadow-2xl border border-primary-accent/20 z-[110]">
                 {moreNavItems.map((item) => (
                   <a
                     key={item.path}
@@ -363,11 +369,13 @@ export default function Navigation() {
                     className={`${mobileNavButtonBase} ${
                       activeHash === item.path 
                         ? desktopNavButtonActive
-                        : "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white"
+                        : mobileNavButtonIdle
                     }`}
                     onClick={() => handleNavClick(item.path)}
                   >
-                    {item.icon}
+                    <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                      {item.icon}
+                    </span>
                     <span>{item.name}</span>
                   </a>
                 ))}
@@ -382,9 +390,12 @@ export default function Navigation() {
             rel="noopener" 
             className={`${desktopNavButtonBase} ${desktopNavButtonIdle}`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
+            <span className="flex items-center justify-center w-5 h-5 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+            </span>
+            <span className="leading-none">GitHub</span>
           </a>
         </div>
 
@@ -440,11 +451,13 @@ export default function Navigation() {
                           className={`${mobileNavButtonBase} ${
                             activeHash === item.path 
                               ? desktopNavButtonActive
-                              : "border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white"
+                              : mobileNavButtonIdle
                           }`}
                           onClick={() => handleNavClick(item.path)}
                         >
-                          <span className="text-lg">{item.icon}</span>
+                          <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                            {item.icon}
+                          </span>
                           <span>{item.name}</span>
                         </a>
                       ))}
@@ -459,12 +472,14 @@ export default function Navigation() {
                       href="https://github.com/suichanwa" 
                       target="_blank" 
                       rel="noopener" 
-                      className={`${mobileNavButtonBase} border-slate-700/80 bg-[rgba(var(--primary-bg-rgb),0.35)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.58)] hover:border-slate-500/90 hover:text-white`}
+                      className={`${mobileNavButtonBase} ${mobileNavButtonIdle}`}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                      </svg>
+                      <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                      </span>
                       <span>GitHub</span>
                       <svg className="ml-auto w-4 h-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
