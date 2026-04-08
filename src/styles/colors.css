@@ -17,6 +17,8 @@
   
   /* Text colors */
   --text-dark-bg: #f8f9ff;
+  --text-dark-bg-rgb: 248, 249, 255;
   --text-light-bg: #1c1d2b;
+  --text-light-bg-rgb: 28, 29, 43;
   --base-100: #ffffff;
 }

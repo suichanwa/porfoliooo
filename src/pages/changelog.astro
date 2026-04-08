@@ -1,103 +1,26 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getCollection } from 'astro:content';
+import { getCollection } from "astro:content";
+import ChangelogEntry from "../components/ChangelogEntry.astro";
+
+const parseDate = (value: unknown) => {
+  if (!value) return 0;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
 
 // Import changelog entries
-const changelogEntries = (await getCollection('changelog')).sort(
-  (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+const changelogEntries = (await getCollection("changelog")).sort(
+  (a, b) => parseDate(b.data.date) - parseDate(a.data.date)
 );
 ---
 
 <BaseLayout title="Changelog | My Portfolio">
   <section class="changelog-section">
     <div class="container">
-      <div class="hero-header">
-        <h1 class="hero-title">Changelog</h1>
-        <p class="hero-subtitle">
-          Track updates, new features, and improvements to the portfolio
-        </p>
-      </div>
-
       <div class="timeline">
         {changelogEntries.map((entry) => (
-          <article class="changelog-entry">
-            <div class="entry-header">
-              <time class="entry-date" datetime={entry.data.date.toISOString()}>
-                {entry.data.date.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </time>
-              <span class={`version-badge ${entry.data.type}`}>
-                {entry.data.version}
-              </span>
-            </div>
-            
-            <h2 class="entry-title">{entry.data.title}</h2>
-            
-            {entry.data.description && (
-              <p class="entry-description">{entry.data.description}</p>
-            )}
-
-            <div class="changes-grid">
-              {entry.data.added && entry.data.added.length > 0 && (
-                <div class="change-category added">
-                  <h3 class="category-title">
-                    <span class="category-icon">✨</span>
-                    Added
-                  </h3>
-                  <ul class="change-list">
-                    {entry.data.added.map((item) => (
-                      <li>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {entry.data.improved && entry.data.improved.length > 0 && (
-                <div class="change-category improved">
-                  <h3 class="category-title">
-                    <span class="category-icon">🚀</span>
-                    Improved
-                  </h3>
-                  <ul class="change-list">
-                    {entry.data.improved.map((item) => (
-                      <li>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {entry.data.fixed && entry.data.fixed.length > 0 && (
-                <div class="change-category fixed">
-                  <h3 class="category-title">
-                    <span class="category-icon">🔧</span>
-                    Fixed
-                  </h3>
-                  <ul class="change-list">
-                    {entry.data.fixed.map((item) => (
-                      <li>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {entry.data.removed && entry.data.removed.length > 0 && (
-                <div class="change-category removed">
-                  <h3 class="category-title">
-                    <span class="category-icon">🗑️</span>
-                    Removed
-                  </h3>
-                  <ul class="change-list">
-                    {entry.data.removed.map((item) => (
-                      <li>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </article>
+          <ChangelogEntry entry={entry} />
         ))}
       </div>
     </div>
@@ -116,33 +39,10 @@ const changelogEntries = (await getCollection('changelog')).sort(
     margin: 0 auto;
   }
 
-  .hero-header {
-    text-align: center;
-    margin-bottom: 4rem;
-    animation: fadeInUp 0.8s ease-out;
-  }
-
-  .hero-title {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1rem;
-  }
-
-  .hero-subtitle {
-    font-size: clamp(1rem, 2vw, 1.25rem);
-    color: var(--text-dark-bg);
-    opacity: 0.8;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
   .timeline {
     position: relative;
     padding-left: 2rem;
+    padding-top: 0.5rem;
   }
 
   .timeline::before {
@@ -160,8 +60,10 @@ const changelogEntries = (await getCollection('changelog')).sort(
     opacity: 0.3;
   }
 
-  .changelog-entry {
+  :global(.changelog-entry) {
     position: relative;
+    display: grid;
+    gap: 1rem;
     padding: 2rem;
     margin-bottom: 3rem;
     background: rgba(var(--primary-bg-rgb), 0.6);
@@ -172,7 +74,7 @@ const changelogEntries = (await getCollection('changelog')).sort(
     animation: fadeInUp 0.8s ease-out backwards;
   }
 
-  .changelog-entry::before {
+  :global(.changelog-entry)::before {
     content: "";
     position: absolute;
     left: -2.5rem;
@@ -185,27 +87,26 @@ const changelogEntries = (await getCollection('changelog')).sort(
     box-shadow: 0 0 0 4px rgba(var(--primary-accent-rgb), 0.2);
   }
 
-  .changelog-entry:hover {
+  :global(.changelog-entry:hover) {
     transform: translateX(8px);
     border-color: rgba(var(--primary-accent-rgb), 0.4);
     box-shadow: 0 10px 40px rgba(var(--primary-accent-rgb), 0.15);
   }
 
-  .entry-header {
+  :global(.entry-header) {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1rem;
     flex-wrap: wrap;
   }
 
-  .entry-date {
+  :global(.entry-date) {
     font-size: 0.9rem;
-    color: rgba(var(--text-dark-bg), 0.6);
+    color: rgba(var(--text-dark-bg-rgb), 0.6);
     font-weight: 500;
   }
 
-  .version-badge {
+  :global(.version-badge) {
     padding: 0.4rem 0.8rem;
     border-radius: 50px;
     font-size: 0.75rem;
@@ -214,70 +115,125 @@ const changelogEntries = (await getCollection('changelog')).sort(
     letter-spacing: 0.05em;
   }
 
-  .version-badge.major {
+  :global(.version-badge.major) {
     background: rgba(var(--primary-accent-rgb), 0.2);
     border: 1px solid var(--primary-accent);
     color: var(--primary-accent);
   }
 
-  .version-badge.minor {
+  :global(.version-badge.minor) {
     background: rgba(var(--secondary-accent-rgb), 0.2);
     border: 1px solid var(--secondary-accent);
     color: var(--secondary-accent);
   }
 
-  .version-badge.patch {
+  :global(.version-badge.patch) {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    color: rgba(var(--text-dark-bg), 0.8);
+    color: rgba(var(--text-dark-bg-rgb), 0.8);
   }
 
-  .entry-title {
+  :global(.entry-title) {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-dark-bg);
-    margin-bottom: 0.5rem;
+    margin: 0;
   }
 
-  .entry-description {
+  :global(.entry-description) {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(var(--text-dark-bg), 0.7);
-    margin-bottom: 1.5rem;
+    color: rgba(var(--text-dark-bg-rgb), 0.7);
+    margin: 0;
   }
 
-  .changes-grid {
+  :global(.entry-content) {
+    display: grid;
+    gap: 0.9rem;
+    color: rgba(var(--text-dark-bg-rgb), 0.82);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  :global(.entry-content > *) {
+    margin: 0;
+  }
+
+  :global(.entry-content a) {
+    color: var(--secondary-accent);
+  }
+
+  :global(.entry-content strong) {
+    color: var(--text-dark-bg);
+  }
+
+  :global(.entry-content ul),
+  :global(.entry-content ol) {
+    padding-left: 1.25rem;
+  }
+
+  :global(.entry-content li + li) {
+    margin-top: 0.35rem;
+  }
+
+  :global(.entry-content h1),
+  :global(.entry-content h2),
+  :global(.entry-content h3),
+  :global(.entry-content h4) {
+    color: var(--text-dark-bg);
+    line-height: 1.2;
+  }
+
+  :global(.entry-content p) {
+    line-height: 1.75;
+  }
+
+  :global(.entry-content code) {
+    background: rgba(var(--primary-accent-rgb), 0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.35rem;
+  }
+
+  :global(.entry-content pre) {
+    background: rgba(var(--primary-bg-rgb), 0.72);
+    border: 1px solid rgba(var(--primary-accent-rgb), 0.12);
+    padding: 1rem;
+    border-radius: 0.9rem;
+    overflow-x: auto;
+  }
+
+  :global(.changes-grid) {
     display: grid;
     gap: 1.5rem;
   }
 
-  .change-category {
+  :global(.change-category) {
     padding: 1rem;
     border-radius: 10px;
     border-left: 3px solid;
   }
 
-  .change-category.added {
+  :global(.change-category.added) {
     background: rgba(52, 211, 153, 0.05);
     border-left-color: #34d399;
   }
 
-  .change-category.improved {
+  :global(.change-category.improved) {
     background: rgba(96, 165, 250, 0.05);
     border-left-color: #60a5fa;
   }
 
-  .change-category.fixed {
+  :global(.change-category.fixed) {
     background: rgba(251, 191, 36, 0.05);
     border-left-color: #fbbf24;
   }
 
-  .change-category.removed {
+  :global(.change-category.removed) {
     background: rgba(248, 113, 113, 0.05);
     border-left-color: #f87171;
   }
 
-  .category-title {
+  :global(.category-title) {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -289,11 +245,11 @@ const changelogEntries = (await getCollection('changelog')).sort(
     letter-spacing: 0.05em;
   }
 
-  .category-icon {
+  :global(.category-icon) {
     font-size: 1.1rem;
   }
 
-  .change-list {
+  :global(.change-list) {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -302,15 +258,15 @@ const changelogEntries = (await getCollection('changelog')).sort(
     gap: 0.5rem;
   }
 
-  .change-list li {
+  :global(.change-list li) {
     padding-left: 1.5rem;
     position: relative;
     font-size: 0.95rem;
     line-height: 1.6;
-    color: rgba(var(--text-dark-bg), 0.8);
+    color: rgba(var(--text-dark-bg-rgb), 0.8);
   }
 
-  .change-list li::before {
+  :global(.change-list li::before) {
     content: "→";
     position: absolute;
     left: 0;
@@ -338,29 +294,29 @@ const changelogEntries = (await getCollection('changelog')).sort(
       padding-left: 1.5rem;
     }
 
-    .changelog-entry {
+    :global(.changelog-entry) {
       padding: 1.5rem;
     }
 
-    .changelog-entry::before {
+    :global(.changelog-entry)::before {
       left: -2rem;
     }
 
-    .entry-title {
+    :global(.entry-title) {
       font-size: 1.25rem;
     }
 
-    .changes-grid {
+    :global(.changes-grid) {
       gap: 1rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .changelog-entry {
+    :global(.changelog-entry) {
       animation: none;
     }
 
-    .changelog-entry:hover {
+    :global(.changelog-entry:hover) {
       transform: none;
     }
   }

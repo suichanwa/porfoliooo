@@ -1,0 +1,97 @@
+---
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const parseDate = (value: unknown) => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+const asText = (value: unknown, fallback = "") =>
+  typeof value === "string" && value.trim().length > 0 ? value : fallback;
+const asItems = (value: unknown) =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+
+const entryDate = parseDate(entry.data.date);
+const entryType = asText(entry.data.type);
+const versionText = asText(entry.data.version);
+const titleText = asText(entry.data.title, "Untitled changelog entry");
+const descriptionText = asText(entry.data.description);
+
+const categories = [
+  {
+    key: "added",
+    label: "Added",
+    icon: "✨",
+    className: "added",
+    items: asItems(entry.data.added)
+  },
+  {
+    key: "improved",
+    label: "Improved",
+    icon: "🚀",
+    className: "improved",
+    items: asItems(entry.data.improved)
+  },
+  {
+    key: "fixed",
+    label: "Fixed",
+    icon: "🔧",
+    className: "fixed",
+    items: asItems(entry.data.fixed)
+  },
+  {
+    key: "removed",
+    label: "Removed",
+    icon: "🗑️",
+    className: "removed",
+    items: asItems(entry.data.removed)
+  }
+].filter((category) => category.items.length > 0);
+---
+
+<article class="changelog-entry">
+  <div class="entry-header">
+    {entryDate && (
+      <time class="entry-date" datetime={entryDate.toISOString()}>
+        {entryDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        })}
+      </time>
+    )}
+    {versionText && (
+      <span class={`version-badge ${entryType}`}>
+        {versionText}
+      </span>
+    )}
+  </div>
+
+  <h2 class="entry-title">{titleText}</h2>
+
+  {descriptionText && (
+    <p class="entry-description">{descriptionText}</p>
+  )}
+
+  <div class="entry-content">
+    <Content />
+  </div>
+
+  {categories.length > 0 && (
+    <div class="changes-grid">
+      {categories.map((category) => (
+        <div class={`change-category ${category.className}`}>
+          <h3 class="category-title">
+            <span class="category-icon">{category.icon}</span>
+            {category.label}
+          </h3>
+          <ul class="change-list">
+            {category.items.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )}
+</article>

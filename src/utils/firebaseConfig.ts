@@ -1,5 +1,16 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -11,7 +22,7 @@ const firebaseConfig = {
   storageBucket: "porfoliooo.appspot.com",
   messagingSenderId: "627269340192",
   appId: "1:627269340192:web:566592916d2be3e0090045",
-  measurementId: "G-QSTD7G1DWC"
+  measurementId: "G-QSTD7G1DWC",
 };
 
 // Initialize Firebase only once (singleton pattern)
@@ -36,9 +47,9 @@ export async function getDiaryEntries() {
   try {
     const q = query(diaryEntriesRef, orderBy("date", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     })) as DiaryEntry[];
   } catch (error) {
     console.error("Error getting diary entries:", error);
@@ -51,7 +62,7 @@ export async function addDiaryEntry(entry: Omit<DiaryEntry, "id" | "date">) {
   try {
     const docRef = await addDoc(diaryEntriesRef, {
       ...entry,
-      date: serverTimestamp()
+      date: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -76,7 +87,7 @@ export async function addLetter(letter: Omit<Letter, "id" | "date">) {
   try {
     const docRef = await addDoc(lettersRef, {
       ...letter,
-      date: serverTimestamp()
+      date: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -91,9 +102,9 @@ export async function getLetters() {
     console.log("Fetching letters from Firestore...");
     const q = query(lettersRef, orderBy("date", "desc"));
     const snapshot = await getDocs(q);
-    const letters = snapshot.docs.map(doc => ({
+    const letters = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     })) as Letter[];
     console.log("Retrieved letters:", letters.length);
     return letters;
@@ -126,12 +137,14 @@ export interface Book {
 }
 
 // Add a book
-export async function addBook(book: Omit<Book, "id" | "createdAt" | "updatedAt">) {
+export async function addBook(
+  book: Omit<Book, "id" | "createdAt" | "updatedAt">,
+) {
   try {
     const docRef = await addDoc(booksRef, {
       ...book,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -144,16 +157,16 @@ export async function addBook(book: Omit<Book, "id" | "createdAt" | "updatedAt">
 export async function getBooks() {
   try {
     console.log("Fetching books from Firestore...");
-    
+
     // Use simple query without multiple orderBy (no index needed)
     const q = query(booksRef, orderBy("createdAt", "desc"));
-    
+
     const snapshot = await getDocs(q);
-    const books = snapshot.docs.map(doc => ({
+    const books = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     })) as Book[];
-    
+
     // Sort in JavaScript instead of Firestore
     books.sort((a, b) => {
       if (a.rating !== b.rating) {
@@ -161,13 +174,13 @@ export async function getBooks() {
       }
       return new Date(b.dateRead).getTime() - new Date(a.dateRead).getTime(); // Then by date desc
     });
-    
+
     console.log("Retrieved books:", books.length);
     return books;
   } catch (error) {
     console.error("Error getting books:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
+    console.error("Error code:", Error.name);
+    console.error("Error message:", Error.name);
     throw error;
   }
 }
@@ -178,7 +191,7 @@ export async function updateBook(bookId: string, updates: Partial<Book>) {
     const bookDoc = doc(db, "books", bookId);
     await updateDoc(bookDoc, {
       ...updates,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
     return bookId;
   } catch (error) {
@@ -226,11 +239,13 @@ export interface ReadingProgress {
 }
 
 // Save reading progress
-export async function saveReadingProgress(progress: Omit<ReadingProgress, "id" | "lastReadAt">) {
+export async function saveReadingProgress(
+  progress: Omit<ReadingProgress, "id" | "lastReadAt">,
+) {
   try {
     const docRef = await addDoc(readingProgressRef, {
       ...progress,
-      lastReadAt: serverTimestamp()
+      lastReadAt: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -244,12 +259,12 @@ export async function getReadingProgress(bookId: string) {
   try {
     const q = query(readingProgressRef, orderBy("lastReadAt", "desc"));
     const snapshot = await getDocs(q);
-    const progress = snapshot.docs.find(doc => doc.data().bookId === bookId);
-    
+    const progress = snapshot.docs.find((doc) => doc.data().bookId === bookId);
+
     if (progress) {
       return {
         id: progress.id,
-        ...progress.data()
+        ...progress.data(),
       } as ReadingProgress;
     }
     return null;
@@ -305,11 +320,13 @@ export interface StarryBackgroundAnalytics {
 }
 
 // Save starry background preferences
-export async function saveStarryPreferences(preferences: Omit<StarryBackgroundPreferences, "id" | "lastUpdated">) {
+export async function saveStarryPreferences(
+  preferences: Omit<StarryBackgroundPreferences, "id" | "lastUpdated">,
+) {
   try {
     const docRef = await addDoc(starryBackgroundRef, {
       ...preferences,
-      lastUpdated: serverTimestamp()
+      lastUpdated: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -323,15 +340,15 @@ export async function getStarryPreferences(userId?: string) {
   try {
     const q = query(starryBackgroundRef, orderBy("lastUpdated", "desc"));
     const snapshot = await getDocs(q);
-    const preferences = snapshot.docs.find(doc => {
+    const preferences = snapshot.docs.find((doc) => {
       const data = doc.data();
       return userId ? data.userId === userId : !data.userId;
     });
-    
+
     if (preferences) {
       return {
         id: preferences.id,
-        ...preferences.data()
+        ...preferences.data(),
       } as StarryBackgroundPreferences;
     }
     return null;
@@ -342,12 +359,15 @@ export async function getStarryPreferences(userId?: string) {
 }
 
 // Update starry background preferences
-export async function updateStarryPreferences(preferencesId: string, updates: Partial<StarryBackgroundPreferences>) {
+export async function updateStarryPreferences(
+  preferencesId: string,
+  updates: Partial<StarryBackgroundPreferences>,
+) {
   try {
     const preferencesDoc = doc(db, "starryBackground", preferencesId);
     await updateDoc(preferencesDoc, {
       ...updates,
-      lastUpdated: serverTimestamp()
+      lastUpdated: serverTimestamp(),
     });
     return preferencesId;
   } catch (error) {
@@ -357,7 +377,9 @@ export async function updateStarryPreferences(preferencesId: string, updates: Pa
 }
 
 // Save starry background analytics
-export async function saveStarryAnalytics(analytics: Omit<StarryBackgroundAnalytics, "id">) {
+export async function saveStarryAnalytics(
+  analytics: Omit<StarryBackgroundAnalytics, "id">,
+) {
   try {
     const docRef = await addDoc(starryAnalyticsRef, analytics);
     return docRef.id;
@@ -372,9 +394,9 @@ export async function getStarryAnalytics(limit: number = 100) {
   try {
     const q = query(starryAnalyticsRef, orderBy("startTime", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.slice(0, limit).map(doc => ({
+    return snapshot.docs.slice(0, limit).map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     })) as StarryBackgroundAnalytics[];
   } catch (error) {
     console.error("Error getting starry analytics:", error);

@@ -10,10 +10,6 @@ interface Star {
   baseOpacity: number;
   twinkleSpeed: number;
   twinklePhase: number;
-  driftX: number;
-  driftY: number;
-  driftSpeed: number;
-  driftPhase: number;
   type: StarType;
 }
 
@@ -65,10 +61,6 @@ export default function useStarfieldCanvas({
           baseOpacity,
           twinkleSpeed: randomBetween(profile.twinkleMin, profile.twinkleMax),
           twinklePhase: Math.random() * Math.PI * 2,
-          driftX: (Math.random() - 0.5) * profile.driftXMax,
-          driftY: (Math.random() - 0.5) * profile.driftYMax,
-          driftSpeed: randomBetween(profile.driftSpeedMin, profile.driftSpeedMax),
-          driftPhase: Math.random() * Math.PI * 2,
           type
         });
       }
@@ -106,16 +98,10 @@ export default function useStarfieldCanvas({
         const twinkle = Math.sin(timestamp * star.twinkleSpeed + star.twinklePhase) * 0.3 + 0.7;
         star.opacity = star.baseOpacity * twinkle;
 
-        const driftOffsetX = Math.sin(timestamp * star.driftSpeed + star.driftPhase) * star.driftX;
-        const driftOffsetY = Math.cos(timestamp * star.driftSpeed + star.driftPhase) * star.driftY;
-
-        const x = star.x + driftOffsetX;
-        const y = star.y + driftOffsetY;
-
         ctx.globalAlpha = star.opacity;
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(x, y, star.radius, 0, Math.PI * 2);
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         ctx.fill();
       });
 
