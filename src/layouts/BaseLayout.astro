@@ -1,6 +1,7 @@
 ---
 import Navigation from "../components/Navigation";
 import StarryBackground from "../components/Starry";
+import FirebaseAnalytics from "../components/FirebaseAnalytics.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -25,6 +26,7 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     <title>{title}</title>
   </head>
   <body class={useVoidBackground ? 'void-body' : 'starry-body'}>
+    <FirebaseAnalytics />
     <!-- Only render StarryBackground if NOT using void background -->
     {!useVoidBackground && <StarryBackground client:load enableNeptuneTransition={enableNeptuneTransition} neptuneSectionId={neptuneSectionId} />}
     

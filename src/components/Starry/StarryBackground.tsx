@@ -6,6 +6,7 @@ import useDeviceInfo from "../../hooks/useDeviceInfo";
 import useIsClient from "../../hooks/useIsClient";
 import useNeptuneBackground from "../../hooks/useNeptuneBackground";
 import useNeptuneTransition from "../../hooks/useNeptuneTransition";
+import useScrollParallax from "../../hooks/useScrollParallax";
 
 interface StarryBackgroundProps {
   onHideGUI?: (hidden: boolean) => void;
@@ -28,6 +29,12 @@ export default function StarryBackground({
     enabled: enableNeptuneTransition,
     sectionId: neptuneSectionId,
     isClient
+  });
+  const canvasParallaxOffset = useScrollParallax({
+    isClient,
+    disabled: deviceInfo.prefersReducedMotion,
+    strength: deviceInfo.isMobile ? 0.045 : 0.07,
+    maxOffset: deviceInfo.isMobile ? 18 : 32
   });
   const dynamicBackground = useNeptuneBackground(neptuneTransitionProgress);
 
@@ -71,11 +78,24 @@ export default function StarryBackground({
           transition: "background 0.3s ease-out"
         }}
       >
-        <StarryCanvas
-          showConstellations={showConstellations}
-          deviceInfo={deviceInfo}
-          isClient={isClient}
-        />
+        <div
+          style={{
+            position: "absolute",
+            inset: "-4%",
+            transform: `translate3d(0, ${canvasParallaxOffset}px, 0) scale(1.06)`,
+            transformOrigin: "center top",
+            transition: deviceInfo.prefersReducedMotion
+              ? "none"
+              : "transform 220ms ease-out",
+            willChange: "transform"
+          }}
+        >
+          <StarryCanvas
+            showConstellations={showConstellations}
+            deviceInfo={deviceInfo}
+            isClient={isClient}
+          />
+        </div>
       </div>
     </>
   );

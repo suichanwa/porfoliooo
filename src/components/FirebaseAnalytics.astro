@@ -1,0 +1,10 @@
+<script>
+  import { initializeFirebaseAnalytics } from "../utils/firebaseAnalytics";
+
+  const bootAnalytics = () => {
+    void initializeFirebaseAnalytics();
+  };
+
+  bootAnalytics();
+  document.addEventListener("astro:page-load", bootAnalytics);
+</script>

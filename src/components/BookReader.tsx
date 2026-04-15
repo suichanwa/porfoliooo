@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveReadingProgress, getReadingProgress, type Book, type ReadingProgress } from '../utils/firebaseConfig';
+import { trackBookOpened } from '../utils/firebaseAnalytics';
 
 interface BookReaderProps {
   book: Book;
@@ -29,6 +30,21 @@ export default function BookReader({ book }: BookReaderProps) {
 
     loadProgress();
   }, [book.id]);
+
+  useEffect(() => {
+    if (!book.id) {
+      return;
+    }
+
+    void trackBookOpened({
+      bookId: book.id,
+      title: book.title,
+      author: book.author,
+      genre: book.genre,
+      pages: book.pages,
+      rating: book.rating,
+    });
+  }, [book.author, book.genre, book.id, book.pages, book.rating, book.title]);
 
   // Auto-save reading progress
   useEffect(() => {

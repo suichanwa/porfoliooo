@@ -1,4 +1,5 @@
 import { addLetter } from "../utils/firebaseConfig";
+import { trackLetterSent } from "../utils/firebaseAnalytics";
 
 type MaybeElement<T extends HTMLElement> = T | null;
 
@@ -135,6 +136,10 @@ export const usePushLetteres = (root: ParentNode = document) => {
       loadingSpinner.classList.remove("hidden");
 
       await addLetter({ name, message });
+      void trackLetterSent({
+        hasName: name.length > 0,
+        messageLength: message.length,
+      });
 
       form.classList.add("hidden");
       successMessage.classList.remove("hidden");

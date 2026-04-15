@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
 import type { BodyId } from "./data/types";
@@ -21,6 +21,7 @@ import {
   DEFAULT_GRAVITY_SETTINGS,
   type GravitySettings
 } from "./gravity/gravityField";
+import { trackPlanetariumVisited } from "../utils/firebaseAnalytics";
 
 const OVERVIEW_SPACING = 40;
 const EXPLORE_SPACING = 75;
@@ -50,6 +51,7 @@ export default function PlanetariumPage() {
   const [distanceScaleSpacing, setDistanceScaleSpacing] = useState(OVERVIEW_SPACING);
   const [spacingTarget, setSpacingTarget] = useState(OVERVIEW_SPACING);
   const [debugGravity, setDebugGravity] = useState(false);
+  const hasTrackedVisit = useRef(false);
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
   const canvasDpr = deviceInfo.isLowEnd ? 1 : 1.5;
@@ -161,6 +163,24 @@ export default function PlanetariumPage() {
       setShowPerf(params.get("perf") === "1");
     }
   }, [isClient]);
+
+  useEffect(() => {
+    if (!isClient || hasTrackedVisit.current) {
+      return;
+    }
+
+    hasTrackedVisit.current = true;
+    void trackPlanetariumVisited({
+      isMobile: deviceInfo.isMobile,
+      isLowEnd: deviceInfo.isLowEnd,
+      prefersReducedMotion: deviceInfo.prefersReducedMotion,
+    });
+  }, [
+    deviceInfo.isLowEnd,
+    deviceInfo.isMobile,
+    deviceInfo.prefersReducedMotion,
+    isClient,
+  ]);
 
   return (
     <div className="relative min-h-screen">

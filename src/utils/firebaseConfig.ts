@@ -1,4 +1,3 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
   collection,
@@ -13,20 +12,8 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app } from "./firebaseApp";
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBw67UWqoH-tQVyEqPDUlAjZWASJFHc5DA",
-  authDomain: "porfoliooo.firebaseapp.com",
-  projectId: "porfoliooo",
-  storageBucket: "porfoliooo.appspot.com",
-  messagingSenderId: "627269340192",
-  appId: "1:627269340192:web:566592916d2be3e0090045",
-  measurementId: "G-QSTD7G1DWC",
-};
-
-// Initialize Firebase only once (singleton pattern)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
