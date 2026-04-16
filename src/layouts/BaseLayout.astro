@@ -20,7 +20,7 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     <meta charset="UTF-8" />
     <meta name="description" content="My personal portfolio" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f1123" />
+    <meta name="theme-color" content="#070913" />
     <link rel="icon" type="image/jpg" href="/images/pfp.jpg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
@@ -45,17 +45,21 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     padding: 0;
     overflow-x: hidden;
     min-height: 100vh;
+    background: #070913;
   }
 
   /* For pages using StarryBackground */
   .starry-body {
     position: relative;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(18, 24, 44, 0.38), transparent 42%),
+      linear-gradient(180deg, #070913 0%, #04060d 100%);
   }
 
   /* For pages using VoidBackground */
   .void-body {
     position: relative;
-    background: #000000;
+    background: linear-gradient(180deg, #05070d 0%, #000000 100%);
   }
 
   .main-content {
