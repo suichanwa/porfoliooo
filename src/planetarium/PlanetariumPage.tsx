@@ -65,7 +65,7 @@ export default function PlanetariumPage() {
     () => (selectedId ? PLANET_INFO[selectedId] : null),
     [selectedId]
   );
-  const isInfoVisible = Boolean(selectedPlanet && isFocused && !infoHidden);
+  const isInfoVisible = Boolean(selectedPlanet && !infoHidden);
   const shouldHideControls = isInfoVisible;
   const filteredPlanets = useMemo(() => {
     const query = pickerQuery.trim().toLowerCase();
@@ -215,7 +215,7 @@ export default function PlanetariumPage() {
           onHide={() => setInfoHidden(true)}
           onClose={handleInfoClose}
         />
-        {selectedPlanet && isFocused && infoHidden && (
+        {selectedPlanet && infoHidden && (
           <div className="pointer-events-auto ml-auto">
             <button
               type="button"

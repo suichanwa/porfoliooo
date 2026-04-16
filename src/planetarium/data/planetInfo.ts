@@ -1,11 +1,50 @@
-import type { BodyId } from "./types";
+import { PLANETS } from "./planets";
+import type { BodyData, BodyId } from "./types";
 
 export interface PlanetInfo {
   summary: string;
   facts: string[];
 }
 
-export const PLANET_INFO: Record<BodyId, PlanetInfo> = {
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat("en-US").format(Math.round(value));
+
+const buildFallbackSummary = (planet: BodyData) => {
+  if (planet.kind === "star") {
+    return `${planet.name} is the central star that lights and anchors this system view.`;
+  }
+
+  if (planet.kind === "dwarf") {
+    return `${planet.name} is a dwarf world with its own distinct orbit, rotation, and surface character.`;
+  }
+
+  return `${planet.name} is a selectable world in the planetarium with live orbit and scale data.`;
+};
+
+const buildFallbackFacts = (planet: BodyData) => {
+  const facts = [
+    `Radius is about ${formatNumber(planet.render.radiusKm)} km.`,
+    `Axial tilt is ${planet.rotation.axialTiltDeg.toFixed(1)} degrees.`,
+    `Rotation period is about ${planet.rotation.rotationPeriodHours.toFixed(2)} hours.`
+  ];
+
+  if (planet.orbit) {
+    facts.splice(
+      1,
+      0,
+      `Orbits the Sun every ${formatNumber(planet.orbit.orbitalPeriodDays)} days at about ${(planet.orbit.semiMajorAxisKm / 149_597_870.7).toFixed(2)} AU.`
+    );
+    facts.push(`Orbital inclination is ${planet.orbit.inclinationDeg.toFixed(2)} degrees.`);
+  }
+
+  if (planet.rings) {
+    facts.push("Has a visible ring system in this planetarium view.");
+  }
+
+  return facts.slice(0, 3);
+};
+
+const PLANET_INFO_OVERRIDES: Partial<Record<BodyId, PlanetInfo>> = {
   sun: {
     summary: "The star that anchors the entire solar system.",
     facts: [
@@ -95,3 +134,13 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo> = {
     ]
   }
 };
+
+export const PLANET_INFO = Object.fromEntries(
+  PLANETS.map((planet) => [
+    planet.id,
+    PLANET_INFO_OVERRIDES[planet.id] ?? {
+      summary: buildFallbackSummary(planet),
+      facts: buildFallbackFacts(planet)
+    }
+  ])
+) as Record<BodyId, PlanetInfo>;
