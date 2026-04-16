@@ -1,10 +1,23 @@
 import { useEffect } from "react";
 
 const BASE_SELECTOR = "[data-scroll]";
-const INITIAL_TRANSFORM = "translateY(20px)";
 const VISIBLE_TRANSFORM = "translateY(0)";
-const TRANSITION = "opacity 0.6s ease, transform 0.6s ease";
+const DEFAULT_OFFSET_PX = 20;
+const DEFAULT_DURATION = "0.6s";
+const DEFAULT_EASE = "ease";
 const ROOT_MARGIN = "0px 0px -15% 0px";
+
+const getInitialTransform = (element: HTMLElement) => {
+  const offset = Number.parseFloat(element.dataset.scrollOffset ?? `${DEFAULT_OFFSET_PX}`);
+  const safeOffset = Number.isFinite(offset) ? offset : DEFAULT_OFFSET_PX;
+  return `translateY(${safeOffset}px)`;
+};
+
+const getTransition = (element: HTMLElement) => {
+  const duration = element.dataset.scrollDuration ?? DEFAULT_DURATION;
+  const easing = element.dataset.scrollEase ?? DEFAULT_EASE;
+  return `opacity ${duration} ${easing}, transform ${duration} ${easing}`;
+};
 
 const showElement = (element: HTMLElement) => {
   element.classList.add("motion-safe:animate-fadeIn");
@@ -14,7 +27,7 @@ const showElement = (element: HTMLElement) => {
 
 const hideElement = (element: HTMLElement) => {
   element.style.opacity = "0";
-  element.style.transform = INITIAL_TRANSFORM;
+  element.style.transform = getInitialTransform(element);
 };
 
 export default function Scroll() {
@@ -23,7 +36,7 @@ export default function Scroll() {
     const pendingTimers = new Map<HTMLElement, number>();
 
     scrollElements.forEach((element) => {
-      element.style.transition = TRANSITION;
+      element.style.transition = getTransition(element);
       hideElement(element);
     });
 

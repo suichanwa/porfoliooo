@@ -4,13 +4,28 @@ import TypeWriter from "../components/TypeWriter.tsx";
 import { getLetters, type Letter } from "../utils/firebaseConfig";
 import Scroll from "../utils/Scroll.tsx";
 
+const formatLetterDate = (date: Letter["date"]) => {
+  if (typeof date === "string") {
+    return date;
+  }
+
+  if (date instanceof Date) {
+    return date.toLocaleDateString();
+  }
+
+  if (date && typeof date === "object" && "toDate" in date) {
+    return date.toDate().toLocaleDateString();
+  }
+
+  return "Unknown date";
+};
+
 // Fetch letters from Firebase
 let visitorLetters: Letter[] = [];
 let isLoading = true;
 let errorMessage = "";
 
 try {
-  // Fetch letters from Firebase
   visitorLetters = await getLetters();
   isLoading = false;
 } catch (error) {
@@ -18,101 +33,319 @@ try {
   errorMessage = "There was an error fetching messages. Please try again later.";
   isLoading = false;
 }
+
 ---
 
 <BaseLayout title="Letters from Visitors | My Portfolio">
   <Scroll client:load />
-  <section class="py-12 md:py-16 max-w-3xl mx-auto">
-    <div data-scroll class="opacity-0">
-      <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 min-h-[3.5rem]">
-        <TypeWriter 
-          client:load 
-          text="Letters from Visitors" 
-          speed={100} 
-          delay={300}
-        />
-      </h1>
-      <div class="w-24 h-1 bg-primary-accent mx-auto mb-6"></div>
-      
-      <p class="text-center mb-12 max-w-xl mx-auto">
-        These are notes and messages people have sent me. Each one means a lot to me!
-        <a href="/write-letter" class="block mt-2 text-secondary-accent hover:underline">Want to send me one too?</a>
-      </p>
-    </div>
-    
-    {/* Loading state */}
-    {isLoading && (
-      <div data-scroll class="opacity-0 flex justify-center py-12">
-        <div class="loading loading-dots loading-lg text-primary-accent"></div>
-      </div>
-    )}
-    
-    {/* Error state */}
-    {errorMessage && (
-      <div data-scroll class="opacity-0 text-center p-8 bg-error/10 rounded-xl">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <p class="text-lg font-medium text-error">{errorMessage}</p>
-        <button 
-          class="mt-4 btn btn-error btn-outline"
-          onclick="window.location.reload();"
-        >
-          Try Again
-        </button>
-      </div>
-    )}
-    
-    {/* Letters from Firebase */}
-    {!isLoading && !errorMessage && (
-      <div class="space-y-8">
-        {visitorLetters.map((letter, i) => (
-          <div 
-            data-scroll 
-            data-scroll-delay={i * 0.1} 
-            class="opacity-0"
-          >
-            <div class="bg-base-200 p-6 rounded-xl shadow-lg border-l-4 border-secondary-accent/50">
-              <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-medium text-primary-accent">
-                  {letter.name || "Anonymous"}
-                </h2>
-                <span class="text-sm text-secondary-accent">
-                  {typeof letter.date === 'string' ? letter.date : letter.date instanceof Date ? letter.date.toLocaleDateString() : 
-                  letter.date && typeof letter.date === 'object' && 'toDate' in letter.date ? letter.date.toDate().toLocaleDateString() : 'Unknown date'}
-                </span>
-              </div>
-              
-              <div class="relative pl-6 leading-relaxed">
-                <div class="absolute left-0 top-0 text-4xl text-secondary-accent/30 font-serif">"</div>
-                <p class="italic">{letter.message}</p>
-                <div class="absolute right-0 bottom-0 text-4xl text-secondary-accent/30 font-serif">"</div>
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        {visitorLetters.length === 0 && (
-          <div data-scroll data-scroll-delay="0.2" class="opacity-0 text-center p-12">
-            <div class="text-5xl mb-4">📭</div>
-            <p class="text-lg text-base-content/70">No letters yet</p>
-            <a 
-              href="/write-letter" 
-              class="mt-4 inline-block px-6 py-2 bg-primary-accent text-white rounded-lg hover:bg-primary-accent/90 transition"
-            >
-              Send the first one
+
+  <section class="letters-page py-12 md:py-16">
+    <div class="letters-glow letters-glow-one"></div>
+    <div class="letters-glow letters-glow-two"></div>
+
+    <div class="max-w-4xl mx-auto px-4">
+      <div data-scroll data-scroll-duration="0.24s" data-scroll-offset="12" class="opacity-0">
+        <div class="letters-hero p-6 md:p-8 rounded-3xl shadow-xl">
+          <h1 class="text-4xl md:text-5xl font-bold text-center mb-5 min-h-[3.5rem]">
+            <TypeWriter
+              client:load
+              text="Letters from Visitors"
+              speed={100}
+              delay={300}
+            />
+          </h1>
+
+          <div class="w-24 h-1 bg-primary-accent mx-auto mb-6 rounded-full"></div>
+
+          <p class="letters-intro text-center max-w-2xl mx-auto leading-relaxed">
+            Notes from people passing through this little corner of the internet. Every message makes this space feel more alive.
+          </p>
+
+          <div class="mt-7 flex items-center justify-center">
+            <a href="/write-letter" class="write-letter-btn btn btn-md md:btn-lg text-base-content border-none shadow-none">
+              Write a Letter
             </a>
           </div>
-        )}
+        </div>
       </div>
-    )}
+
+      {isLoading && (
+        <div data-scroll data-scroll-duration="0.2s" data-scroll-offset="10" class="opacity-0 flex flex-col items-center justify-center py-14 text-center">
+          <div class="loading loading-dots loading-lg text-primary-accent"></div>
+          <p class="mt-3 text-sm text-base-content/85">Fetching letters...</p>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div data-scroll data-scroll-duration="0.2s" data-scroll-offset="10" class="opacity-0 mt-8 text-center p-8 bg-error/10 rounded-2xl border border-error/20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p class="text-lg font-medium text-error">{errorMessage}</p>
+          <button
+            class="mt-4 btn btn-error btn-outline"
+            onclick="window.location.reload();"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !errorMessage && (
+        <div class="mt-8 space-y-5 md:space-y-6">
+          {visitorLetters.map((letter, i) => (
+            <article
+              data-scroll
+              data-scroll-delay={i * 0.04}
+              data-scroll-duration="0.24s"
+              data-scroll-offset="12"
+              class="letter-shell opacity-0"
+            >
+              <div class="letter-card p-5 md:p-6 rounded-2xl">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="h-10 w-10 rounded-full bg-secondary-accent/20 text-secondary-accent flex items-center justify-center text-sm font-semibold shrink-0">
+                      {(letter.name || "A").trim().charAt(0).toUpperCase()}
+                    </div>
+                    <div class="min-w-0">
+                      <h2 class="text-lg md:text-xl font-semibold text-primary-accent truncate letter-name">
+                        {letter.name || "Anonymous"}
+                      </h2>
+                      <p class="text-xs md:text-sm text-base-content/90 visitor-meta">Visitor Message</p>
+                    </div>
+                  </div>
+                  <span class="letter-date text-xs md:text-sm whitespace-nowrap">
+                    {formatLetterDate(letter.date)}
+                  </span>
+                </div>
+
+                <div class="relative pl-5 pr-3 leading-relaxed letter-message-wrap">
+                  <div class="absolute left-0 top-0 text-3xl text-secondary-accent/45 font-serif leading-none">&ldquo;</div>
+                  <p class="italic break-words letter-message">{letter.message}</p>
+                  <div class="absolute right-0 -bottom-2 text-3xl text-secondary-accent/45 font-serif leading-none">&rdquo;</div>
+                </div>
+              </div>
+            </article>
+          ))}
+
+          {visitorLetters.length === 0 && (
+            <div data-scroll data-scroll-delay="0.08" data-scroll-duration="0.22s" data-scroll-offset="10" class="opacity-0 text-center p-12 rounded-2xl border border-dashed border-base-300 bg-base-200/40">
+              <div class="text-5xl mb-4">📭</div>
+              <p class="text-lg text-base-content/70">No letters yet</p>
+              <a
+                href="/write-letter"
+                class="mt-4 inline-block px-6 py-2.5 bg-primary-accent text-white rounded-lg hover:bg-primary-accent/90 transition"
+              >
+                Send the first one
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   </section>
 </BaseLayout>
 
 <style>
+  .letters-page {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .letters-glow {
+    position: absolute;
+    width: 24rem;
+    height: 24rem;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.22;
+    z-index: -1;
+  }
+
+  .letters-glow-one {
+    top: -9rem;
+    left: -10rem;
+    background: linear-gradient(120deg, hsl(var(--p) / 0.7), hsl(var(--s) / 0.4));
+  }
+
+  .letters-glow-two {
+    right: -10rem;
+    bottom: -11rem;
+    background: linear-gradient(120deg, hsl(var(--s) / 0.55), hsl(var(--a) / 0.35));
+  }
+
+  .letters-hero {
+    background:
+      radial-gradient(circle at 14% 22%, hsl(var(--p) / 0.2), transparent 40%),
+      radial-gradient(circle at 84% 16%, hsl(var(--s) / 0.2), transparent 40%),
+      linear-gradient(160deg, hsl(var(--b1) / 0.72), hsl(var(--b1) / 0.52));
+    border: 1px solid hsl(var(--b3) / 0.3);
+    box-shadow:
+      0 20px 44px -34px hsl(var(--s) / 0.55),
+      inset 0 1px 0 hsl(var(--b1) / 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .letters-intro {
+    color: hsl(var(--bc) / 0.94);
+    font-size: clamp(1rem, 1.35vw, 1.2rem);
+    line-height: 1.6;
+    text-shadow: 0 1px 12px hsl(var(--b1) / 0.7);
+  }
+
+  .write-letter-btn {
+    position: relative;
+    padding: 0.78rem 1.45rem;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    font-weight: 700;
+    background:
+      linear-gradient(180deg, hsl(var(--b1) / 0.06), hsl(var(--b1) / 0.02));
+    outline: 1px solid hsl(var(--s) / 0.45);
+    box-shadow:
+      0 10px 28px -22px hsl(var(--s) / 0.95),
+      inset 0 1px 0 hsl(var(--b1) / 0.7);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, outline-color 0.18s ease;
+  }
+
+  .write-letter-btn:hover {
+    transform: translateY(-1px);
+    outline-color: hsl(var(--p) / 0.8);
+    box-shadow:
+      0 14px 34px -20px hsl(var(--p) / 0.8),
+      inset 0 1px 0 hsl(var(--b1) / 0.8);
+  }
+
+  .write-letter-btn:active {
+    transform: translateY(0);
+  }
+
+  .letter-shell {
+    position: relative;
+  }
+
+  .letter-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0.6rem 1.1rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, hsl(var(--s) / 0.2), transparent 68%);
+    filter: blur(22px);
+    opacity: 0.5;
+    z-index: -1;
+  }
+
+  .letter-card {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 85% 18%, hsl(var(--p) / 0.15), transparent 38%),
+      radial-gradient(circle at 12% 78%, hsl(var(--s) / 0.12), transparent 42%),
+      linear-gradient(165deg, hsl(var(--b2) / 0.98), hsl(var(--b1) / 0.96)),
+      repeating-linear-gradient(
+        180deg,
+        transparent,
+        transparent 26px,
+        hsl(var(--s) / 0.08) 27px,
+        transparent 28px
+      );
+    border: 1px solid hsl(var(--b1) / 0.12);
+    outline: 1px solid hsl(var(--s) / 0.56);
+    outline-offset: -1px;
+    box-shadow:
+      0 16px 42px -32px hsl(var(--s) / 0.7),
+      inset 0 0 0 1px hsl(var(--p) / 0.2),
+      inset 0 1px 0 hsl(var(--b1) / 0.55);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, outline-color 0.2s ease;
+  }
+
+  .letter-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid hsl(var(--b1) / 0.18);
+    opacity: 1;
+  }
+
+  .letter-card::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: calc(1rem - 1px);
+    border: 1px solid hsl(var(--p) / 0.28);
+    pointer-events: none;
+    opacity: 1;
+  }
+
+  .letter-date {
+    color: hsl(var(--bc) / 0.94);
+    font-weight: 600;
+    text-shadow: 0 1px 10px hsl(var(--b1) / 0.72);
+  }
+
+  .letter-name {
+    color: hsl(var(--p) / 0.98);
+    text-shadow: 0 1px 10px hsl(var(--b1) / 0.62);
+  }
+
+  .visitor-meta {
+    text-shadow: 0 1px 8px hsl(var(--b1) / 0.62);
+  }
+
+  .letter-message-wrap {
+    color: hsl(var(--bc) / 0.98);
+    margin-top: 0.25rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .letter-message {
+    font-size: clamp(1rem, 1.25vw, 1.16rem);
+    line-height: 1.62;
+    text-shadow: 0 1px 12px hsl(var(--b1) / 0.75);
+  }
+
+  .letter-card:hover {
+    transform: translateY(-2px);
+    outline-color: hsl(var(--p) / 0.8);
+    box-shadow:
+      0 18px 48px -28px hsl(var(--s) / 0.82),
+      inset 0 0 0 1px hsl(var(--p) / 0.28),
+      inset 0 1px 0 hsl(var(--b1) / 0.7);
+  }
+
+  .letter-card:hover::before {
+    opacity: 1;
+  }
+
+  .letter-card:hover::after {
+    border-color: hsl(var(--p) / 0.42);
+    opacity: 1;
+  }
+
   [data-scroll] {
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition: opacity 0.24s ease, transform 0.24s ease;
+  }
+
+  @media (max-width: 640px) {
+    .letters-glow {
+      width: 16rem;
+      height: 16rem;
+      filter: blur(54px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .letter-card,
+    [data-scroll] {
+      transition: none !important;
+    }
   }
 </style>

@@ -25,7 +25,7 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
-  <body class={useVoidBackground ? 'void-body' : 'starry-body'}>
+  <body data-theme="dark" class={useVoidBackground ? 'void-body' : 'starry-body'}>
     <FirebaseAnalytics />
     <!-- Only render StarryBackground if NOT using void background -->
     {!useVoidBackground && <StarryBackground client:load enableNeptuneTransition={enableNeptuneTransition} neptuneSectionId={neptuneSectionId} />}
