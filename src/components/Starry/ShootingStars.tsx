@@ -66,17 +66,37 @@ export default function ShootingStars({
       return;
     }
 
-    const spawnStar = () => {
+    const spawnStar = (maxActiveStars = 2) => {
       const star = buildShootingStar(nextIdRef.current++, deviceInfo);
       const lifetime = star.durationMs + 180;
+      const keepCount = Math.max(1, Math.floor(maxActiveStars) - 1);
 
-      setStars((current) => [...current.slice(-1), star]);
+      setStars((current) => [...current.slice(-keepCount), star]);
 
       const timeoutId = window.setTimeout(() => {
         setStars((current) => current.filter((item) => item.id !== star.id));
       }, lifetime);
 
       cleanupTimeoutsRef.current.push(timeoutId);
+    };
+
+    const spawnMeteorShower = () => {
+      const burstCount = Math.round(
+        randomBetween(deviceInfo.isMobile ? 2 : 3, deviceInfo.isLowEnd ? 4 : 6)
+      );
+      const burstGapRange = deviceInfo.isLowEnd ? [120, 210] : [90, 170];
+      const showerCapacity = deviceInfo.isLowEnd ? 4 : 6;
+
+      for (let index = 0; index < burstCount; index += 1) {
+        const burstDelay =
+          randomBetween(burstGapRange[0], burstGapRange[1]) * (index + 1);
+
+        const timeoutId = window.setTimeout(() => {
+          spawnStar(showerCapacity);
+        }, burstDelay);
+
+        cleanupTimeoutsRef.current.push(timeoutId);
+      }
     };
 
     const scheduleNextSpawn = () => {
@@ -86,12 +106,18 @@ export default function ShootingStars({
       );
 
       spawnTimeoutRef.current = window.setTimeout(() => {
-        spawnStar();
+        spawnStar(2);
+
+        const meteorShowerChance = deviceInfo.isLowEnd ? 0.04 : 0.08;
+        if (Math.random() < meteorShowerChance) {
+          spawnMeteorShower();
+        }
+
         scheduleNextSpawn();
       }, delay);
     };
 
-    spawnStar();
+    spawnStar(2);
     scheduleNextSpawn();
 
     return () => {
