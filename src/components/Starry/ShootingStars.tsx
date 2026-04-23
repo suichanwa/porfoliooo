@@ -53,7 +53,7 @@ const buildShootingStar = (
     durationMs: randomBetween(isLowEnd ? 1200 : 1400, isMobile ? 1900 : 2500),
     trailLength: randomBetween(isMobile ? 140 : 180, isMobile ? 210 : 280),
     trailThickness: randomBetween(isMobile ? 0.9 : 1, isMobile ? 1.4 : 1.7),
-    headSize: randomBetween(isMobile ? 2.4 : 2.8, isMobile ? 3.8 : 4.4),
+    headSize: randomBetween(isMobile ? 3.2 : 3.8, isMobile ? 5 : 5.8),
     glowSize: randomBetween(isMobile ? 7 : 8, isMobile ? 11 : 13),
     hasStarHead: forceStarHead || Math.random() < STAR_HEAD_CHANCE
   };
@@ -162,9 +162,9 @@ export default function ShootingStars({
         const isSuiseiStar = star.hasStarHead;
         const headCenterX = star.glowSize * 0.5;
         const headLeft = headCenterX - star.headSize / 2;
-        const starHeadSize = star.headSize * 1.2;
+        const starHeadSize = star.headSize * 2.2;
         const starHeadLeft = headCenterX - starHeadSize / 2;
-        const tailLeft = headCenterX + (isSuiseiStar ? starHeadSize * 0.06 : 0);
+        const tailLeft = headCenterX;
         const tailLength = isSuiseiStar ? star.trailLength * 0.84 : star.trailLength;
         const tailThickness = isSuiseiStar
           ? Math.max(0.8, star.trailThickness * 0.86)
@@ -275,6 +275,7 @@ export default function ShootingStars({
                     stroke="rgba(255,255,255,0.98)"
                     strokeWidth="0.36"
                     strokeLinejoin="round"
+                    transform="translate(0 1.8)"
                   />
                 </svg>
               </span>
