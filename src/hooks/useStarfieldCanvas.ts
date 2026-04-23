@@ -11,6 +11,7 @@ interface Star {
   twinkleSpeed: number;
   twinklePhase: number;
   type: StarType;
+  hasStarHead: boolean;
 }
 
 const pickStarType = () => {
@@ -24,6 +25,46 @@ const pickStarType = () => {
 };
 
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
+const SPECIAL_STAR_CHANCE = 0.3;
+
+const drawRoundedFivePointStar = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number
+) => {
+  const outerRadius = radius * 1.28;
+  const innerRadius = outerRadius * 0.64;
+  const rotation = -Math.PI / 2;
+  const step = Math.PI / 5;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+
+  for (let index = 0; index < 10; index += 1) {
+    const angle = rotation + index * step;
+    const pointRadius = index % 2 === 0 ? outerRadius : innerRadius;
+    const pointX = Math.cos(angle) * pointRadius;
+    const pointY = Math.sin(angle) * pointRadius;
+
+    if (index === 0) {
+      ctx.moveTo(pointX, pointY);
+    } else {
+      ctx.lineTo(pointX, pointY);
+    }
+  }
+
+  ctx.closePath();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(0.15, outerRadius * 0.22);
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.restore();
+};
 
 interface StarfieldOptions {
   showConstellations: boolean;
@@ -61,7 +102,8 @@ export default function useStarfieldCanvas({
           baseOpacity,
           twinkleSpeed: randomBetween(profile.twinkleMin, profile.twinkleMax),
           twinklePhase: Math.random() * Math.PI * 2,
-          type
+          type,
+          hasStarHead: Math.random() < SPECIAL_STAR_CHANCE
         });
       }
 
@@ -99,10 +141,14 @@ export default function useStarfieldCanvas({
         star.opacity = star.baseOpacity * twinkle;
 
         ctx.globalAlpha = star.opacity;
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (star.hasStarHead) {
+          drawRoundedFivePointStar(ctx, star.x, star.y, star.radius);
+        } else {
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
 
       ctx.globalAlpha = 1;
