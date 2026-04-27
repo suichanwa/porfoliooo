@@ -1,8 +1,12 @@
 <script>
-  import { initializeFirebaseAnalytics } from "../utils/firebaseAnalytics";
+  import {
+    initializeFirebaseAnalytics,
+    trackSitePageViewed,
+  } from "../utils/firebaseAnalytics";
 
   const bootAnalytics = () => {
     void initializeFirebaseAnalytics();
+    void trackSitePageViewed();
   };
 
   bootAnalytics();

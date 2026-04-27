@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveReadingProgress, getReadingProgress, type Book, type ReadingProgress } from '../utils/firebaseConfig';
-import { trackBookOpened } from '../utils/firebaseAnalytics';
+import {
+  trackBookOpened,
+  trackBookPageTurned,
+  trackBookPdfOpened,
+  trackBookThoughtsOpened,
+  trackBookZoomChanged,
+} from '../utils/firebaseAnalytics';
 
 interface BookReaderProps {
   book: Book;
@@ -68,13 +74,65 @@ export default function BookReader({ book }: BookReaderProps) {
     return () => clearTimeout(timeoutId);
   }, [currentPage, book.id, book.pages]);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number, source: "prev" | "next" | "input") => {
     const validPage = Math.max(1, Math.min(book.pages, page));
+
+    if (validPage !== currentPage && book.id) {
+      void trackBookPageTurned({
+        bookId: book.id,
+        page: validPage,
+        totalPages: book.pages,
+        source,
+      });
+    }
+
     setCurrentPage(validPage);
   };
 
-  const goToPrevPage = () => handlePageChange(currentPage - 1);
-  const goToNextPage = () => handlePageChange(currentPage + 1);
+  const goToPrevPage = () => handlePageChange(currentPage - 1, "prev");
+  const goToNextPage = () => handlePageChange(currentPage + 1, "next");
+  const handleZoomOut = () => {
+    const nextScale = Math.max(0.5, scale - 0.25);
+    setScale(nextScale);
+    if (book.id) {
+      void trackBookZoomChanged({
+        bookId: book.id,
+        title: book.title,
+        scale: nextScale,
+      });
+    }
+  };
+  const handleZoomIn = () => {
+    const nextScale = Math.min(3, scale + 0.25);
+    setScale(nextScale);
+    if (book.id) {
+      void trackBookZoomChanged({
+        bookId: book.id,
+        title: book.title,
+        scale: nextScale,
+      });
+    }
+  };
+  const handleOpenThoughts = () => {
+    if (book.id) {
+      void trackBookThoughtsOpened({
+        bookId: book.id,
+        title: book.title,
+        genre: book.genre,
+        source: "reader",
+      });
+    }
+    setShowThoughts(true);
+  };
+  const handleOpenPdf = () => {
+    if (book.id) {
+      void trackBookPdfOpened({
+        bookId: book.id,
+        title: book.title,
+      });
+    }
+    window.open(book.pdfUrl, '_blank');
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -131,7 +189,7 @@ export default function BookReader({ book }: BookReaderProps) {
               {/* Zoom Controls */}
               <div className="hidden md:flex items-center gap-1">
                 <button
-                  onClick={() => setScale(Math.max(0.5, scale - 0.25))}
+                  onClick={handleZoomOut}
                   className="btn btn-ghost btn-xs"
                   disabled={scale <= 0.5}
                 >
@@ -139,7 +197,7 @@ export default function BookReader({ book }: BookReaderProps) {
                 </button>
                 <span className="text-xs px-2">{Math.round(scale * 100)}%</span>
                 <button
-                  onClick={() => setScale(Math.min(3, scale + 0.25))}
+                  onClick={handleZoomIn}
                   className="btn btn-ghost btn-xs"
                   disabled={scale >= 3}
                 >
@@ -161,7 +219,7 @@ export default function BookReader({ book }: BookReaderProps) {
                   <input
                     type="number"
                     value={currentPage}
-                    onChange={(e) => handlePageChange(parseInt(e.target.value) || 1)}
+                    onChange={(e) => handlePageChange(parseInt(e.target.value) || 1, "input")}
                     className="input input-bordered input-xs w-16 text-center"
                     min="1"
                     max={book.pages}
@@ -180,14 +238,14 @@ export default function BookReader({ book }: BookReaderProps) {
 
               {/* Action Buttons */}
               <button
-                onClick={() => setShowThoughts(true)}
+                onClick={handleOpenThoughts}
                 className="btn btn-secondary btn-sm"
               >
                 💭 Thoughts
               </button>
 
               <button
-                onClick={() => window.open(book.pdfUrl, '_blank')}
+                onClick={handleOpenPdf}
                 className="btn btn-outline btn-sm"
               >
                 🔗 Open PDF

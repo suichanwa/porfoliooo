@@ -1,5 +1,8 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { trackMusicToggled } from "../utils/firebaseAnalytics";
+import {
+  trackMusicToggled,
+  trackNavigationClicked,
+} from "../utils/firebaseAnalytics";
 
 export default function Navigation() {
   const [activeHash, setActiveHash] = useState("/");
@@ -75,6 +78,21 @@ export default function Navigation() {
     setCurrentPfp(prev => 
       prev === "/images/pfp.jpg" ? "/images/pfp2.jpg" : "/images/pfp.jpg"
     );
+  };
+
+  const handleNavClick = (
+    path: string,
+    label: string,
+    surface: "desktop_main" | "desktop_more" | "mobile",
+  ) => {
+    setActiveHash(path);
+    setIsMenuOpen(false);
+    setIsDropdownOpen(false);
+    void trackNavigationClicked({
+      destinationPath: path,
+      label,
+      surface,
+    });
   };
 
   const toggleBgm = () => {
@@ -227,12 +245,6 @@ export default function Navigation() {
   // All items for mobile
   const allNavItems = [...mainNavItems, ...moreNavItems];
 
-  const handleNavClick = (path: string) => {
-    setActiveHash(path);
-    setIsMenuOpen(false);
-    setIsDropdownOpen(false);
-  };
-
   const isMoreActive = moreNavItems.some(item => item.path === activeHash);
   const desktopNavButtonBase =
     "group relative flex items-center gap-2 px-2.5 py-2 border-b-2 border-transparent text-[12px] font-semibold uppercase tracking-[0.08em] transition-all duration-300";
@@ -349,7 +361,7 @@ export default function Navigation() {
                   ? desktopNavButtonActive
                   : desktopNavButtonIdle
               }`}
-              onClick={() => setActiveHash(item.path)}
+              onClick={() => handleNavClick(item.path, item.name, "desktop_main")}
             >
               <span className="flex items-center justify-center w-5 h-5 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
                 {item.icon}
@@ -396,7 +408,7 @@ export default function Navigation() {
                         ? desktopNavButtonActive
                         : dropdownNavButtonIdle
                     }`}
-                    onClick={() => handleNavClick(item.path)}
+                    onClick={() => handleNavClick(item.path, item.name, "desktop_more")}
                   >
                     <span className="flex items-center justify-center w-5 h-5 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
                       {item.icon}
@@ -478,7 +490,7 @@ export default function Navigation() {
                               ? desktopNavButtonActive
                               : mobileNavButtonIdle
                           }`}
-                          onClick={() => handleNavClick(item.path)}
+                          onClick={() => handleNavClick(item.path, item.name, "mobile")}
                         >
                           <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
                             {item.icon}

@@ -1,5 +1,9 @@
 import { addLetter } from "../utils/firebaseConfig";
-import { trackLetterSent } from "../utils/firebaseAnalytics";
+import {
+  trackLetterDraftStarted,
+  trackLetterSent,
+  trackLetterValidationFailed,
+} from "../utils/firebaseAnalytics";
 
 type MaybeElement<T extends HTMLElement> = T | null;
 
@@ -116,6 +120,26 @@ export const usePushLetteres = (root: ParentNode = document) => {
     updateCharacterCount(messageInput, charCount);
   };
 
+  let draftTracked = false;
+  const trackDraftStarted = () => {
+    if (draftTracked) {
+      return;
+    }
+
+    const messageLength = messageInput.value.trim().length;
+    const hasName = nameInput.value.trim().length > 0;
+
+    if (!messageLength && !hasName) {
+      return;
+    }
+
+    draftTracked = true;
+    void trackLetterDraftStarted({
+      hasName,
+      messageLength,
+    });
+  };
+
   const handleSubmit = async (event: SubmitEvent) => {
     event.preventDefault();
 
@@ -125,6 +149,7 @@ export const usePushLetteres = (root: ParentNode = document) => {
     errorMessage.classList.add("hidden");
 
     if (!message) {
+      void trackLetterValidationFailed({ reason: "empty_message" });
       flashInputError(messageInput);
       return;
     }
@@ -171,6 +196,8 @@ export const usePushLetteres = (root: ParentNode = document) => {
   };
 
   messageInput.addEventListener("input", handleMessageInput);
+  messageInput.addEventListener("input", trackDraftStarted);
+  nameInput.addEventListener("input", trackDraftStarted);
   form.addEventListener("submit", handleSubmit);
   writeAnotherButton.addEventListener("click", handleWriteAnother);
   tryAgainButton.addEventListener("click", handleTryAgain);
@@ -180,6 +207,8 @@ export const usePushLetteres = (root: ParentNode = document) => {
   return () => {
     delete form.dataset.pushLettersBound;
     messageInput.removeEventListener("input", handleMessageInput);
+    messageInput.removeEventListener("input", trackDraftStarted);
+    nameInput.removeEventListener("input", trackDraftStarted);
     form.removeEventListener("submit", handleSubmit);
     writeAnotherButton.removeEventListener("click", handleWriteAnother);
     tryAgainButton.removeEventListener("click", handleTryAgain);

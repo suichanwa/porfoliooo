@@ -21,7 +21,14 @@ import {
   DEFAULT_GRAVITY_SETTINGS,
   type GravitySettings
 } from "./gravity/gravityField";
-import { trackPlanetariumVisited } from "../utils/firebaseAnalytics";
+import {
+  trackPlanetariumBodySelected,
+  trackPlanetariumDistanceScaleChanged,
+  trackPlanetariumPickerToggled,
+  trackPlanetariumToggleChanged,
+  trackPlanetariumViewModeChanged,
+  trackPlanetariumVisited,
+} from "../utils/firebaseAnalytics";
 
 const OVERVIEW_SPACING = 40;
 const EXPLORE_SPACING = 75;
@@ -81,6 +88,12 @@ export default function PlanetariumPage() {
     setSelectedId(id);
     setIsFocused(false);
     setInfoHidden(false);
+    if (id) {
+      void trackPlanetariumBodySelected({
+        bodyId: id,
+        source: "canvas",
+      });
+    }
   }, []);
   const handlePointerMissed = useCallback(() => {
     setSelectedId(null);
@@ -95,6 +108,10 @@ export default function PlanetariumPage() {
     setIsFocused(false);
     setInfoHidden(false);
     setPickerOpen(false);
+    void trackPlanetariumBodySelected({
+      bodyId: id,
+      source: "picker",
+    });
   }, []);
   const handleOverview = useCallback(() => {
     clearSelection();
@@ -102,20 +119,69 @@ export default function PlanetariumPage() {
     setPickerOpen(false);
   }, [clearSelection]);
   const handleSpacingChange = useCallback((value: number) => {
+    if (viewMode !== "custom") {
+      void trackPlanetariumViewModeChanged({
+        mode: "custom",
+      });
+    }
     setViewMode("custom");
     setSpacingTarget(value);
     setDistanceScaleSpacing(value);
-  }, []);
+  }, [viewMode]);
   const handleSetOverview = useCallback(() => {
     setViewMode("overview");
     setSpacingTarget(OVERVIEW_SPACING);
+    void trackPlanetariumViewModeChanged({
+      mode: "overview",
+    });
   }, []);
   const handleSetExplore = useCallback(() => {
     setViewMode("explore");
     setSpacingTarget(EXPLORE_SPACING);
+    void trackPlanetariumViewModeChanged({
+      mode: "explore",
+    });
   }, []);
   const handlePickerToggle = useCallback(() => {
-    setPickerOpen((prev) => !prev);
+    const nextOpen = !pickerOpen;
+    setPickerOpen(nextOpen);
+    void trackPlanetariumPickerToggled({
+      open: nextOpen,
+    });
+  }, [pickerOpen]);
+  const handleShowOrbitsChange = useCallback((value: boolean) => {
+    setShowOrbits(value);
+    void trackPlanetariumToggleChanged({
+      control: "show_orbits",
+      enabled: value,
+    });
+  }, []);
+  const handleShowLabelsChange = useCallback((value: boolean) => {
+    setShowLabels(value);
+    void trackPlanetariumToggleChanged({
+      control: "show_labels",
+      enabled: value,
+    });
+  }, []);
+  const handleShowGridChange = useCallback((value: boolean) => {
+    setShowGrid(value);
+    void trackPlanetariumToggleChanged({
+      control: "show_grid",
+      enabled: value,
+    });
+  }, []);
+  const handleShowPerfChange = useCallback((value: boolean) => {
+    setShowPerf(value);
+    void trackPlanetariumToggleChanged({
+      control: "show_perf",
+      enabled: value,
+    });
+  }, []);
+  const handleDistanceScaleModeChange = useCallback((mode: DistanceScaleMode) => {
+    setDistanceScaleMode(mode);
+    void trackPlanetariumDistanceScaleChanged({
+      mode,
+    });
   }, []);
 
   useEffect(() => {
@@ -229,22 +295,22 @@ export default function PlanetariumPage() {
       </div>
       <ControlsPanel
         distanceScaleMode={distanceScaleMode}
-        onDistanceScaleModeChange={setDistanceScaleMode}
+        onDistanceScaleModeChange={handleDistanceScaleModeChange}
         distanceScaleSpacing={distanceScaleSpacing}
         onSpacingChange={handleSpacingChange}
         viewMode={viewMode}
         onSetOverview={handleSetOverview}
         onSetExplore={handleSetExplore}
         showOrbits={showOrbits}
-        onShowOrbitsChange={setShowOrbits}
+        onShowOrbitsChange={handleShowOrbitsChange}
         showLabels={showLabels}
-        onShowLabelsChange={setShowLabels}
+        onShowLabelsChange={handleShowLabelsChange}
         showGrid={showGrid}
-        onShowGridChange={setShowGrid}
+        onShowGridChange={handleShowGridChange}
         showLensing={showLensing}
         onShowLensingChange={() => {}}
         showPerf={showPerf}
-        onShowPerfChange={setShowPerf}
+        onShowPerfChange={handleShowPerfChange}
         orbitSpeed={orbitSpeed}
         onOrbitSpeedChange={setOrbitSpeed}
         planets={filteredPlanets}

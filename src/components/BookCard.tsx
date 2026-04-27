@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { trackBookThoughtsOpened } from '../utils/firebaseAnalytics';
 
 interface Book {
   id: string;
@@ -105,12 +106,13 @@ export default function BookCard({ book }: BookCardProps) {
   };
 
   const handleViewThoughts = () => {
+    void trackBookThoughtsOpened({
+      bookId: book.id,
+      title: book.title,
+      genre: book.genre,
+      source: "card",
+    });
     setShowModal(true);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    savePageToCookie(page);
   };
 
   const formatDate = (dateString: string) => {
