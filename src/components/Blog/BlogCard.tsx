@@ -1,4 +1,5 @@
-﻿import { BlogPost } from "../../models/BlogPost";
+﻿import type { BlogPost } from "../../models/BlogPost";
+
 export default function BlogCard({ post }: { post: BlogPost }) {
   return (
     <div className="p-4 border-b border-base-content/10 cursor-pointer hover:text-primary">

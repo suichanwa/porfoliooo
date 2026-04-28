@@ -23,7 +23,7 @@ interface ShootingStar {
 }
 
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
-const METEOR_SHOWER_CHANCE = 0.05;
+const METEOR_SHOWER_CHANCE = 0.02; // 2% chance for meteor shower
 const STAR_HEAD_CHANCE = 1;
 
 const buildShootingStar = (

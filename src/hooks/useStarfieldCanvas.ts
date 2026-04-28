@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { STAR_TYPES, STAR_TYPE_ORDER, type StarType } from "../components/Starry/types/starry.ts";
+import { randomBetween, STARFIELD_CONFIG } from "../utils/starUtils.ts";
 import type { DeviceInfo } from "./useDeviceInfo";
 
 interface Star {
@@ -14,18 +15,17 @@ interface Star {
   hasStarHead: boolean;
 }
 
+// Pre-calculate total weight for weighted random selection (constant across all invocations)
+const TOTAL_STAR_TYPE_WEIGHT = STAR_TYPE_ORDER.reduce((sum, type) => sum + STAR_TYPES[type].weight, 0);
+
 const pickStarType = () => {
-  const totalWeight = STAR_TYPE_ORDER.reduce((sum, type) => sum + STAR_TYPES[type].weight, 0);
-  let roll = Math.random() * totalWeight;
+  let roll = Math.random() * TOTAL_STAR_TYPE_WEIGHT;
   for (const type of STAR_TYPE_ORDER) {
     roll -= STAR_TYPES[type].weight;
     if (roll <= 0) return type;
   }
   return "standard";
 };
-
-const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
-const SPECIAL_STAR_CHANCE = 0.3;
 
 const drawRoundedFivePointStar = (
   ctx: CanvasRenderingContext2D,
@@ -82,10 +82,22 @@ export default function useStarfieldCanvas({
   const animationRef = useRef<number>();
   const lastFrameTime = useRef<number>(0);
   const isVisible = useRef<boolean>(true);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const dprRef = useRef<number>(1);
+  const targetFPSRef = useRef<number>(30);
+  const frameIntervalRef = useRef<number>(1000 / 30);
+  const showConstellationsRef = useRef<boolean>(showConstellations);
+  const constellationCacheRef = useRef<Array<[number, number]>>([]);
+  const lastCanvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  // Update the ref whenever showConstellations prop changes
+  useEffect(() => {
+    showConstellationsRef.current = showConstellations;
+  }, [showConstellations]);
 
   const generateStars = useCallback(
     (width: number, height: number) => {
-      const starCount = deviceInfo.isLowEnd ? 30 : deviceInfo.isMobile ? 50 : 80;
+      const starCount = deviceInfo.isLowEnd ? STARFIELD_CONFIG.STAR_COUNTS.lowEnd : deviceInfo.isMobile ? STARFIELD_CONFIG.STAR_COUNTS.mobile : STARFIELD_CONFIG.STAR_COUNTS.desktop;
       const stars: Star[] = [];
 
       for (let i = 0; i < starCount; i++) {
@@ -103,7 +115,7 @@ export default function useStarfieldCanvas({
           twinkleSpeed: randomBetween(profile.twinkleMin, profile.twinkleMax),
           twinklePhase: Math.random() * Math.PI * 2,
           type,
-          hasStarHead: Math.random() < SPECIAL_STAR_CHANCE
+          hasStarHead: Math.random() < STARFIELD_CONFIG.SPECIAL_STAR_CHANCE
         });
       }
 
@@ -117,22 +129,18 @@ export default function useStarfieldCanvas({
       if (!canvasRef.current || !isVisible.current) return;
 
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
+      const ctx = contextRef.current;
       if (!ctx) return;
 
-      const targetFPS = deviceInfo.isLowEnd ? 20 : 30;
-      const frameInterval = 1000 / targetFPS;
-
-      if (timestamp - lastFrameTime.current < frameInterval) {
+      if (timestamp - lastFrameTime.current < frameIntervalRef.current) {
         animationRef.current = requestAnimationFrame(render);
         return;
       }
 
       lastFrameTime.current = timestamp;
 
-      const dpr = window.devicePixelRatio || 1;
-      const width = canvas.width / dpr;
-      const height = canvas.height / dpr;
+      const width = canvas.width / dprRef.current;
+      const height = canvas.height / dprRef.current;
 
       ctx.clearRect(0, 0, width, height);
 
@@ -144,7 +152,7 @@ export default function useStarfieldCanvas({
         if (star.hasStarHead) {
           drawRoundedFivePointStar(ctx, star.x, star.y, star.radius);
         } else {
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = STARFIELD_CONFIG.COLORS.STAR;
           ctx.beginPath();
           ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
           ctx.fill();
@@ -153,24 +161,37 @@ export default function useStarfieldCanvas({
 
       ctx.globalAlpha = 1;
 
-      if (showConstellations && starsRef.current.length > 10) {
-        ctx.strokeStyle = "rgba(140, 180, 220, 0.15)";
-        ctx.lineWidth = 0.5;
+      if (showConstellationsRef.current && starsRef.current.length > 10) {
+        // Recalculate constellation connections only when canvas size changes
+        if (lastCanvasSizeRef.current.width !== width || lastCanvasSizeRef.current.height !== height) {
+          constellationCacheRef.current = [];
+          lastCanvasSizeRef.current = { width, height };
+
+          const maxDistSq = (width * STARFIELD_CONFIG.CONSTELLATION.MAX_DISTANCE_RATIO) ** 2;
+          for (let i = 0; i < Math.min(starsRef.current.length, STARFIELD_CONFIG.CONSTELLATION.MAX_STARS_TO_SAMPLE); i += STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL) {
+            const star1 = starsRef.current[i];
+            const star2 = starsRef.current[i + STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL];
+            if (!star2) break;
+
+            const dx = star2.x - star1.x;
+            const dy = star2.y - star1.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < maxDistSq) {
+              constellationCacheRef.current.push([i, i + STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL]);
+            }
+          }
+        }
+
+        ctx.strokeStyle = STARFIELD_CONFIG.CONSTELLATION.STROKE_COLOR;
+        ctx.lineWidth = STARFIELD_CONFIG.CONSTELLATION.LINE_WIDTH;
         ctx.beginPath();
 
-        for (let i = 0; i < Math.min(starsRef.current.length, 30); i += 3) {
+        for (const [i, j] of constellationCacheRef.current) {
           const star1 = starsRef.current[i];
-          const star2 = starsRef.current[i + 3];
-          if (!star2) break;
-
-          const dx = star2.x - star1.x;
-          const dy = star2.y - star1.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < width * 0.15) {
-            ctx.moveTo(star1.x, star1.y);
-            ctx.lineTo(star2.x, star2.y);
-          }
+          const star2 = starsRef.current[j];
+          ctx.moveTo(star1.x, star1.y);
+          ctx.lineTo(star2.x, star2.y);
         }
 
         ctx.stroke();
@@ -178,7 +199,7 @@ export default function useStarfieldCanvas({
 
       animationRef.current = requestAnimationFrame(render);
     },
-    [deviceInfo.isLowEnd, showConstellations]
+    []
   );
 
   useEffect(() => {
@@ -189,6 +210,12 @@ export default function useStarfieldCanvas({
 
     const setupCanvas = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, deviceInfo.isLowEnd ? 1 : 1.5);
+      dprRef.current = dpr;
+
+      const targetFPS = deviceInfo.isLowEnd ? STARFIELD_CONFIG.TARGET_FPS.lowEnd : STARFIELD_CONFIG.TARGET_FPS.default;
+      targetFPSRef.current = targetFPS;
+      frameIntervalRef.current = 1000 / targetFPS;
+
       const width = window.innerWidth;
       const height = window.innerHeight;
 
@@ -200,6 +227,7 @@ export default function useStarfieldCanvas({
       const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
       if (ctx) {
         ctx.scale(dpr, dpr);
+        contextRef.current = ctx;
       }
 
       generateStars(width, height);
