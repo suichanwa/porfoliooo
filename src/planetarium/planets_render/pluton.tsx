@@ -229,7 +229,6 @@ export default function Pluton({
   );
   const tilt = MathUtils.degToRad(data.rotation.axialTiltDeg);
   const glowColor = data.render.glowPreset?.color ?? "#f3d4a6";
-  const glowIntensity = data.render.glowPreset?.intensity ?? 0.08;
   const geometry = useMemo(() => new SphereGeometry(radius, 48, 32), [radius]);
 
   const material = useMemo(
@@ -238,11 +237,11 @@ export default function Pluton({
         map: texture,
         roughness: 0.95,
         metalness: 0,
+        // Lit by the Sun light only (no emissiveMap) so Pluto shows a terminator.
         emissive: new Color(glowColor),
-        emissiveIntensity: glowIntensity,
-        emissiveMap: texture
+        emissiveIntensity: 0.025
       }),
-    [glowColor, glowIntensity, texture]
+    [glowColor, texture]
   );
 
   useFrame((_, delta) => {

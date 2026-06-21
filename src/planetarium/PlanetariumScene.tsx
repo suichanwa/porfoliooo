@@ -43,7 +43,12 @@ interface PlanetariumSceneProps {
   debugGravity?: boolean;
   showPerf?: boolean;
   orbitSpeed?: number;
+  timeResetSignal?: number;
+  onSimDateChange?: (epochMs: number) => void;
 }
+
+const J2000_EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+const nowEpochDays = () => (Date.now() - J2000_EPOCH_MS) / 86400000;
 
 export default function PlanetariumScene({
   showOrbits,
@@ -61,13 +66,13 @@ export default function PlanetariumScene({
   gravitySettings,
   debugGravity = false,
   showPerf = true,
-  orbitSpeed = 10
+  orbitSpeed = 10,
+  timeResetSignal = 0,
+  onSimDateChange
 }: PlanetariumSceneProps) {
-  const startEpochDays = useMemo(() => {
-    const epoch = Date.UTC(2000, 0, 1, 12, 0, 0);
-    return (Date.now() - epoch) / 86400000;
-  }, []);
+  const startEpochDays = useMemo(() => nowEpochDays(), []);
   const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
+  const simDateAccumRef = useRef(0);
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const planetRefs = useRef<Record<BodyId, Object3D | null>>(
     createBodyRefStore<Object3D | null>(null)
@@ -105,6 +110,25 @@ export default function PlanetariumScene({
   useEffect(() => {
     perfSampleRef.current = { elapsed: 0, frames: 0, logged: false };
   }, [showPerf]);
+
+  // "Now" button: snap simulation time back to the real current date.
+  useEffect(() => {
+    if (timeResetSignal === 0) return;
+    timeRef.current = nowEpochDays();
+    if (onSimDateChange) {
+      onSimDateChange(J2000_EPOCH_MS + timeRef.current * 86400000);
+    }
+  }, [timeResetSignal, onSimDateChange, timeRef]);
+
+  // Report the simulated date to the UI ~4x/sec (avoids per-frame re-renders).
+  useFrame((_, delta) => {
+    if (!onSimDateChange) return;
+    simDateAccumRef.current += delta;
+    if (simDateAccumRef.current >= 1) {
+      simDateAccumRef.current = 0;
+      onSimDateChange(J2000_EPOCH_MS + timeRef.current * 86400000);
+    }
+  });
 
   useFrame(() => {
     if (!showGrid && !showLensing) return;
@@ -169,14 +193,19 @@ export default function PlanetariumScene({
           debug={debugGravity}
         />
       )}
-      <ambientLight intensity={0.04} />
-      <hemisphereLight intensity={0.06} color="#1a2336" groundColor="#000000" />
+      {/* Faint fill so the night side is not pure black, but stays dark
+          enough to keep a visible terminator. */}
+      <ambientLight intensity={0.12} />
+      <hemisphereLight intensity={0.05} color="#1a2336" groundColor="#02040a" />
+      {/* The Sun is the only real light source. decay=0 + infinite range so
+          every planet (Mercury .. Neptune) is lit from the sun direction and
+          shows a proper day/night terminator regardless of distance. */}
       <pointLight
         position={[0, 0, 0]}
-        intensity={1.4}
-        distance={140}
-        decay={2}
-        color="#f9d27b"
+        intensity={2.6}
+        distance={0}
+        decay={0}
+        color="#fff4e0"
       />
       <Sun
         meshRef={sunRef}

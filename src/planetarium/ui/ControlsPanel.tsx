@@ -74,6 +74,7 @@ export default function ControlsPanel({
   isHidden = false
 }: ControlsPanelProps) {
   const [controlsOpen, setControlsOpen] = useState(true);
+  const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState(DEFAULT_POSITION);
   const isMobile = useMediaQuery("(max-width: 639px)");
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -163,10 +164,14 @@ export default function ControlsPanel({
   return (
     <div
       ref={panelRef}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       className={`pointer-events-auto fixed z-20 max-h-[calc(100vh-2rem)] transition-opacity duration-300 ${
         isHidden
-          ? "opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto"
-          : "opacity-100"
+          ? "opacity-0 pointer-events-none sm:pointer-events-auto"
+          : hovered
+            ? "opacity-100"
+            : "opacity-30 hover:opacity-100"
       }`}
       style={{
         transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
@@ -177,10 +182,10 @@ export default function ControlsPanel({
         width: "min(92vw, 20rem)"
       }}
     >
-      <div 
-        className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-700/60 px-3 py-3 text-[11px] text-slate-100 shadow-lg sm:px-4 sm:text-xs"
+      <div
+        className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 px-3 py-3 text-[11px] text-slate-100 shadow-xl backdrop-blur-md sm:px-4 sm:text-xs"
         style={{
-          backgroundColor: 'rgb(15, 23, 42)'
+          backgroundColor: 'rgba(10, 14, 24, 0.45)'
         }}
       >
         <div className="flex items-center justify-between gap-3">
@@ -190,7 +195,7 @@ export default function ControlsPanel({
               onPointerDown={handleDragStart}
               className="flex items-center gap-2 rounded-full border border-slate-700/80 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300 transition-all duration-200 hover:border-slate-500/90 hover:text-white cursor-grab active:cursor-grabbing select-none"
               style={{
-                backgroundColor: 'rgb(30, 41, 59)'
+                backgroundColor: 'rgba(255, 255, 255, 0.06)'
               }}
               aria-label="Drag controls panel"
             >
@@ -206,7 +211,7 @@ export default function ControlsPanel({
             onClick={() => setControlsOpen((prev) => !prev)}
             className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
             style={{
-              backgroundColor: 'rgb(30, 41, 59)'
+              backgroundColor: 'rgba(255, 255, 255, 0.06)'
             }}
             aria-expanded={controlsOpen}
           >
@@ -229,7 +234,7 @@ export default function ControlsPanel({
               <select
                 className="select select-sm border-slate-700/80 text-slate-100 focus:border-primary-accent focus:outline-none"
                 style={{
-                  backgroundColor: 'rgb(30, 41, 59)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)'
                 }}
                 value={distanceScaleMode}
                 onChange={(event) =>
@@ -286,7 +291,7 @@ export default function ControlsPanel({
                 style={{
                   backgroundColor: viewMode === "overview" 
                     ? 'rgba(59, 130, 246, 0.2)' 
-                    : 'rgb(30, 41, 59)'
+                    : 'rgba(255, 255, 255, 0.06)'
                 }}
               >
                 Overview
@@ -302,7 +307,7 @@ export default function ControlsPanel({
                 style={{
                   backgroundColor: viewMode === "explore" 
                     ? 'rgba(59, 130, 246, 0.2)' 
-                    : 'rgb(30, 41, 59)'
+                    : 'rgba(255, 255, 255, 0.06)'
                 }}
               >
                 Explore

@@ -18,7 +18,12 @@ export interface OrbitElements {
   eccentricity: number;
   inclinationDeg: number;
   orbitalPeriodDays: number;
+  /** Legacy manual phase offset (radians). Used only when J2000 elements absent. */
   phaseAtEpoch?: number;
+  /** Mean longitude L at the J2000 epoch (deg). Drives the real "now" position. */
+  meanLongitudeAtEpochDeg?: number;
+  /** Longitude of perihelion ϖ = Ω + ω (deg). Orients the orbit in the ecliptic. */
+  longitudeOfPerihelionDeg?: number;
 }
 
 export interface RotationElements {

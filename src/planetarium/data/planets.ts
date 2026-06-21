@@ -51,7 +51,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(0.387),
       eccentricity: 0.2056,
       inclinationDeg: 7.005,
-      orbitalPeriodDays: 87.969
+      orbitalPeriodDays: 87.969,
+      meanLongitudeAtEpochDeg: 252.2503235,
+      longitudeOfPerihelionDeg: 77.45779628
     }
   },
   {
@@ -76,7 +78,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(0.723),
       eccentricity: 0.0067,
       inclinationDeg: 3.394,
-      orbitalPeriodDays: 224.701
+      orbitalPeriodDays: 224.701,
+      meanLongitudeAtEpochDeg: 181.9790995,
+      longitudeOfPerihelionDeg: 131.60246718
     }
   },
   {
@@ -101,7 +105,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(1),
       eccentricity: 0.0167,
       inclinationDeg: 0,
-      orbitalPeriodDays: 365.256
+      orbitalPeriodDays: 365.256,
+      meanLongitudeAtEpochDeg: 100.46457166,
+      longitudeOfPerihelionDeg: 102.93768193
     }
   },
   {
@@ -126,7 +132,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(1.524),
       eccentricity: 0.0934,
       inclinationDeg: 1.85,
-      orbitalPeriodDays: 686.98
+      orbitalPeriodDays: 686.98,
+      meanLongitudeAtEpochDeg: -4.55343205,
+      longitudeOfPerihelionDeg: -23.94362959
     }
   },
   {
@@ -159,7 +167,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(5.204),
       eccentricity: 0.0489,
       inclinationDeg: 1.304,
-      orbitalPeriodDays: 4332.59
+      orbitalPeriodDays: 4332.59,
+      meanLongitudeAtEpochDeg: 34.39644051,
+      longitudeOfPerihelionDeg: 14.72847983
     }
   },
   {
@@ -195,7 +205,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(9.582),
       eccentricity: 0.0565,
       inclinationDeg: 2.485,
-      orbitalPeriodDays: 10759.22
+      orbitalPeriodDays: 10759.22,
+      meanLongitudeAtEpochDeg: 49.95424423,
+      longitudeOfPerihelionDeg: 92.59887831
     }
   },
   {
@@ -228,7 +240,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(19.201),
       eccentricity: 0.0472,
       inclinationDeg: 0.773,
-      orbitalPeriodDays: 30685.4
+      orbitalPeriodDays: 30685.4,
+      meanLongitudeAtEpochDeg: 313.23810451,
+      longitudeOfPerihelionDeg: 170.9542763
     }
   },
   {
@@ -300,7 +314,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(30.047),
       eccentricity: 0.0086,
       inclinationDeg: 1.77,
-      orbitalPeriodDays: 60190
+      orbitalPeriodDays: 60190,
+      meanLongitudeAtEpochDeg: -55.12002969,
+      longitudeOfPerihelionDeg: 44.96476227
     }
   },
   {
@@ -325,7 +341,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(2.7675),
       eccentricity: 0.0758,
       inclinationDeg: 10.59,
-      orbitalPeriodDays: 1680.9
+      orbitalPeriodDays: 1680.9,
+      meanLongitudeAtEpochDeg: 249.916,
+      longitudeOfPerihelionDeg: 153.927
     }
   },
   {
@@ -350,7 +368,9 @@ export const PLANETS: BodyData[] = [
       semiMajorAxisKm: auToKm(39.482),
       eccentricity: 0.2488,
       inclinationDeg: 17.16,
-      orbitalPeriodDays: 90560
+      orbitalPeriodDays: 90560,
+      meanLongitudeAtEpochDeg: 238.92903833,
+      longitudeOfPerihelionDeg: 224.06891629
     }
   }
 ];

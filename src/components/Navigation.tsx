@@ -9,6 +9,8 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isPlanetarium, setIsPlanetarium] = useState(false);
+  const [navRevealed, setNavRevealed] = useState(true);
   const [currentPfp, setCurrentPfp] = useState("/images/pfp.jpg");
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -16,8 +18,23 @@ export default function Navigation() {
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    setActiveHash(window.location.pathname);
+    const path = window.location.pathname;
+    setActiveHash(path);
+    // On the planetarium, the nav auto-hides so it doesn't cover the canvas/controls.
+    const planetarium = path.replace(/\/$/, "") === "/planetarium";
+    setIsPlanetarium(planetarium);
+    setNavRevealed(!planetarium);
   }, []);
+
+  // Planetarium: reveal the nav only when the pointer is near the top edge.
+  useEffect(() => {
+    if (!isPlanetarium) return;
+    const handlePointer = (event: PointerEvent) => {
+      setNavRevealed(event.clientY <= 72);
+    };
+    window.addEventListener("pointermove", handlePointer, { passive: true });
+    return () => window.removeEventListener("pointermove", handlePointer);
+  }, [isPlanetarium]);
 
   useEffect(() => {
     const audio = bgmRef.current;
@@ -261,12 +278,16 @@ export default function Navigation() {
   const dropdownNavButtonIdle =
     "text-slate-300/90 hover:text-white hover:border-primary-accent/35";
 
+  const showNav = !isPlanetarium || navRevealed || isMenuOpen || isDropdownOpen;
+
   return (
     <nav
       data-theme="dark"
       className={`py-3 shadow-sm sticky top-0 z-[100] transition-all duration-300 ${
-        scrolled 
-          ? 'bg-[rgba(var(--primary-bg-rgb),0.22)] backdrop-blur-lg border-b border-white/20' 
+        showNav ? 'translate-y-0' : '-translate-y-full'
+      } ${
+        scrolled
+          ? 'bg-[rgba(var(--primary-bg-rgb),0.22)] backdrop-blur-lg border-b border-white/20'
           : 'bg-[rgba(var(--primary-bg-rgb),0.06)] backdrop-blur-md border-b border-white/10'
       }`}
     >

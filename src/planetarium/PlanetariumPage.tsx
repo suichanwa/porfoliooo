@@ -10,6 +10,7 @@ import { PLANET_INFO } from "./data/planetInfo";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
+import TimeControls from "./ui/TimeControls";
 import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
 import {
   DEFAULT_DISTANCE_SCALE_MODE,
@@ -32,6 +33,8 @@ import {
 
 const OVERVIEW_SPACING = 40;
 const EXPLORE_SPACING = 75;
+// Simulation speed presets (days per real second) for the time controls.
+const SPEED_LADDER = [0.25, 1, 2, 5, 10, 30, 90, 365, 1825];
 
 export default function PlanetariumPage() {
   const [showOrbits, setShowOrbits] = useState(false);
@@ -49,6 +52,9 @@ export default function PlanetariumPage() {
   const [pickerQuery, setPickerQuery] = useState("");
   const [showPerf, setShowPerf] = useState(false);
   const [orbitSpeed, setOrbitSpeed] = useState(10);
+  const [simDateMs, setSimDateMs] = useState<number | null>(null);
+  const [timeResetSignal, setTimeResetSignal] = useState(0);
+  const prevSpeedRef = useRef(10);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
@@ -183,6 +189,33 @@ export default function PlanetariumPage() {
       mode,
     });
   }, []);
+  const handleFaster = useCallback(() => {
+    setOrbitSpeed((current) => {
+      if (current <= 0) return prevSpeedRef.current || 10;
+      return SPEED_LADDER.find((value) => value > current + 1e-6) ?? current;
+    });
+  }, []);
+  const handleSlower = useCallback(() => {
+    setOrbitSpeed((current) => {
+      if (current <= 0) return current;
+      const lower = [...SPEED_LADDER]
+        .reverse()
+        .find((value) => value < current - 1e-6);
+      return lower ?? SPEED_LADDER[0];
+    });
+  }, []);
+  const handleTogglePause = useCallback(() => {
+    setOrbitSpeed((current) => {
+      if (current > 0) {
+        prevSpeedRef.current = current;
+        return 0;
+      }
+      return prevSpeedRef.current || 10;
+    });
+  }, []);
+  const handleNow = useCallback(() => {
+    setTimeResetSignal((signal) => signal + 1);
+  }, []);
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -271,6 +304,8 @@ export default function PlanetariumPage() {
         debugGravity={debugGravity}
         showPerf={showPerf}
         orbitSpeed={orbitSpeed}
+        timeResetSignal={timeResetSignal}
+        onSimDateChange={setSimDateMs}
       />
       </PlanetariumCanvas>
       <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
@@ -322,6 +357,15 @@ export default function PlanetariumPage() {
         onSelectPlanet={handleSelectPlanet}
         onOverview={handleOverview}
         isHidden={shouldHideControls}
+      />
+      <TimeControls
+        speed={orbitSpeed}
+        isPaused={orbitSpeed <= 0}
+        onSlower={handleSlower}
+        onFaster={handleFaster}
+        onTogglePause={handleTogglePause}
+        onNow={handleNow}
+        simDateMs={simDateMs}
       />
       <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">
         <GravityPanel settings={gravitySettings} onChange={setGravitySettings} />

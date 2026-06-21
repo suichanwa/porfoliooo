@@ -92,11 +92,13 @@ export default function BodyMesh({
         bumpMap: bumpMap ?? null,
         roughness: materialPreset.roughness,
         metalness: materialPreset.metalness,
+        // No emissiveMap: planets must NOT self-illuminate their texture,
+        // otherwise the whole surface is lit and there is no terminator.
+        // A tiny flat emissive keeps the night side from going fully black.
         emissive: new Color(glowPreset.color),
-        emissiveIntensity: glowPreset.intensity,
-        emissiveMap: baseMap ?? null
+        emissiveIntensity: 0.025
       }),
-    [baseMap, bumpMap, glowPreset.color, glowPreset.intensity, materialPreset, normalMap]
+    [baseMap, bumpMap, glowPreset.color, materialPreset, normalMap]
   );
 
   const atmosphereMaterial = useMemo(
