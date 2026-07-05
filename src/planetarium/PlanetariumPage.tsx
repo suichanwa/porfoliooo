@@ -34,7 +34,13 @@ import {
 const OVERVIEW_SPACING = 40;
 const EXPLORE_SPACING = 75;
 // Simulation speed presets (days per real second) for the time controls.
+// Negative side mirrors the positive one: stepping below 0.25 d/s (6 h/s)
+// flips time into reverse so users can scrub back and forth.
 const SPEED_LADDER = [0.25, 1, 2, 5, 10, 30, 90, 365, 1825];
+const SIGNED_SPEED_LADDER = [
+  ...[...SPEED_LADDER].reverse().map((value) => -value),
+  ...SPEED_LADDER
+];
 
 export default function PlanetariumPage() {
   const [showOrbits, setShowOrbits] = useState(false);
@@ -192,22 +198,22 @@ export default function PlanetariumPage() {
   }, []);
   const handleFaster = useCallback(() => {
     setOrbitSpeed((current) => {
-      if (current <= 0) return prevSpeedRef.current || 1;
-      return SPEED_LADDER.find((value) => value > current + 1e-6) ?? current;
+      return (
+        SIGNED_SPEED_LADDER.find((value) => value > current + 1e-6) ?? current
+      );
     });
   }, []);
   const handleSlower = useCallback(() => {
     setOrbitSpeed((current) => {
-      if (current <= 0) return current;
-      const lower = [...SPEED_LADDER]
+      const lower = [...SIGNED_SPEED_LADDER]
         .reverse()
         .find((value) => value < current - 1e-6);
-      return lower ?? SPEED_LADDER[0];
+      return lower ?? current;
     });
   }, []);
   const handleTogglePause = useCallback(() => {
     setOrbitSpeed((current) => {
-      if (current > 0) {
+      if (current !== 0) {
         prevSpeedRef.current = current;
         return 0;
       }
@@ -364,7 +370,7 @@ export default function PlanetariumPage() {
       />
       <TimeControls
         speed={orbitSpeed}
-        isPaused={orbitSpeed <= 0}
+        isPaused={orbitSpeed === 0}
         onSlower={handleSlower}
         onFaster={handleFaster}
         onTogglePause={handleTogglePause}
