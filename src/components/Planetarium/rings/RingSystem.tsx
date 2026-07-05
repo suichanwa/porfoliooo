@@ -32,7 +32,7 @@ export default function RingSystem({
     if (!Number.isFinite(renderRadius) || renderRadius <= 0) return [];
 
     return rings
-      .map((ring, index) => {
+      .map((ring, index): ScaledRing | null => {
         const innerRatio = ring.innerRadiusKm / planetRadiusKm;
         const outerRatio = ring.outerRadiusKm / planetRadiusKm;
         if (!Number.isFinite(innerRatio) || !Number.isFinite(outerRatio)) {
@@ -52,7 +52,7 @@ export default function RingSystem({
           bandDensity: ring.bandDensity
         };
       })
-      .filter((ring): ring is ScaledRing => Boolean(ring));
+      .filter((ring): ring is ScaledRing => ring !== null);
   }, [planetRadiusKm, renderRadius, rings]);
 
   if (scaled.length === 0) return null;

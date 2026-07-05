@@ -42,6 +42,9 @@ export const useFocusTarget = ({
   const target = useMemo(() => new Vector3(), []);
   const desiredPosition = useMemo(() => new Vector3(), []);
   const direction = useMemo(() => new Vector3(), []);
+  const prevTarget = useMemo(() => new Vector3(), []);
+  const displacement = useMemo(() => new Vector3(), []);
+  const trackedIdRef = useRef<BodyId | null>(null);
   const nearRef = useRef<number | null>(null);
   const farRef = useRef<number | null>(null);
   const minDistanceRef = useRef<number | null>(null);
@@ -59,6 +62,18 @@ export const useFocusTarget = ({
       if (!focusObject) return;
       focusObject.getWorldPosition(target);
 
+      // Move camera and orbit target 1:1 with the planet's motion so the
+      // follow never lags at high orbit speeds; easing below only closes
+      // the initial approach gap.
+      if (trackedIdRef.current === selectedId) {
+        displacement.copy(target).sub(prevTarget);
+        camera.position.add(displacement);
+        controls.target.add(displacement);
+      } else {
+        trackedIdRef.current = selectedId;
+      }
+      prevTarget.copy(target);
+
       const radius = scalePlanetRadius(planetData[selectedId].render.radiusKm);
       const desiredDistance = Math.max(radius * 10, 4.5);
 
@@ -73,11 +88,13 @@ export const useFocusTarget = ({
       onDistanceTarget?.(desiredDistance);
       shouldUpdate = true;
     } else if (isResettingRef.current) {
+      trackedIdRef.current = null;
       target.copy(DEFAULT_TARGET);
       desiredPosition.copy(DEFAULT_POSITION);
       onDistanceTarget?.(null);
       shouldUpdate = true;
     } else {
+      trackedIdRef.current = null;
       if (focusStateRef.current) {
         focusStateRef.current = false;
         onFocusChange?.(false);

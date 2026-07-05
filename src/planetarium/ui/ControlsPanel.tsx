@@ -28,6 +28,8 @@ interface ControlsPanelProps {
   onShowLensingChange: (value: boolean) => void;
   showPerf: boolean;
   onShowPerfChange: (value: boolean) => void;
+  useMilkyWayBackground: boolean;
+  onToggleBackground: () => void;
   orbitSpeed: number;
   onOrbitSpeedChange: (value: number) => void;
   planets: BodyData[];
@@ -61,6 +63,8 @@ export default function ControlsPanel({
   onShowLensingChange,
   showPerf,
   onShowPerfChange,
+  useMilkyWayBackground,
+  onToggleBackground,
   orbitSpeed,
   onOrbitSpeedChange,
   planets,
@@ -333,6 +337,18 @@ export default function ControlsPanel({
             />
             <span className="tracking-wide text-slate-100">Planet labels</span>
           </label>
+          <button
+            type="button"
+            onClick={onToggleBackground}
+            className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
+            style={{
+              backgroundColor: useMilkyWayBackground
+                ? 'rgba(59, 130, 246, 0.2)'
+                : 'rgba(255, 255, 255, 0.06)'
+            }}
+          >
+            Switch background
+          </button>
           <div className="h-px bg-slate-700/60" />
           <div className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
             Gravity visuals

@@ -178,7 +178,7 @@ export default function CameraRig({
       enablePan={false}
       enableZoom
       enableDamping
-      dampingFactor={0.08}
+      dampingFactor={0.05}
       rotateSpeed={isInspecting ? 0.65 : 0.6}
       zoomSpeed={isInspecting ? 1.1 : 0.8}
       minDistance={isInspecting ? 0.4 : minDistance}

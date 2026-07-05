@@ -42,7 +42,6 @@ export class DifficultySelector {
       fontFamily: 'serif',
       fontSize: '16px',
       color: '#ffffff',
-      fontWeight: 'bold'
     }).setOrigin(0, 0.5);
   }
 

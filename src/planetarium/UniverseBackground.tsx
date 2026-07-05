@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { Color, BackSide } from "three";
+import { MILKY_WAY_TEXTURE } from "./data/textures";
+import { useTextureAsset } from "./hooks/usePlanetTexture";
 
 interface StarLayerProps {
   count: number;
@@ -78,12 +80,15 @@ function StarLayer({
 interface UniverseBackgroundProps {
   isLowEnd?: boolean;
   prefersReducedMotion?: boolean;
+  useMilkyWay?: boolean;
 }
 
 export default function UniverseBackground({
   isLowEnd = false,
-  prefersReducedMotion = false
+  prefersReducedMotion = false,
+  useMilkyWay = false
 }: UniverseBackgroundProps) {
+  const milkyWayMap = useTextureAsset(useMilkyWay ? MILKY_WAY_TEXTURE : null);
   const layers = useMemo(() => {
     if (isLowEnd || prefersReducedMotion) {
       return [
@@ -133,6 +138,15 @@ export default function UniverseBackground({
       }
     ];
   }, [isLowEnd, prefersReducedMotion]);
+
+  if (useMilkyWay && milkyWayMap) {
+    return (
+      <mesh frustumCulled={false}>
+        <sphereGeometry args={[500, 48, 32]} />
+        <meshBasicMaterial map={milkyWayMap} side={BackSide} depthWrite={false} />
+      </mesh>
+    );
+  }
 
   return (
     <>

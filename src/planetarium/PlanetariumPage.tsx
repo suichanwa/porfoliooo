@@ -51,10 +51,11 @@ export default function PlanetariumPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
   const [showPerf, setShowPerf] = useState(false);
-  const [orbitSpeed, setOrbitSpeed] = useState(10);
+  const [useMilkyWayBackground, setUseMilkyWayBackground] = useState(false);
+  const [orbitSpeed, setOrbitSpeed] = useState(1);
   const [simDateMs, setSimDateMs] = useState<number | null>(null);
   const [timeResetSignal, setTimeResetSignal] = useState(0);
-  const prevSpeedRef = useRef(10);
+  const prevSpeedRef = useRef(1);
   const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
     DEFAULT_DISTANCE_SCALE_MODE
   );
@@ -191,7 +192,7 @@ export default function PlanetariumPage() {
   }, []);
   const handleFaster = useCallback(() => {
     setOrbitSpeed((current) => {
-      if (current <= 0) return prevSpeedRef.current || 10;
+      if (current <= 0) return prevSpeedRef.current || 1;
       return SPEED_LADDER.find((value) => value > current + 1e-6) ?? current;
     });
   }, []);
@@ -210,7 +211,7 @@ export default function PlanetariumPage() {
         prevSpeedRef.current = current;
         return 0;
       }
-      return prevSpeedRef.current || 10;
+      return prevSpeedRef.current || 1;
     });
   }, []);
   const handleNow = useCallback(() => {
@@ -306,6 +307,7 @@ export default function PlanetariumPage() {
         orbitSpeed={orbitSpeed}
         timeResetSignal={timeResetSignal}
         onSimDateChange={setSimDateMs}
+        useMilkyWayBackground={useMilkyWayBackground}
       />
       </PlanetariumCanvas>
       <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
@@ -346,6 +348,8 @@ export default function PlanetariumPage() {
         onShowLensingChange={() => {}}
         showPerf={showPerf}
         onShowPerfChange={handleShowPerfChange}
+        useMilkyWayBackground={useMilkyWayBackground}
+        onToggleBackground={() => setUseMilkyWayBackground((prev) => !prev)}
         orbitSpeed={orbitSpeed}
         onOrbitSpeedChange={setOrbitSpeed}
         planets={filteredPlanets}

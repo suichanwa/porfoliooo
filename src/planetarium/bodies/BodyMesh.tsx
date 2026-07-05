@@ -17,7 +17,7 @@ import {
 import type { BodyData, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
 import { useTextureAsset } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
-import RingSystem from "../../components/planetarium/rings/RingSystem";
+import RingSystem from "../../components/Planetarium/rings/RingSystem";
 
 interface BodyMeshProps {
   data: BodyData;

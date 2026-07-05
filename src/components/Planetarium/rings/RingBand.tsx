@@ -110,9 +110,10 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
     isRing = !isRing;
   }
 
+  // bands run along x (U axis) — geometry maps U to radial position
   let bandIndex = 0;
-  for (let y = 0; y < height; y += 1) {
-    const t = y / (height - 1);
+  for (let x = 0; x < width; x += 1) {
+    const t = x / (width - 1);
     while (bandIndex < bands.length - 1 && t > bands[bandIndex].end) {
       bandIndex += 1;
     }
@@ -125,7 +126,7 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
     const alpha = clamp(band.alpha * edgeFactor + noise, 0, 1);
     const value = Math.round(alpha * 255);
     ctx.fillStyle = `rgb(${value}, ${value}, ${value})`;
-    ctx.fillRect(0, y, width, 1);
+    ctx.fillRect(x, 0, 1, height);
   }
 
   const texture = new CanvasTexture(canvas);
@@ -158,6 +159,15 @@ export default function RingBand({
 
   const geometry = useMemo(() => {
     const geom = new RingGeometry(innerRadius, outerRadius, SEGMENTS, 1);
+    // RingGeometry UVs are planar; remap so U = radial fraction, matching
+    // ring-strip textures (inner edge at U=0, outer edge at U=1).
+    const pos = geom.attributes.position;
+    const uv = geom.attributes.uv;
+    const span = outerRadius - innerRadius;
+    for (let i = 0; i < pos.count; i += 1) {
+      const r = Math.hypot(pos.getX(i), pos.getY(i));
+      uv.setXY(i, (r - innerRadius) / span, 0.5);
+    }
     geom.rotateX(Math.PI / 2);
     return geom;
   }, [innerRadius, outerRadius]);

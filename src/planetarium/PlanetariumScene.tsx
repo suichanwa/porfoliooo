@@ -45,6 +45,7 @@ interface PlanetariumSceneProps {
   orbitSpeed?: number;
   timeResetSignal?: number;
   onSimDateChange?: (epochMs: number) => void;
+  useMilkyWayBackground?: boolean;
 }
 
 const J2000_EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
@@ -68,7 +69,8 @@ export default function PlanetariumScene({
   showPerf = true,
   orbitSpeed = 10,
   timeResetSignal = 0,
-  onSimDateChange
+  onSimDateChange,
+  useMilkyWayBackground = false
 }: PlanetariumSceneProps) {
   const startEpochDays = useMemo(() => nowEpochDays(), []);
   const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
@@ -174,12 +176,14 @@ export default function PlanetariumScene({
           <UniverseBackground
             isLowEnd={isLowEnd}
             prefersReducedMotion={prefersReducedMotion}
+            useMilkyWay={useMilkyWayBackground}
           />
         </BackgroundPass>
       ) : (
         <UniverseBackground
           isLowEnd={isLowEnd}
           prefersReducedMotion={prefersReducedMotion}
+          useMilkyWay={useMilkyWayBackground}
         />
       )}
       <PerfOverlay enabled={showPerf} />
@@ -197,14 +201,18 @@ export default function PlanetariumScene({
           enough to keep a visible terminator. */}
       <ambientLight intensity={0.12} />
       <hemisphereLight intensity={0.05} color="#1a2336" groundColor="#02040a" />
-      {/* The Sun is the only real light source. decay=0 + infinite range so
-          every planet (Mercury .. Neptune) is lit from the sun direction and
-          shows a proper day/night terminator regardless of distance. */}
+      {/* The Sun is the only real light source. Linear decay (decay=1) so
+          inner planets read brighter than outer ones; true inverse-square
+          (decay=2) leaves Neptune pitch black at our compressed distances.
+          Intensity calibrated so Earth-range planets match the old flat look.
+          Note: falloff follows render-space distance, so brightness shifts
+          slightly with the spacing slider — acceptable, still reads as
+          "farther = dimmer". */}
       <pointLight
         position={[0, 0, 0]}
-        intensity={2.6}
+        intensity={34}
         distance={0}
-        decay={0}
+        decay={1}
         color="#fff4e0"
       />
       <Sun
