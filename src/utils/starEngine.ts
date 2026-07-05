@@ -20,9 +20,9 @@ export interface Star {
   color: string;
   temperature: number;
   rightAscension: number;
-  rightAscensionRad: number; // Pre-computed for performance
+  rightAscensionRad: number; 
   declination: number;
-  declinationRad: number; // Pre-computed for performance
+  declinationRad: number; 
   magnitude: number;
   noiseOffset: number;
   cluster: 'sparse' | 'medium' | 'dense';

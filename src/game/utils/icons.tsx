@@ -2,7 +2,6 @@ import {
   Sword,
   Sparkles,
   Heart,
-  Flask,  // Correct icon name (check if available in your version)
   Shield,
   Flame,
   Snowflake,

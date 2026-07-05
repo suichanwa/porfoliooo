@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Tornado, Telescope } from 'lucide-react';
 
 interface NeptuneProps {
   className?: string;
@@ -674,7 +675,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
       <div className="mt-3 bg-gradient-to-r from-blue-950/30 via-indigo-950/30 to-blue-950/30 backdrop-blur-sm rounded-xl p-3 border border-blue-500/20">
         <div className="flex items-center gap-3">
-          <span className="text-xl">🌀</span>
+          <Tornado className="w-5 h-5 text-blue-300" aria-hidden="true" />
           <div>
             <div className="text-[10px] text-blue-300/60 uppercase tracking-wider">Current Conditions</div>
             <div className="text-base font-bold text-blue-300">{weather.condition}</div>
@@ -684,7 +685,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
       <div className="mt-3 bg-gradient-to-r from-blue-950/20 to-indigo-950/20 backdrop-blur-sm rounded-xl p-3 border border-blue-500/10">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm">🔭</span>
+          <Telescope className="w-4 h-4 text-blue-300" aria-hidden="true" />
           <span className="text-xs font-semibold text-blue-300">Orbiting at {NEPTUNE_DATA.distanceFromSun} AU from the Sun</span>
         </div>
         
