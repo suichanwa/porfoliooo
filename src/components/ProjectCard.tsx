@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface ProjectProps {
   title: string;
@@ -10,23 +10,23 @@ interface ProjectProps {
   forks?: number;
 }
 
-export default function ProjectCard({ 
-  title, 
-  description, 
-  technologies, 
-  githubUrl, 
-  liveUrl, 
-  stars, 
-  forks 
+export default function ProjectCard({
+  title,
+  description,
+  technologies,
+  githubUrl,
+  liveUrl,
+  stars,
+  forks
 }: ProjectProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ 
+      whileHover={{
         scale: 1.03,
-        boxShadow: "0 10px 30px -15px rgba(0, 0, 0, 0.3)" 
+        boxShadow: "0 10px 30px -15px rgba(0, 0, 0, 0.3)"
       }}
       className="bg-base-200 rounded-xl overflow-hidden shadow-lg"
     >
@@ -54,13 +54,13 @@ export default function ProjectCard({
             </div>
           )}
         </div>
-        
+
         <p className="text-base-content/80 mb-4">{description}</p>
-        
+
         <div className="flex flex-wrap gap-2 mb-4">
           {technologies.map((tech) => (
-            <span 
-              key={tech} 
+            <span
+              key={tech}
               className="badge badge-primary badge-outline"
             >
               {tech}
@@ -69,10 +69,10 @@ export default function ProjectCard({
         </div>
 
         <div className="flex gap-2 pt-2 border-t border-base-300">
-          <motion.a 
+          <motion.a
             href={githubUrl}
             target="_blank"
-            rel="noopener noreferrer" 
+            rel="noopener noreferrer"
             className="btn btn-sm btn-ghost"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -83,10 +83,10 @@ export default function ProjectCard({
             GitHub
           </motion.a>
           {liveUrl && (
-            <motion.a 
+            <motion.a
               href={liveUrl}
               target="_blank"
-              rel="noopener noreferrer" 
+              rel="noopener noreferrer"
               className="btn btn-sm btn-primary"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

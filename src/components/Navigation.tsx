@@ -296,7 +296,7 @@ export default function Navigation() {
         <div className="flex items-end gap-3">
           <button
             onClick={togglePfp}
-            className="w-10 h-10 rounded-full border-2 border-primary-accent shadow-lg overflow-hidden hover:scale-110 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-accent focus:ring-offset-2"
+            className="w-10 h-10 shrink-0 rounded-full border-2 border-primary-accent shadow-lg overflow-hidden hover:scale-110 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-accent focus:ring-offset-2"
             aria-label="Toggle profile picture"
           >
             <img 
@@ -311,7 +311,7 @@ export default function Navigation() {
 
           {/* Mini Player */}
           <div
-            className="hidden md:flex items-center gap-2 ml-4 px-2.5 rounded-xl border border-slate-700/45 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.32),rgba(20,28,40,0.18))] backdrop-blur-md shadow-[0_10px_24px_-20px_rgba(99,102,241,0.9)]"
+            className="hidden xl:flex items-center gap-2 ml-4 px-2.5 rounded-xl border border-slate-700/45 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.32),rgba(20,28,40,0.18))] backdrop-blur-md shadow-[0_10px_24px_-20px_rgba(99,102,241,0.9)]"
           >
             <button
               type="button"
@@ -372,7 +372,7 @@ export default function Navigation() {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden xl:flex items-center gap-2">
           {mainNavItems.map((item) => (
             <a
               key={item.path}
@@ -458,7 +458,7 @@ export default function Navigation() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="md:hidden relative" ref={menuRef}>
+        <div className="xl:hidden relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -483,7 +483,7 @@ export default function Navigation() {
           </button>
 
           {isMenuOpen && (
-            <div className="fixed inset-0 z-[110] md:hidden">
+            <div className="fixed inset-0 z-[110] xl:hidden">
               <button
                 type="button"
                 aria-label="Close navigation menu"
@@ -520,6 +520,34 @@ export default function Navigation() {
                         </a>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="border-t border-slate-700/90 pt-3">
+                    <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
+                      Music
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={toggleBgm}
+                      aria-pressed={isBgmPlaying}
+                      aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
+                      className={`w-full ${mobileNavButtonBase} ${
+                        isBgmPlaying ? desktopNavButtonActive : mobileNavButtonIdle
+                      }`}
+                    >
+                      <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                        {isBgmPlaying ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </span>
+                      <span>{isBgmPlaying ? "Pause music" : "Play a song for yourself"}</span>
+                    </button>
                   </div>
 
                   <div className="border-t border-slate-700/90 pt-3">
