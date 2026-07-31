@@ -65,7 +65,6 @@ export default function SpacetimeGrid({
         side: DoubleSide,
         transparent: true,
         depthWrite: false,
-        extensions: { derivatives: true },
         vertexShader: `
           uniform int uBodyCount;
           uniform vec3 uBodies[${MAX_BODIES}];
