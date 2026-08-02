@@ -14,6 +14,8 @@ interface Project {
   externalUrl?: string;
   stars?: number;
   forks?: number;
+  language?: string;
+  updatedAt?: string;
 }
 
 const EXTERNAL_LABELS: Record<string, string> = {
@@ -91,10 +93,8 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
             data-y={n.y}
             data-size={n.size}
             data-name={n.title}
-            data-desc={n.description === "No description available" ? "" : n.description}
+            data-desc={n.description}
             data-tech={JSON.stringify(n.technologies ?? [])}
-            data-stars={n.stars ?? 0}
-            data-forks={n.forks ?? 0}
             data-github={n.githubUrl}
             data-ext-type={n.externalType ?? ""}
             data-ext-url={n.externalUrl ?? ""}
@@ -118,11 +118,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
         <div class="plog-head">
           <div class="plog-headtext">
             <h3 class="plog-title" data-log-title></h3>
-            <div class="plog-meta">
-              <span data-log-stars></span>
-              <span class="plog-dot"></span>
-              <span data-log-forks></span>
-            </div>
           </div>
           <button type="button" class="plog-close" data-log-close aria-label="Close">✕</button>
         </div>
@@ -150,7 +145,7 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     </div>
 
     <div class="fp-legend">
-      <span>click a star for its log</span>
+      <span>click a star for its description</span>
     </div>
 
     <!-- ── Mobile: a magnitude ladder ─────────────────────────────────── -->
@@ -166,7 +161,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
             </span>
             <span class="pladder-text">
               <span class="pladder-name">{n.title}</span>
-              <span class="pladder-sub">★ {n.stars ?? 0} · ⑂ {n.forks ?? 0}</span>
             </span>
             <span class="pladder-chev">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -176,9 +170,7 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
           </button>
 
           <div class="pladder-panel" data-rung-panel hidden>
-            {n.description && n.description !== "No description available" && (
-              <p class="pladder-desc">{n.description}</p>
-            )}
+            {n.description && <p class="pladder-desc">{n.description}</p>}
             {n.technologies && n.technologies.length > 0 && (
               <div class="pladder-tech">
                 {n.technologies.map((tech) => <span>{tech}</span>)}
@@ -270,8 +262,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
       const d = star.dataset;
 
       setText("[data-log-title]", d.name ?? "");
-      setText("[data-log-stars]", `★ ${d.stars ?? 0}`);
-      setText("[data-log-forks]", `⑂ ${d.forks ?? 0}`);
 
       const desc = log.querySelector<HTMLElement>("[data-log-desc]");
       if (desc) {
@@ -674,25 +664,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     word-break: break-word;
   }
 
-  .plog-meta {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-top: 8px;
-    font-size: 0.63rem;
-    font-weight: 500;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: rgba(var(--fp-star), 0.58);
-  }
-
-  .plog-dot {
-    width: 2px;
-    height: 2px;
-    border-radius: 50%;
-    background: rgba(var(--fp-star), 0.4);
-  }
-
   .plog-close {
     flex: none;
     width: 24px;
@@ -734,6 +705,10 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     flex-wrap: wrap;
     gap: 6px 14px;
     margin-top: 15px;
+  }
+
+  .plog-tech[hidden] {
+    display: none;
   }
 
   .plog-tech span {
@@ -881,16 +856,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     line-height: 1.3;
     color: rgba(240, 245, 255, 0.92);
     word-break: break-word;
-  }
-
-  .pladder-sub {
-    display: block;
-    margin-top: 2px;
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(var(--fp-star), 0.5);
   }
 
   .pladder-chev {

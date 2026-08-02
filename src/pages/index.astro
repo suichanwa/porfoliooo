@@ -15,6 +15,8 @@ interface GitHubRepo {
   forks_count: number;
   topics: string[];
   fork: boolean;
+  language: string | null;
+  updated_at: string;
 }
 
 interface Project {
@@ -27,6 +29,8 @@ interface Project {
   externalUrl?: string;
   stars?: number;
   forks?: number;
+  language?: string;
+  updatedAt?: string;
 }
 
 // Manual overrides for distribution links GitHub doesn't know about (e.g.
@@ -35,6 +39,12 @@ const EXTERNAL_LINKS: Record<string, { type: "live" | "curseforge"; url: string 
   solenoid: { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/solenoid" },
   "gtnh-additional-crafts": { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/gtnh-additional-crafts" },
 };
+
+// GitHub repos without a description shouldn't show a placeholder — build a
+// short real sentence out of data GitHub actually gives us instead.
+function fallbackDescription(repo: GitHubRepo): string {
+  return repo.language ? `A ${repo.language} project.` : "A project on GitHub.";
+}
 
 // Fetch real GitHub projects
 let featuredProjects: Project[] = [];
@@ -55,13 +65,15 @@ try {
         return {
           id: repo.id.toString(),
           title: repo.name,
-          description: repo.description || "No description available",
+          description: repo.description || fallbackDescription(repo),
           technologies: repo.topics || [],
           githubUrl: repo.html_url,
           externalType: override?.type ?? (repo.homepage ? "live" : undefined),
           externalUrl: override?.url ?? repo.homepage ?? undefined,
           stars: repo.stargazers_count,
-          forks: repo.forks_count
+          forks: repo.forks_count,
+          language: repo.language ?? undefined,
+          updatedAt: repo.updated_at
         };
       });
   }
