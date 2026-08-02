@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Airy star">
+  <path d="M16 2.00A14 14 0 1 0 16 30.00A14 14 0 1 0 16 2.00Z" fill="#5e9fff" opacity="0.12"></path>
+  <path d="M16 7.00A9 9 0 1 0 16 25.00A9 9 0 1 0 16 7.00Z" fill="#f4f7ff" opacity="0.14"></path>
+  <path d="M16 11.00A5 5 0 1 0 16 21.00A5 5 0 1 0 16 11.00Z" fill="#f4f7ff" opacity="0.4"></path>
+  <path d="M16 13.70A2.3 2.3 0 1 0 16 18.30A2.3 2.3 0 1 0 16 13.70Z" fill="#f4f7ff"></path>
+</svg>

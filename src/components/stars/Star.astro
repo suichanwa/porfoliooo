@@ -1,0 +1,48 @@
+---
+import { STAR_GLYPHS, STAR_VIEWBOX, type StarName } from "./starGlyphs";
+
+interface Props {
+  name?: StarName;
+  size?: number;
+  color?: string;
+  accent?: string;
+  glow?: boolean;
+  title?: string;
+  class?: string;
+}
+
+const {
+  name = "sirius",
+  size = 16,
+  color = "#f4f7ff",
+  accent = "#5e9fff",
+  glow = false,
+  title,
+  class: className,
+} = Astro.props;
+
+const glyph = STAR_GLYPHS[name];
+const filter = glow ? `drop-shadow(0 0 ${Math.round(size / 4)}px ${accent}55)` : "none";
+---
+
+<svg
+  viewBox={`0 0 ${STAR_VIEWBOX} ${STAR_VIEWBOX}`}
+  width={size}
+  height={size}
+  class={className}
+  role={title ? "img" : undefined}
+  aria-label={title}
+  aria-hidden={title ? undefined : "true"}
+  style={`display:block;overflow:visible;filter:${filter}`}
+>
+  {glyph.layers.map((layer) => (
+    <path
+      d={layer.d}
+      transform={layer.transform}
+      opacity={layer.opacity}
+      fill={layer.stroke ? "none" : layer.accent ? accent : color}
+      stroke={layer.stroke ? (layer.accent ? accent : color) : undefined}
+      stroke-width={layer.width}
+    />
+  ))}
+</svg>

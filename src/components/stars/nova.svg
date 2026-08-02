@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Nova star">
+  <path d="M16 2.60A13.4 13.4 0 1 0 16 29.40A13.4 13.4 0 1 0 16 2.60Z" fill="none" stroke="#f4f7ff" stroke-width="1" opacity="0.15"></path>
+  <path d="M16 7.60A8.4 8.4 0 1 0 16 24.40A8.4 8.4 0 1 0 16 7.60Z" fill="none" stroke="#f4f7ff" stroke-width="1.2" opacity="0.33"></path>
+  <path d="M16 13.20A2.8 2.8 0 1 0 16 18.80A2.8 2.8 0 1 0 16 13.20Z" fill="#f4f7ff"></path>
+</svg>

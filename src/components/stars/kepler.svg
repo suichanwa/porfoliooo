@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Kepler star">
+  <path d="M1.60 16A14.4 5.5 0 1 0 30.40 16A14.4 5.5 0 1 0 1.60 16Z" transform="rotate(-22 16 16)" fill="none" stroke="#f4f7ff" stroke-width="1.2" opacity="0.36"></path>
+  <path d="M30.4 14.50A1.5 1.5 0 1 0 30.4 17.50A1.5 1.5 0 1 0 30.4 14.50Z" transform="rotate(-22 16 16)" fill="#5e9fff"></path>
+  <path d="M16 13.00A3 3 0 1 0 16 19.00A3 3 0 1 0 16 13.00Z" fill="#f4f7ff"></path>
+</svg>
