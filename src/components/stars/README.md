@@ -7,13 +7,14 @@ All drawn in one 32-unit box, so anything can swap them by name at any size.
 
 | File | Use |
 | --- | --- |
-| `starGlyphs.ts` | Path data + types. Everything else reads from this. |
+| `starGlyphs.ts` | Path data + types. The catalogue itself — don't import this directly. |
+| `StarAPI.ts` | The actual entry point: `getStar`, `isStarName`, `listStars`, `pickStarBySeed`, ... |
 | `Star.tsx` | React component (`<Star name="lyra" size={20} />`). |
 | `Star.astro` | Same component for `.astro` pages. |
 | `drawSiriusStar.ts` | Canvas version of Sirius for the starfield hook. |
-| `*.svg` | Standalone files for `<img>`, favicons, OG art. |
+| `src/assets/stars/*.svg` | Standalone files for `<img>`, favicons, OG art — not used by the components above. |
 
-Drop the folder in `src/components/stars/`.
+Lives in `src/components/stars/`; the standalone SVGs live in `src/assets/stars/`.
 
 ## Usage
 

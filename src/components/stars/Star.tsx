@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { STAR_GLYPHS, STAR_VIEWBOX, type StarName } from "./starGlyphs";
+import { DEFAULT_STAR, getStar, STAR_VIEWBOX, type StarName } from "./StarAPI";
 
 interface StarProps {
   name?: StarName;
@@ -18,7 +18,7 @@ interface StarProps {
 }
 
 export default function Star({
-  name = "sirius",
+  name = DEFAULT_STAR,
   size = 16,
   color = "#f4f7ff",
   accent = "#5e9fff",
@@ -27,7 +27,7 @@ export default function Star({
   style,
   title,
 }: StarProps) {
-  const glyph = STAR_GLYPHS[name];
+  const glyph = getStar(name);
 
   return (
     <svg

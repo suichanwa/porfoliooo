@@ -4,6 +4,12 @@
 // The starfield comes from BaseLayout's <StarryBackground />; this section
 // stays fully transparent and sits on top of it.
 
+// Zero-JS: Star.astro renders to plain server-side SVG, so giving every
+// project its own glyph costs nothing at runtime — no hydration, no client
+// bundle, just a few extra static <path> nodes baked into the HTML.
+import Star from "./stars/Star.astro";
+import { pickStarBySeed } from "./stars/StarAPI";
+
 interface Project {
   id: string;
   title: string;
@@ -29,9 +35,10 @@ interface Props {
 
 const { projects } = Astro.props;
 
-// Same star glyph as the About page's constellation.
-const SUISEI_PATH =
-  "M8 1.85C8.38 1.85 8.68 2.11 8.9 2.58L9.57 4.03C9.76 4.43 10.07 4.64 10.49 4.69L12.07 4.9C12.73 4.98 13.01 5.73 12.51 6.12L11.34 7.03C11.01 7.29 10.87 7.64 10.95 8.06L11.26 9.63C11.39 10.28 10.71 10.77 10.13 10.47L8.74 9.75C8.36 9.56 7.94 9.56 7.56 9.75L6.17 10.47C5.59 10.77 4.91 10.28 5.04 9.63L5.35 8.06C5.43 7.64 5.29 7.29 4.96 7.03L3.79 6.12C3.29 5.73 3.57 4.98 4.23 4.9L5.81 4.69C6.23 4.64 6.54 4.43 6.73 4.03L7.4 2.58C7.62 2.11 7.92 1.85 8.3 1.85H8Z";
+// Same tones the rest of this section already uses (--fp-star grey, the
+// CurseForge/live-link purple) so mixed glyphs still read as one palette.
+const STAR_COLOR = "rgba(167, 179, 198, 0.9)";
+const STAR_ACCENT = "rgba(199, 146, 234, 0.9)";
 
 // A seeded random scatter reads as noise, not as a chart. These slots are a
 // deliberate zigzag: listed left-to-right (so the polyline connecting them
@@ -47,9 +54,11 @@ const LAYOUT = [
 ];
 
 // Size by stargazer rank — like real stellar magnitude, the best-known
-// project is the biggest, brightest star. projects[] arrives already sorted
-// by stargazers descending from index.astro.
-const SIZE_RANKS = [56, 44, 38, 33, 29, 25];
+// project is the biggest, brightest star. Kept close together on purpose:
+// this section sits on the same page as 20px nav/UI icons, so a 56→25px
+// spread read as wildly out of scale next to them. projects[] arrives
+// already sorted by stargazers descending from index.astro.
+const SIZE_RANKS = [50, 46, 43, 40, 37, 34];
 
 const nodes = LAYOUT.filter((slot) => projects[slot.rank]).map((slot) => {
   const project = projects[slot.rank];
@@ -59,6 +68,9 @@ const nodes = LAYOUT.filter((slot) => projects[slot.rank]).map((slot) => {
     y: slot.y,
     size: SIZE_RANKS[slot.rank],
     rank: slot.rank,
+    // Seeded on the project's stable id, not random — same star on every
+    // rebuild, no flash-of-different-glyph, nothing to reseed client-side.
+    starName: pickStarBySeed(project.id),
   };
 });
 
@@ -71,7 +83,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
 <section id="projects" class="featured-projects">
   <div class="container max-w-6xl mx-auto px-4">
     <header class="fp-header">
-      <span class="fp-eyebrow">Featured</span>
       <h2 class="fp-title text-3xl md:text-4xl font-bold">Projects</h2>
       <p class="fp-subtitle">A small orbit of builds I keep leveling up.</p>
     </header>
@@ -102,9 +113,7 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
             aria-label={`Open the log for ${n.title}`}
           >
             <span class="pstar">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d={SUISEI_PATH} transform="translate(0 1.8)"></path>
-              </svg>
+              <Star name={n.starName} size={n.size} color={STAR_COLOR} accent={STAR_ACCENT} />
             </span>
             <span class="pstar-ring"></span>
             <span class="pstar-label">{n.title}</span>
@@ -154,10 +163,13 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
       {ladder.map((n) => (
         <div class="pladder-item">
           <button type="button" class="pladder-row" data-rung aria-expanded="false">
-            <span class="pladder-star" style={`--size:${Math.max(20, Math.round(n.size * 0.52))}px`}>
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d={SUISEI_PATH} transform="translate(0 1.8)"></path>
-              </svg>
+            <span class="pladder-star">
+              <Star
+                name={n.starName}
+                size={Math.round(n.size * 0.58)}
+                color={STAR_COLOR}
+                accent={STAR_ACCENT}
+              />
             </span>
             <span class="pladder-text">
               <span class="pladder-name">{n.title}</span>
@@ -396,16 +408,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     color: var(--fp-text);
   }
 
-  .fp-eyebrow {
-    display: inline-block;
-    text-transform: uppercase;
-    letter-spacing: 0.4em;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: rgba(198, 206, 222, 0.55);
-    margin-bottom: 0.8rem;
-  }
-
   .fp-title {
     color: var(--fp-text);
     letter-spacing: -0.02em;
@@ -499,11 +501,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     display: block;
   }
 
-  .pstar path {
-    fill: rgba(var(--fp-star), 0.9);
-    transition: fill 0.3s ease;
-  }
-
   @keyframes ptwinkle {
     0%,
     100% {
@@ -554,14 +551,8 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
   .pstar-btn[data-active] .pstar {
     animation: none;
     opacity: 1;
-    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.85));
+    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.85)) brightness(1.35);
     transform: scale(1.14);
-  }
-
-  .pstar-btn:hover .pstar path,
-  .pstar-btn:focus-visible .pstar path,
-  .pstar-btn[data-active] .pstar path {
-    fill: rgba(255, 255, 255, 0.98);
   }
 
   .pstar-btn:hover .pstar-ring,
@@ -830,18 +821,8 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     width: 52px;
   }
 
-  .pladder-star svg {
-    width: var(--size);
-    height: var(--size);
-    display: block;
-  }
-
-  .pladder-star path {
-    fill: rgba(var(--fp-star), 0.9);
-  }
-
-  .pladder-row[aria-expanded="true"] .pladder-star path {
-    fill: rgba(255, 255, 255, 0.98);
+  .pladder-row[aria-expanded="true"] .pladder-star {
+    filter: brightness(1.4);
   }
 
   .pladder-text {

@@ -1,5 +1,5 @@
 ---
-import { STAR_GLYPHS, STAR_VIEWBOX, type StarName } from "./starGlyphs";
+import { DEFAULT_STAR, getStar, STAR_VIEWBOX, type StarName } from "./StarAPI";
 
 interface Props {
   name?: StarName;
@@ -12,7 +12,7 @@ interface Props {
 }
 
 const {
-  name = "sirius",
+  name = DEFAULT_STAR,
   size = 16,
   color = "#f4f7ff",
   accent = "#5e9fff",
@@ -21,7 +21,7 @@ const {
   class: className,
 } = Astro.props;
 
-const glyph = STAR_GLYPHS[name];
+const glyph = getStar(name);
 const filter = glow ? `drop-shadow(0 0 ${Math.round(size / 4)}px ${accent}55)` : "none";
 ---
 
