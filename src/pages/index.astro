@@ -5,20 +5,6 @@ import TypeWriter from "../components/TypeWriter.tsx";
 import Neptune from "../components/Neptune.tsx";
 import FeaturedProjects from "../components/FeaturedProjects.astro";
 
-interface GitHubRepo {
-  id: number;
-  name: string;
-  description: string | null;
-  html_url: string;
-  homepage: string | null;
-  stargazers_count: number;
-  forks_count: number;
-  topics: string[];
-  fork: boolean;
-  language: string | null;
-  updated_at: string;
-}
-
 interface Project {
   id: string;
   title: string;
@@ -27,79 +13,63 @@ interface Project {
   githubUrl: string;
   externalType?: "live" | "curseforge";
   externalUrl?: string;
-  stars?: number;
-  forks?: number;
-  language?: string;
-  updatedAt?: string;
 }
 
-// Manual overrides for distribution links GitHub doesn't know about (e.g.
-// CurseForge mod pages), keyed by repo name.
-const EXTERNAL_LINKS: Record<string, { type: "live" | "curseforge"; url: string }> = {
-  solenoid: { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/solenoid" },
-  "gtnh-additional-crafts": { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/gtnh-additional-crafts" },
-};
-
-// GitHub repos without a description shouldn't show a placeholder — build a
-// short real sentence out of data GitHub actually gives us instead.
-function fallbackDescription(repo: GitHubRepo): string {
-  return repo.language ? `A ${repo.language} project.` : "A project on GitHub.";
-}
-
-// Fetch real GitHub projects
-let featuredProjects: Project[] = [];
-
-try {
-  const username = 'suichanwa';
-  const response = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`);
-  
-  if (response.ok) {
-    const repositories: GitHubRepo[] = await response.json();
-    
-    featuredProjects = repositories
-      .filter((repo: GitHubRepo) => !repo.fork)
-      .sort((a: GitHubRepo, b: GitHubRepo) => b.stargazers_count - a.stargazers_count)
-      .slice(0, 6)
-      .map((repo: GitHubRepo) => {
-        const override = EXTERNAL_LINKS[repo.name.toLowerCase()];
-        return {
-          id: repo.id.toString(),
-          title: repo.name,
-          description: repo.description || fallbackDescription(repo),
-          technologies: repo.topics || [],
-          githubUrl: repo.html_url,
-          externalType: override?.type ?? (repo.homepage ? "live" : undefined),
-          externalUrl: override?.url ?? repo.homepage ?? undefined,
-          stars: repo.stargazers_count,
-          forks: repo.forks_count,
-          language: repo.language ?? undefined,
-          updatedAt: repo.updated_at
-        };
-      });
-  }
-} catch (error) {
-  console.error('Error fetching GitHub data:', error);
-}
-
-// Fallback projects if GitHub API fails
-if (featuredProjects.length === 0) {
-  featuredProjects = [
-    {
-      id: "1",
-      title: "Portfolio Website",
-      description: "A modern portfolio built with Astro and React",
-      technologies: ["Astro", "React", "TypeScript", "Tailwind CSS"],
-      githubUrl: "https://github.com/suichanwa/portfolio",
-    },
-    {
-      id: "2",
-      title: "Coming Soon",
-      description: "More projects on the way",
-      technologies: [],
-      githubUrl: "#"
-    }
-  ];
-}
+// Hand-picked, in display order — not pulled from the GitHub API and not
+// sorted by stargazers. These repos barely have any stars, so a star-count
+// ranking was never actually saying "best," just "oldest/most-visited."
+// Order here IS the ranking: first = most prominent star in the chart.
+//
+// TODO: descriptions below are placeholders (GitHub has no description set
+// on any of these repos) — replace with real one-liners when you get to it.
+const featuredProjects: Project[] = [
+  {
+    id: "1152924887",
+    title: "GTNH-additional-crafts",
+    description: "A Java mod for GTNH.",
+    technologies: [],
+    githubUrl: "https://github.com/suichanwa/GTNH-additional-crafts",
+    externalType: "curseforge",
+    externalUrl: "https://www.curseforge.com/minecraft/mc-mods/gtnh-additional-crafts",
+  },
+  {
+    id: "453734143",
+    title: "PythonProjects",
+    description: "A collection of Python projects.",
+    technologies: [],
+    githubUrl: "https://github.com/suichanwa/PythonProjects",
+  },
+  {
+    id: "925292993",
+    title: "notesapp",
+    description: "A React Native (Expo) notes app with grid/list views, calendar organization, archive, note locking, and pinning.",
+    technologies: ["React Native", "Expo", "TypeScript"],
+    githubUrl: "https://github.com/suichanwa/notesapp",
+  },
+  {
+    id: "472825857",
+    title: "sui-tetris",
+    description: "A TypeScript take on Tetris.",
+    technologies: [],
+    githubUrl: "https://github.com/suichanwa/sui-tetris",
+  },
+  {
+    id: "928040353",
+    title: "porfoliooo",
+    description: "This site.",
+    technologies: [],
+    githubUrl: "https://github.com/suichanwa/porfoliooo",
+  },
+  {
+    id: "1258695925",
+    title: "solenoid",
+    description: "A Java mod.",
+    technologies: [],
+    githubUrl: "https://github.com/suichanwa/solenoid",
+    externalType: "curseforge",
+    externalUrl: "https://www.curseforge.com/minecraft/mc-mods/solenoid",
+  },
+];
 
 // Stats with consistent styling
 const stats = [

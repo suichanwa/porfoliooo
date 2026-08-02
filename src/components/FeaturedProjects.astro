@@ -1,6 +1,4 @@
 ---
-// Drop-in replacement for src/components/FeaturedProjects.astro
-// Same Props interface as before, so index.astro needs no changes.
 // The starfield comes from BaseLayout's <StarryBackground />; this section
 // stays fully transparent and sits on top of it.
 
@@ -18,10 +16,6 @@ interface Project {
   githubUrl: string;
   externalType?: "live" | "curseforge";
   externalUrl?: string;
-  stars?: number;
-  forks?: number;
-  language?: string;
-  updatedAt?: string;
 }
 
 const EXTERNAL_LABELS: Record<string, string> = {
@@ -42,8 +36,8 @@ const STAR_ACCENT = "rgba(199, 146, 234, 0.9)";
 
 // A seeded random scatter reads as noise, not as a chart. These slots are a
 // deliberate zigzag: listed left-to-right (so the polyline connecting them
-// never crosses itself), each carrying the stargazer RANK that belongs in it.
-// Rank 0 (the brightest project) gets the low-left anchor position.
+// never crosses itself), each carrying the RANK that belongs in it. Rank 0
+// (the brightest project) gets the low-left anchor position.
 const LAYOUT = [
   { x: 14, y: 30, rank: 1 },
   { x: 27, y: 66, rank: 0 },
@@ -53,11 +47,12 @@ const LAYOUT = [
   { x: 88, y: 58, rank: 5 },
 ];
 
-// Size by stargazer rank — like real stellar magnitude, the best-known
-// project is the biggest, brightest star. Kept close together on purpose:
-// this section sits on the same page as 20px nav/UI icons, so a 56→25px
-// spread read as wildly out of scale next to them. projects[] arrives
-// already sorted by stargazers descending from index.astro.
+// Size by rank — like real stellar magnitude, the most prominent project is
+// the biggest, brightest star. Kept close together on purpose: this section
+// sits on the same page as 20px nav/UI icons, so a 56→25px spread read as
+// wildly out of scale next to them. Rank is display order, not stargazers —
+// projects[] is a hand-curated list from index.astro, first = most
+// prominent, not sorted by any GitHub metric.
 const SIZE_RANKS = [50, 46, 43, 40, 37, 34];
 
 const nodes = LAYOUT.filter((slot) => projects[slot.rank]).map((slot) => {
@@ -74,7 +69,7 @@ const nodes = LAYOUT.filter((slot) => projects[slot.rank]).map((slot) => {
   };
 });
 
-// Stargazer order for the mobile ladder (brightest first).
+// Same rank order for the mobile ladder (most prominent first).
 const ladder = [...nodes].sort((a, b) => a.rank - b.rank);
 
 const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
