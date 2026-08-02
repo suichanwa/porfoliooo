@@ -1,14 +1,25 @@
 ---
+// Drop-in replacement for src/components/FeaturedProjects.astro
+// Same Props interface as before, so index.astro needs no changes.
+// The starfield comes from BaseLayout's <StarryBackground />; this section
+// stays fully transparent and sits on top of it.
+
 interface Project {
   id: string;
   title: string;
   description: string;
   technologies: string[];
   githubUrl: string;
-  liveUrl?: string;
+  externalType?: "live" | "curseforge";
+  externalUrl?: string;
   stars?: number;
   forks?: number;
 }
+
+const EXTERNAL_LABELS: Record<string, string> = {
+  live: "Live",
+  curseforge: "CurseForge",
+};
 
 interface Props {
   projects: Project[];
@@ -16,184 +27,355 @@ interface Props {
 
 const { projects } = Astro.props;
 
-// Same star glyph as the About page's constellation, for a consistent visual language.
+// Same star glyph as the About page's constellation.
 const SUISEI_PATH =
   "M8 1.85C8.38 1.85 8.68 2.11 8.9 2.58L9.57 4.03C9.76 4.43 10.07 4.64 10.49 4.69L12.07 4.9C12.73 4.98 13.01 5.73 12.51 6.12L11.34 7.03C11.01 7.29 10.87 7.64 10.95 8.06L11.26 9.63C11.39 10.28 10.71 10.77 10.13 10.47L8.74 9.75C8.36 9.56 7.94 9.56 7.56 9.75L6.17 10.47C5.59 10.77 4.91 10.28 5.04 9.63L5.35 8.06C5.43 7.64 5.29 7.29 4.96 7.03L3.79 6.12C3.29 5.73 3.57 4.98 4.23 4.9L5.81 4.69C6.23 4.64 6.54 4.43 6.73 4.03L7.4 2.58C7.62 2.11 7.92 1.85 8.3 1.85H8Z";
 
-// Real star fields are a random point process — genuine randomness produces
-// uneven clumps and gaps, which is what reads as "natural" rather than
-// designed. mulberry32 gives that same look but pinned to a fixed seed, so
-// the scatter is identical on every load instead of reshuffling on refresh.
-function mulberry32(seed: number) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+// A seeded random scatter reads as noise, not as a chart. These slots are a
+// deliberate zigzag: listed left-to-right (so the polyline connecting them
+// never crosses itself), each carrying the stargazer RANK that belongs in it.
+// Rank 0 (the brightest project) gets the low-left anchor position.
+const LAYOUT = [
+  { x: 14, y: 30, rank: 1 },
+  { x: 27, y: 66, rank: 0 },
+  { x: 43, y: 32, rank: 2 },
+  { x: 58, y: 64, rank: 3 },
+  { x: 74, y: 32, rank: 4 },
+  { x: 88, y: 58, rank: 5 },
+];
+
+// Size by stargazer rank — like real stellar magnitude, the best-known
+// project is the biggest, brightest star. projects[] arrives already sorted
+// by stargazers descending from index.astro.
+const SIZE_RANKS = [56, 44, 38, 33, 29, 25];
+
+const nodes = LAYOUT.filter((slot) => projects[slot.rank]).map((slot) => {
+  const project = projects[slot.rank];
+  return {
+    ...project,
+    x: slot.x,
+    y: slot.y,
+    size: SIZE_RANKS[slot.rank],
+    rank: slot.rank,
   };
-}
+});
 
-const rand = mulberry32(20260731);
-
-// Stars are now the whole UI (click one to see the project) instead of
-// permanent floating text, so the only collision to avoid is icon-to-icon —
-// a much looser constraint than before, so a real rejection-sampled random
-// scatter works reliably instead of needing a hand-tuned base layout.
-const CANVAS_W = 1100;
-const CANVAS_H = 600;
-const MARGIN_X = 90;
-const MARGIN_Y = 30; // small vertical margin so stars spread closer to the full container height
-const MIN_DIST = 190; // wide enough to keep the name labels under each star from overlapping
-
-function placeStars(count: number) {
-  const points: { x: number; y: number }[] = [];
-  let attempts = 0;
-  while (points.length < count && attempts < 5000) {
-    attempts++;
-    const candidate = {
-      x: MARGIN_X + rand() * (CANVAS_W - MARGIN_X * 2),
-      y: MARGIN_Y + rand() * (CANVAS_H - MARGIN_Y * 2),
-    };
-    if (points.every((p) => Math.hypot(p.x - candidate.x, p.y - candidate.y) >= MIN_DIST)) {
-      points.push(candidate);
-    }
-  }
-  // Fallback in the unlikely case the random walk can't fit everyone: just
-  // append remaining candidates so we never silently drop a project.
-  while (points.length < count) {
-    points.push({
-      x: MARGIN_X + rand() * (CANVAS_W - MARGIN_X * 2),
-      y: MARGIN_Y + rand() * (CANVAS_H - MARGIN_Y * 2),
-    });
-  }
-  return points;
-}
-
-// Size ranks by GitHub stars (projects already arrive sorted by stargazer
-// count) — like real star magnitude, your best-known project is the
-// brightest, biggest star.
-const SIZE_RANKS = [58, 46, 40, 36, 32, 28];
-
-const count = Math.min(projects.length, SIZE_RANKS.length);
-const points = placeStars(count);
-
-// Size the constellation box to the actual vertical spread of the sampled
-// points (plus room for the star + label at the extremes) instead of a
-// fixed height — otherwise a random draw that happens to land mid-height
-// leaves a big dead gap before the next section.
-const V_PAD = 70;
-const minY = Math.min(...points.map((p) => p.y));
-const maxY = Math.max(...points.map((p) => p.y));
-const contentHeight = maxY - minY + V_PAD * 2;
-
-const nodes = projects.slice(0, count).map((project, i) => ({
-  ...project,
-  x: (points[i].x / CANVAS_W) * 100,
-  y: ((points[i].y - minY + V_PAD) / contentHeight) * 100,
-  size: SIZE_RANKS[i],
-}));
+// Stargazer order for the mobile ladder (brightest first).
+const ladder = [...nodes].sort((a, b) => a.rank - b.rank);
 
 const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
 ---
 
 <section id="projects" class="featured-projects">
   <div class="container max-w-6xl mx-auto px-4">
-    <header class="featured-projects__header">
-      <span class="featured-projects__eyebrow">Featured</span>
-      <h2 class="featured-projects__title text-3xl md:text-4xl font-bold">
-        Projects
-      </h2>
-      <p class="featured-projects__subtitle">
-        A small orbit of builds I keep leveling up. Click a star.
-      </p>
+    <header class="fp-header">
+      <span class="fp-eyebrow">Featured</span>
+      <h2 class="fp-title text-3xl md:text-4xl font-bold">Projects</h2>
+      <p class="fp-subtitle">A small orbit of builds I keep leveling up.</p>
     </header>
 
-    <div class="pconstellation" style={`height:${contentHeight}px`}>
-      <svg class="plines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={linePoints} />
-      </svg>
+    <!-- ── Desktop / tablet: the star chart ───────────────────────────── -->
+    <div class="pconstellation" data-chart>
+      <div class="pfield" data-field>
+        <svg class="plines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points={linePoints}></polyline>
+        </svg>
 
-      {nodes.map((n, i) => (
-        <button
-          type="button"
-          class="pstar-btn"
-          style={`left:${n.x}%; top:${n.y}%; --delay:${300 + i * 180}ms`}
-          data-modal={`pmodal-${n.id}`}
-          aria-label={`View ${n.title} project details`}
-        >
-          <span class="pstar" style={`--size:${n.size}px`}>
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d={SUISEI_PATH} transform="translate(0 1.8)" />
+        {nodes.map((n, i) => (
+          <button
+            type="button"
+            class="pstar-btn"
+            style={`left:${n.x}%; top:${n.y}%; --size:${n.size}px; --box:${n.size + 26}px; --delay:${300 + i * 170}ms`}
+            data-star
+            data-x={n.x}
+            data-y={n.y}
+            data-size={n.size}
+            data-name={n.title}
+            data-desc={n.description === "No description available" ? "" : n.description}
+            data-tech={JSON.stringify(n.technologies ?? [])}
+            data-stars={n.stars ?? 0}
+            data-forks={n.forks ?? 0}
+            data-github={n.githubUrl}
+            data-ext-type={n.externalType ?? ""}
+            data-ext-url={n.externalUrl ?? ""}
+            data-ext-label={n.externalType ? EXTERNAL_LABELS[n.externalType] : ""}
+            aria-label={`Open the log for ${n.title}`}
+          >
+            <span class="pstar">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d={SUISEI_PATH} transform="translate(0 1.8)"></path>
+              </svg>
+            </span>
+            <span class="pstar-ring"></span>
+            <span class="pstar-label">{n.title}</span>
+          </button>
+        ))}
+      </div>
+
+      <!-- One docked log, repositioned next to whichever star you open. -->
+      <div class="ptether" data-tether hidden></div>
+      <div class="plog" data-log role="dialog" aria-label="Project log" hidden>
+        <div class="plog-head">
+          <div class="plog-headtext">
+            <h3 class="plog-title" data-log-title></h3>
+            <div class="plog-meta">
+              <span data-log-stars></span>
+              <span class="plog-dot"></span>
+              <span data-log-forks></span>
+            </div>
+          </div>
+          <button type="button" class="plog-close" data-log-close aria-label="Close">✕</button>
+        </div>
+
+        <div class="plog-rule"></div>
+
+        <p class="plog-desc" data-log-desc></p>
+        <div class="plog-tech" data-log-tech></div>
+
+        <div class="plog-links">
+          <a class="plog-link" data-log-github target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
             </svg>
-          </span>
-          <span class="pstar-label">{n.title}</span>
-        </button>
+            GitHub
+          </a>
+          <a class="plog-link plog-link--ext" data-log-ext target="_blank" rel="noopener noreferrer" hidden>
+            <span data-log-ext-label></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7m0 0h-7m7 0v7"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="fp-legend">
+      <span>click a star for its log</span>
+    </div>
+
+    <!-- ── Mobile: a magnitude ladder ─────────────────────────────────── -->
+    <div class="pladder">
+      <div class="pladder-spine"></div>
+      {ladder.map((n) => (
+        <div class="pladder-item">
+          <button type="button" class="pladder-row" data-rung aria-expanded="false">
+            <span class="pladder-star" style={`--size:${Math.max(20, Math.round(n.size * 0.52))}px`}>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d={SUISEI_PATH} transform="translate(0 1.8)"></path>
+              </svg>
+            </span>
+            <span class="pladder-text">
+              <span class="pladder-name">{n.title}</span>
+              <span class="pladder-sub">★ {n.stars ?? 0} · ⑂ {n.forks ?? 0}</span>
+            </span>
+            <span class="pladder-chev">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+              </svg>
+            </span>
+          </button>
+
+          <div class="pladder-panel" data-rung-panel hidden>
+            {n.description && n.description !== "No description available" && (
+              <p class="pladder-desc">{n.description}</p>
+            )}
+            {n.technologies && n.technologies.length > 0 && (
+              <div class="pladder-tech">
+                {n.technologies.map((tech) => <span>{tech}</span>)}
+              </div>
+            )}
+            <div class="pladder-links">
+              <a class="plog-link" href={n.githubUrl} target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+                </svg>
+                GitHub
+              </a>
+              {n.externalUrl && (
+                <a class="plog-link plog-link--ext" href={n.externalUrl} target="_blank" rel="noopener noreferrer">
+                  {EXTERNAL_LABELS[n.externalType ?? "live"]}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7m0 0h-7m7 0v7"></path>
+                  </svg>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   </div>
-
-  {nodes.map((n) => (
-    <dialog id={`pmodal-${n.id}`} class="pmodal">
-      <div class="pmodal-inner">
-        <button type="button" class="pmodal-close" data-close aria-label="Close">✕</button>
-        <h3 class="pmodal-title">{n.title}</h3>
-        {n.description && n.description !== "No description available" && (
-          <p class="pmodal-desc">{n.description}</p>
-        )}
-        {n.technologies && n.technologies.length > 0 && (
-          <div class="pmodal-tags">
-            {n.technologies.map((tech) => <span class="pmodal-tag">{tech}</span>)}
-          </div>
-        )}
-        <div class="pmodal-meta">
-          {n.stars !== undefined && <span>★ {n.stars}</span>}
-          {n.forks !== undefined && <span>⑂ {n.forks}</span>}
-        </div>
-        <div class="pmodal-links">
-          <a href={n.githubUrl} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-          {n.liveUrl && (
-            <a href={n.liveUrl} target="_blank" rel="noopener noreferrer">Live ↗</a>
-          )}
-        </div>
-      </div>
-    </dialog>
-  ))}
 </section>
 
 <script>
   function initProjectConstellation() {
-    document.querySelectorAll<HTMLElement>(".pconstellation").forEach((c) => {
-      const line = c.querySelector<SVGPolylineElement>(".plines polyline");
-      if (line) {
-        const len = line.getTotalLength();
-        line.style.strokeDasharray = `${len}`;
-        line.style.strokeDashoffset = `${len}`;
-        requestAnimationFrame(() => {
-          line.style.transition = "stroke-dashoffset 2s ease 0.2s";
-          line.style.strokeDashoffset = "0";
-        });
+    const chart = document.querySelector<HTMLElement>("[data-chart]");
+    if (!chart) return;
+
+    const field = chart.querySelector<HTMLElement>("[data-field]");
+    const log = chart.querySelector<HTMLElement>("[data-log]");
+    const tether = chart.querySelector<HTMLElement>("[data-tether]");
+    const stars = Array.from(chart.querySelectorAll<HTMLElement>("[data-star]"));
+    if (!field || !log || !tether) return;
+
+    // Draw the connecting line in once.
+    const line = chart.querySelector<SVGPolylineElement>(".plines polyline");
+    if (line) {
+      const len = line.getTotalLength();
+      line.style.strokeDasharray = `${len}`;
+      line.style.strokeDashoffset = `${len}`;
+      requestAnimationFrame(() => {
+        line.style.transition = "stroke-dashoffset 2s ease .2s";
+        line.style.strokeDashoffset = "0";
+      });
+    }
+
+    // Parallax on the whole group, scoped to the section so it only responds
+    // while the pointer is actually over the chart.
+    chart.addEventListener(
+      "pointermove",
+      (event) => {
+        const rect = chart.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width - 0.5) * 14;
+        const y = ((event.clientY - rect.top) / rect.height - 0.5) * 10;
+        field.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      },
+      { passive: true },
+    );
+    chart.addEventListener("pointerleave", () => {
+      field.style.transform = "translate(0, 0)";
+    });
+
+    const setText = (selector: string, value: string) => {
+      const el = log.querySelector<HTMLElement>(selector);
+      if (el) el.textContent = value;
+    };
+
+    let openStar: HTMLElement | null = null;
+
+    const closeLog = () => {
+      openStar = null;
+      log.hidden = true;
+      tether.hidden = true;
+      chart.removeAttribute("data-open");
+      stars.forEach((s) => s.removeAttribute("data-active"));
+    };
+
+    const openLog = (star: HTMLElement) => {
+      if (openStar === star) {
+        closeLog();
+        return;
+      }
+      openStar = star;
+      const d = star.dataset;
+
+      setText("[data-log-title]", d.name ?? "");
+      setText("[data-log-stars]", `★ ${d.stars ?? 0}`);
+      setText("[data-log-forks]", `⑂ ${d.forks ?? 0}`);
+
+      const desc = log.querySelector<HTMLElement>("[data-log-desc]");
+      if (desc) {
+        desc.textContent = d.desc ?? "";
+        desc.hidden = !d.desc;
       }
 
-      document.addEventListener("mousemove", (e) => {
-        const x = (e.clientX / window.innerWidth - 0.5) * 10;
-        const y = (e.clientY / window.innerHeight - 0.5) * 10;
-        c.style.transform = `translate(${x}px, ${y}px)`;
+      const techWrap = log.querySelector<HTMLElement>("[data-log-tech]");
+      if (techWrap) {
+        let tech: string[] = [];
+        try {
+          tech = JSON.parse(d.tech ?? "[]");
+        } catch {
+          tech = [];
+        }
+        techWrap.replaceChildren(
+          ...tech.map((t) => {
+            const span = document.createElement("span");
+            span.textContent = t;
+            return span;
+          }),
+        );
+        techWrap.hidden = tech.length === 0;
+      }
+
+      const gh = log.querySelector<HTMLAnchorElement>("[data-log-github]");
+      if (gh) gh.href = d.github ?? "#";
+
+      const ext = log.querySelector<HTMLAnchorElement>("[data-log-ext]");
+      if (ext) {
+        if (d.extUrl) {
+          ext.href = d.extUrl;
+          setText("[data-log-ext-label]", d.extLabel ?? "");
+          ext.hidden = false;
+        } else {
+          ext.hidden = true;
+        }
+      }
+
+      stars.forEach((s) => s.removeAttribute("data-active"));
+      star.setAttribute("data-active", "");
+      chart.setAttribute("data-open", "");
+
+      // Dock the log beside the star: flip to whichever side has room, clamp
+      // vertically, then stretch the tether across the gap between them.
+      log.hidden = false;
+      tether.hidden = false;
+
+      const fieldRect = field.getBoundingClientRect();
+      const size = Number(star.dataset.size ?? 32);
+      const sx = (Number(star.dataset.x ?? 0) / 100) * fieldRect.width;
+      const sy = (Number(star.dataset.y ?? 0) / 100) * fieldRect.height;
+
+      const logW = log.offsetWidth;
+      const logH = log.offsetHeight;
+      const gap = size / 2 + 26;
+      const toRight = sx < fieldRect.width * 0.52;
+      const lx = toRight ? sx + gap : sx - gap - logW;
+      const ly = Math.max(4, Math.min(sy - 78, fieldRect.height - logH - 4));
+
+      log.style.left = `${lx}px`;
+      log.style.top = `${ly}px`;
+      log.dataset.side = toRight ? "right" : "left";
+
+      tether.style.top = `${sy}px`;
+      tether.style.left = `${toRight ? sx : lx + logW}px`;
+      tether.style.width = `${Math.max(0, toRight ? lx - sx : sx - (lx + logW))}px`;
+      tether.dataset.side = toRight ? "right" : "left";
+    };
+
+    stars.forEach((star) => {
+      star.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openLog(star);
       });
     });
 
-    document.querySelectorAll<HTMLButtonElement>(".pstar-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const id = btn.dataset.modal;
-        if (id) (document.getElementById(id) as HTMLDialogElement | null)?.showModal();
-      };
+    log.querySelector<HTMLButtonElement>("[data-log-close]")?.addEventListener("click", closeLog);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeLog();
     });
 
-    document.querySelectorAll<HTMLDialogElement>(".pmodal").forEach((dialog) => {
-      dialog.onclick = (e) => {
-        if (e.target === dialog) dialog.close();
-      };
-      dialog.querySelector<HTMLButtonElement>("[data-close]")!.onclick = () => dialog.close();
+    document.addEventListener("click", (event) => {
+      if (!openStar) return;
+      if (log.contains(event.target as Node)) return;
+      closeLog();
+    });
+
+    // Mobile ladder accordions.
+    document.querySelectorAll<HTMLButtonElement>("[data-rung]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const panel = row.parentElement?.querySelector<HTMLElement>("[data-rung-panel]");
+        if (!panel) return;
+        const isOpen = row.getAttribute("aria-expanded") === "true";
+        document.querySelectorAll<HTMLButtonElement>("[data-rung]").forEach((other) => {
+          other.setAttribute("aria-expanded", "false");
+          other.parentElement?.querySelector<HTMLElement>("[data-rung-panel]")?.setAttribute("hidden", "");
+        });
+        if (!isOpen) {
+          row.setAttribute("aria-expanded", "true");
+          panel.removeAttribute("hidden");
+        }
+      });
     });
   }
 
@@ -203,13 +385,13 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
 
 <style>
   .featured-projects {
-    --fp-primary: #a7b3c6;
-    --fp-primary-rgb: 167, 179, 198;
+    --fp-star: 167, 179, 198;
     --fp-text: rgba(248, 249, 255, 0.96);
     --fp-text-muted: rgba(224, 230, 242, 0.58);
     position: relative;
     padding: 4.5rem 0;
     font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    /* No background: the section sits directly on <StarryBackground />. */
   }
 
   .featured-projects .container {
@@ -217,39 +399,48 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     z-index: 1;
   }
 
-  .featured-projects__header {
+  /* ── Header ─────────────────────────────────────────────────────────── */
+  .fp-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.25rem;
     color: var(--fp-text);
-    position: relative;
-    z-index: 1;
   }
 
-  .featured-projects__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+  .fp-eyebrow {
+    display: inline-block;
     text-transform: uppercase;
     letter-spacing: 0.4em;
     font-size: 0.7rem;
+    font-weight: 500;
     color: rgba(198, 206, 222, 0.55);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.8rem;
   }
 
-  .featured-projects__title {
+  .fp-title {
     color: var(--fp-text);
+    letter-spacing: -0.02em;
   }
 
-  .featured-projects__subtitle {
-    margin-top: 0.75rem;
+  .fp-subtitle {
+    margin: 0.85rem auto 0;
+    max-width: 30rem;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    font-weight: 300;
     color: var(--fp-text-muted);
-    max-width: 32rem;
-    margin-left: auto;
-    margin-right: auto;
+    text-wrap: pretty;
   }
 
+  /* ── Star chart ─────────────────────────────────────────────────────── */
   .pconstellation {
     position: relative;
+    height: 400px;
+    margin-top: 1.15rem;
+  }
+
+  .pfield {
+    position: absolute;
+    inset: 0;
     transition: transform 0.6s ease;
     will-change: transform;
   }
@@ -271,23 +462,34 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
 
   .pstar-btn {
     position: absolute;
+    width: var(--box);
+    height: var(--box);
     transform: translate(-50%, -50%);
-    opacity: 0;
-    animation: pnodeIn 1.2s ease forwards;
-    animation-delay: var(--delay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
-    padding: 0.5rem;
+    padding: 0;
     margin: 0;
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4rem;
+    opacity: 0;
+    animation: pnodeIn 1.1s ease var(--delay) forwards;
+    transition: opacity 0.4s ease;
   }
 
   @keyframes pnodeIn {
-    to { opacity: 1; }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Opening a log dims the rest of the sky. */
+  .pconstellation[data-open] .pstar-btn {
+    opacity: 0.34;
+  }
+  .pconstellation[data-open] .pstar-btn[data-active] {
+    opacity: 1;
   }
 
   .pstar {
@@ -296,173 +498,488 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     height: var(--size);
     filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
     animation: ptwinkle 4s ease-in-out infinite;
+    transition:
+      transform 0.32s cubic-bezier(0.2, 0.7, 0.3, 1),
+      filter 0.32s ease;
   }
 
-  .pstar svg { width: 100%; height: 100%; display: block; }
-  .pstar path { fill: rgba(var(--fp-primary-rgb), 0.9); }
+  .pstar svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .pstar path {
+    fill: rgba(var(--fp-star), 0.9);
+    transition: fill 0.3s ease;
+  }
 
   @keyframes ptwinkle {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); }
+    0%,
+    100% {
+      opacity: 0.72;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* A magnitude ring is the hover affordance. */
+  .pstar-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--size) + 22px);
+    height: calc(var(--size) + 22px);
+    margin-left: calc((var(--size) + 22px) / -2);
+    margin-top: calc((var(--size) + 22px) / -2);
+    border-radius: 50%;
+    border: 1px solid rgba(var(--fp-star), 0.34);
+    opacity: 0;
+    transform: scale(0.72);
+    transition:
+      opacity 0.34s ease,
+      transform 0.34s cubic-bezier(0.2, 0.7, 0.3, 1);
+    pointer-events: none;
   }
 
   .pstar-label {
-    max-width: 6.5rem;
-    font-size: 0.68rem;
-    font-weight: 500;
-    line-height: 1.25;
-    letter-spacing: 0.02em;
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
     text-align: center;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
     color: rgba(220, 228, 242, 0.5);
     transition: color 0.3s ease;
-  }
-
-  .pstar-btn:hover .pstar-label,
-  .pstar-btn:focus-visible .pstar-label {
-    color: rgba(255, 255, 255, 0.95);
+    pointer-events: none;
   }
 
   .pstar-btn:hover .pstar,
-  .pstar-btn:focus-visible .pstar {
+  .pstar-btn:focus-visible .pstar,
+  .pstar-btn[data-active] .pstar {
     animation: none;
     opacity: 1;
-    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.85));
-    transform: scale(1.15);
+    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.85));
+    transform: scale(1.14);
+  }
+
+  .pstar-btn:hover .pstar path,
+  .pstar-btn:focus-visible .pstar path,
+  .pstar-btn[data-active] .pstar path {
+    fill: rgba(255, 255, 255, 0.98);
+  }
+
+  .pstar-btn:hover .pstar-ring,
+  .pstar-btn:focus-visible .pstar-ring,
+  .pstar-btn[data-active] .pstar-ring {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .pstar-btn:hover .pstar-label,
+  .pstar-btn:focus-visible .pstar-label,
+  .pstar-btn[data-active] .pstar-label {
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .pstar-btn:focus-visible {
-    outline: 2px solid rgba(var(--fp-primary-rgb), 0.6);
-    outline-offset: 4px;
-    border-radius: 999px;
+    outline: none;
   }
 
-  /* Modal */
-  .pmodal {
-    border: 1px solid rgba(180, 194, 214, 0.16);
-    border-radius: 20px;
-    padding: 0;
-    background: rgba(var(--primary-bg-rgb, 10 13 24), 0.97);
-    color: var(--fp-text);
-    max-width: 26rem;
-    width: calc(100vw - 2.5rem);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-  }
-
-  .pmodal::backdrop {
-    background: rgba(2, 4, 10, 0.65);
-    backdrop-filter: blur(3px);
-  }
-
-  .pmodal-inner {
-    position: relative;
-    padding: 2rem 1.75rem 1.75rem;
-  }
-
-  .pmodal-close {
+  /* ── Docked log ─────────────────────────────────────────────────────── */
+  .ptether {
     position: absolute;
-    top: 0.9rem;
-    right: 0.9rem;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 999px;
-    border: 1px solid rgba(180, 194, 214, 0.16);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(220, 228, 242, 0.7);
-    cursor: pointer;
-    line-height: 1;
-    transition: background 0.2s ease, color 0.2s ease;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(var(--fp-star), 0.05), rgba(var(--fp-star), 0.4));
+    transform-origin: left center;
+    animation: pleaderIn 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    z-index: 5;
+    pointer-events: none;
   }
 
-  .pmodal-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+  .ptether[data-side="left"] {
+    background: linear-gradient(90deg, rgba(var(--fp-star), 0.4), rgba(var(--fp-star), 0.05));
+    transform-origin: right center;
+  }
+
+  @keyframes pleaderIn {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .plog {
+    position: absolute;
+    width: 300px;
+    box-sizing: border-box;
+    padding: 19px 20px 21px;
+    border-radius: 14px;
+    background: linear-gradient(165deg, rgba(11, 15, 27, 0.8), rgba(7, 9, 19, 0.74));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(180, 194, 214, 0.12);
+    box-shadow:
+      inset 1px 0 0 rgba(var(--fp-star), 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      0 22px 54px rgba(2, 4, 10, 0.55);
+    z-index: 6;
+    animation: plogIn 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+
+  /* The accent hairline marks the edge the tether arrives at. */
+  .plog[data-side="left"] {
+    box-shadow:
+      inset -1px 0 0 rgba(var(--fp-star), 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      0 22px 54px rgba(2, 4, 10, 0.55);
+  }
+
+  @keyframes plogIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .plog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .plog-headtext {
+    min-width: 0;
+  }
+
+  .plog-title {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: rgba(248, 249, 255, 0.97);
+    word-break: break-word;
+  }
+
+  .plog-meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 8px;
+    font-size: 0.63rem;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(var(--fp-star), 0.58);
+  }
+
+  .plog-dot {
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgba(var(--fp-star), 0.4);
+  }
+
+  .plog-close {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: -2px -2px 0 0;
+    border: none;
+    background: none;
+    color: rgba(var(--fp-star), 0.5);
+    font-size: 0.72rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  .plog-close:hover {
+    color: rgba(248, 249, 255, 0.95);
+  }
+
+  .plog-rule {
+    height: 1px;
+    margin: 15px 0;
+    background: linear-gradient(90deg, rgba(180, 194, 214, 0.2), rgba(180, 194, 214, 0.02));
+  }
+
+  .plog-desc {
+    margin: 0;
+    font-size: 0.855rem;
+    line-height: 1.64;
+    font-weight: 300;
+    color: rgba(220, 228, 242, 0.7);
+    text-wrap: pretty;
+  }
+
+  .plog-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 15px;
+  }
+
+  .plog-tech span {
+    font-size: 0.63rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(220, 228, 242, 0.6);
+    padding-bottom: 1px;
+    border-bottom: 1px solid rgba(var(--fp-star), 0.22);
+  }
+
+  .plog-links {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 18px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(180, 194, 214, 0.1);
+  }
+
+  .plog-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: rgba(230, 236, 248, 0.82);
+    transition: color 0.2s ease;
+  }
+
+  .plog-link svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+    flex: none;
+    opacity: 0.8;
+  }
+
+  .plog-link:hover {
     color: #fff;
   }
 
-  .pmodal-title {
-    margin: 0 0 0.75rem;
-    font-size: 1.35rem;
-    font-weight: 700;
-    padding-right: 2rem;
+  .plog-link--ext {
+    color: rgba(199, 146, 234, 0.9);
   }
 
-  .pmodal-desc {
-    margin: 0 0 1rem;
-    font-size: 0.92rem;
+  .plog-link--ext svg {
+    width: 12px;
+    height: 12px;
+    opacity: 1;
+  }
+
+  /* ── Legend ─────────────────────────────────────────────────────────── */
+  .fp-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 0.75rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(var(--fp-star), 0.42);
+  }
+
+  /* ── Mobile magnitude ladder ────────────────────────────────────────── */
+  .pladder {
+    display: none;
+  }
+
+  .pladder-spine {
+    position: absolute;
+    left: 26px;
+    top: 10px;
+    bottom: 34px;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      rgba(180, 194, 214, 0.2) 12%,
+      rgba(180, 194, 214, 0.2) 88%,
+      transparent
+    );
+  }
+
+  .pladder-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 56px;
+    padding: 13px 4px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(180, 194, 214, 0.07);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .pladder-row[aria-expanded="true"] {
+    border-bottom-color: transparent;
+  }
+
+  .pladder-star {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+  }
+
+  .pladder-star svg {
+    width: var(--size);
+    height: var(--size);
+    display: block;
+  }
+
+  .pladder-star path {
+    fill: rgba(var(--fp-star), 0.9);
+  }
+
+  .pladder-row[aria-expanded="true"] .pladder-star path {
+    fill: rgba(255, 255, 255, 0.98);
+  }
+
+  .pladder-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .pladder-name {
+    display: block;
+    font-size: 0.94rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(240, 245, 255, 0.92);
+    word-break: break-word;
+  }
+
+  .pladder-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(var(--fp-star), 0.5);
+  }
+
+  .pladder-chev {
+    flex: none;
+    display: flex;
+    color: rgba(var(--fp-star), 0.55);
+    transition: transform 0.28s ease;
+  }
+
+  .pladder-chev svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  .pladder-row[aria-expanded="true"] .pladder-chev {
+    transform: rotate(180deg);
+  }
+
+  .pladder-panel {
+    margin: 0 0 6px 58px;
+    padding: 0 4px 16px;
+  }
+
+  .pladder-desc {
+    margin: 0;
+    font-size: 0.83rem;
     line-height: 1.6;
-    color: rgba(220, 228, 242, 0.65);
+    font-weight: 300;
+    color: rgba(220, 228, 242, 0.68);
+    text-wrap: pretty;
   }
 
-  .pmodal-tags {
+  .pladder-tech {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
+    gap: 6px 14px;
+    margin-top: 13px;
   }
 
-  .pmodal-tag {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    background: rgba(var(--fp-primary-rgb), 0.1);
-    border: 1px solid rgba(var(--fp-primary-rgb), 0.2);
-    color: rgba(220, 228, 242, 0.75);
+  .pladder-tech span {
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(220, 228, 242, 0.6);
+    padding-bottom: 1px;
+    border-bottom: 1px solid rgba(var(--fp-star), 0.22);
   }
 
-  .pmodal-meta {
+  .pladder-links {
     display: flex;
-    gap: 1rem;
-    font-size: 0.8rem;
-    color: rgba(var(--fp-primary-rgb), 0.85);
-    margin-bottom: 1.25rem;
+    align-items: center;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(180, 194, 214, 0.1);
   }
 
-  .pmodal-links {
-    display: flex;
-    gap: 0.75rem;
+  /* Touch targets stay at 44px on mobile. */
+  .pladder-links .plog-link {
+    min-height: 44px;
+    padding: 13px 0;
   }
 
-  .pmodal-links a {
-    padding: 0.55rem 1.1rem;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: rgba(230, 236, 248, 0.92);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(180, 194, 214, 0.16);
-    transition: background 0.2s ease;
-  }
-
-  .pmodal-links a:hover {
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  @media (max-width: 768px) {
-    .pconstellation {
-      height: auto !important;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1.5rem;
-      padding: 1rem 0;
-      transform: none !important;
+  /* The 2D chart needs width; below this, use the ladder instead. */
+  @media (max-width: 900px) {
+    .pconstellation,
+    .fp-legend {
+      display: none;
     }
-    .plines { display: none; }
-    .pstar-btn {
+
+    .pladder {
+      display: block;
       position: relative;
-      left: auto !important;
-      top: auto !important;
-      transform: none;
-      opacity: 1;
-      animation: none;
+      margin-top: 1.75rem;
     }
-    .pstar-btn:hover .pstar, .pstar-btn:focus-visible .pstar {
-      transform: none;
+
+    .fp-header {
+      text-align: left;
+    }
+
+    .fp-subtitle {
+      margin-left: 0;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pstar-btn, .pstar {
+    .pstar-btn,
+    .pstar,
+    .plog,
+    .ptether,
+    .pfield {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }

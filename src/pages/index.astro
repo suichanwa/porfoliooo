@@ -23,10 +23,18 @@ interface Project {
   description: string;
   technologies: string[];
   githubUrl: string;
-  liveUrl?: string;
+  externalType?: "live" | "curseforge";
+  externalUrl?: string;
   stars?: number;
   forks?: number;
 }
+
+// Manual overrides for distribution links GitHub doesn't know about (e.g.
+// CurseForge mod pages), keyed by repo name.
+const EXTERNAL_LINKS: Record<string, { type: "live" | "curseforge"; url: string }> = {
+  solenoid: { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/solenoid" },
+  "gtnh-additional-crafts": { type: "curseforge", url: "https://www.curseforge.com/minecraft/mc-mods/gtnh-additional-crafts" },
+};
 
 // Fetch real GitHub projects
 let featuredProjects: Project[] = [];
@@ -42,16 +50,20 @@ try {
       .filter((repo: GitHubRepo) => !repo.fork)
       .sort((a: GitHubRepo, b: GitHubRepo) => b.stargazers_count - a.stargazers_count)
       .slice(0, 6)
-      .map((repo: GitHubRepo) => ({
-        id: repo.id.toString(),
-        title: repo.name,
-        description: repo.description || "No description available",
-        technologies: repo.topics || [],
-        githubUrl: repo.html_url,
-        liveUrl: repo.homepage || undefined,
-        stars: repo.stargazers_count,
-        forks: repo.forks_count
-      }));
+      .map((repo: GitHubRepo) => {
+        const override = EXTERNAL_LINKS[repo.name.toLowerCase()];
+        return {
+          id: repo.id.toString(),
+          title: repo.name,
+          description: repo.description || "No description available",
+          technologies: repo.topics || [],
+          githubUrl: repo.html_url,
+          externalType: override?.type ?? (repo.homepage ? "live" : undefined),
+          externalUrl: override?.url ?? repo.homepage ?? undefined,
+          stars: repo.stargazers_count,
+          forks: repo.forks_count
+        };
+      });
   }
 } catch (error) {
   console.error('Error fetching GitHub data:', error);
