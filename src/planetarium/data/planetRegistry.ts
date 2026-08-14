@@ -4,7 +4,7 @@ import type { BodyData, BodyId } from "./types";
 export const PLANET_IDS = PLANETS.map((planet) => planet.id) as BodyId[];
 
 export const ORBITING_PLANETS = PLANETS.filter(
-  (planet): planet is BodyData & { parentId: "sun" } => planet.parentId === "sun"
+  (planet): planet is BodyData & { parentId: BodyId } => Boolean(planet.parentId)
 );
 
 export const PLANET_BY_ID = Object.fromEntries(

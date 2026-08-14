@@ -77,6 +77,14 @@ const PLANET_INFO_OVERRIDES: Partial<Record<BodyId, PlanetInfo>> = {
       "Oxygen-rich atmosphere supports life."
     ]
   },
+  moon: {
+    summary: "Earth's only natural satellite, modulating ocean tides and stabilizing Earth's axial tilt.",
+    facts: [
+      "Fifth-largest moon in the solar system.",
+      "Tidally locked to Earth, showing only one side.",
+      "The only celestial body beyond Earth visited by humans."
+    ]
+  },
   mars: {
     summary: "A cold desert world with a thin atmosphere.",
     facts: [

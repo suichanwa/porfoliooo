@@ -14,6 +14,7 @@ import ceresTexture from "../../assets/planetarium/2k_ceres_fictional.jpg";
 import starfieldTexture from "../../assets/planetarium/2k_stars.jpg";
 import milkyWayTexture from "../../assets/planetarium/BG_stars_milky_way.jpg";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
+import moonTexture from "../../assets/planetarium/Solarsystemscope_texture_8k_moon.jpg";
 
 type TextureAsset = string | { src: string };
 
@@ -27,6 +28,7 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   mercury: toUrl(mercuryTexture),
   venus: toUrl(venusSurfaceTexture),
   earth: null,
+  moon: toUrl(moonTexture),
   mars: toUrl(marsTexture),
   jupiter: toUrl(jupiterTexture),
   saturn: toUrl(saturnTexture),

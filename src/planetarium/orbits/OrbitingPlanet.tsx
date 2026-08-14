@@ -15,6 +15,7 @@ interface OrbitingPlanetProps {
   showLabels?: boolean;
   onSelect?: (id: BodyId | null) => void;
   onObjectRef?: (id: BodyId, object: Object3D | null) => void;
+  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
 }
@@ -26,12 +27,16 @@ export default function OrbitingPlanet({
   showLabels = false,
   onSelect,
   onObjectRef,
+  planetRefs,
   scaleMode,
   scaleParams
 }: OrbitingPlanetProps) {
   const groupRef = useRef<Group>(null);
   const hoveredRef = useRef(false);
   const orbitPositionRef = useRef(new Vector3());
+  const parentWorldPosRef = useRef(new Vector3());
+  const isMoon = Boolean(data.parentId && data.parentId !== "sun");
+
   const initialPosition = useMemo(
     () =>
       data.orbit
@@ -40,10 +45,11 @@ export default function OrbitingPlanet({
             timeRef.current,
             scaleMode,
             scaleParams,
-            new Vector3()
+            new Vector3(),
+            isMoon
           )
         : new Vector3(),
-    [data.orbit, scaleMode, scaleParams, timeRef]
+    [data.orbit, isMoon, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {
@@ -53,9 +59,23 @@ export default function OrbitingPlanet({
       timeRef.current,
       scaleMode,
       scaleParams,
-      orbitPositionRef.current
+      orbitPositionRef.current,
+      isMoon
     );
-    groupRef.current.position.copy(orbitPositionRef.current);
+
+    if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
+      const parentObj = planetRefs.current[data.parentId];
+      if (parentObj) {
+        parentObj.getWorldPosition(parentWorldPosRef.current);
+        groupRef.current.position
+          .copy(parentWorldPosRef.current)
+          .add(orbitPositionRef.current);
+      } else {
+        groupRef.current.position.copy(orbitPositionRef.current);
+      }
+    } else {
+      groupRef.current.position.copy(orbitPositionRef.current);
+    }
   });
 
   useEffect(() => {
@@ -107,6 +127,7 @@ export default function OrbitingPlanet({
           timeRef={timeRef}
           showLabels={showLabels}
           hoveredRef={hoveredRef}
+          planetRefs={planetRefs}
           scaleMode={scaleMode}
           scaleParams={scaleParams}
         />

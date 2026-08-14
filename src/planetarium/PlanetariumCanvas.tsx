@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -24,6 +24,19 @@ export default function PlanetariumCanvas({
   onPointerMissed,
   dpr = [1, 1.5]
 }: PlanetariumCanvasProps) {
+  const [frameloop, setFrameloop] = useState<"always" | "never">("always");
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setFrameloop(document.hidden ? "never" : "always");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <div
       className="planetarium-canvas"
@@ -35,6 +48,7 @@ export default function PlanetariumCanvas({
       }}
     >
       <Canvas
+        frameloop={frameloop}
         dpr={dpr}
         camera={{ position: [0, 0, 20], fov: 45, near: 0.1, far: 2000 }}
         gl={{ antialias: true, alpha: true }}

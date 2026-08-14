@@ -74,8 +74,11 @@ export const useFocusTarget = ({
       }
       prevTarget.copy(target);
 
-      const radius = scalePlanetRadius(planetData[selectedId].render.radiusKm);
-      const desiredDistance = Math.max(radius * 10, 4.5);
+      const isMoon = planetData[selectedId].kind === "moon";
+      const radius = scalePlanetRadius(planetData[selectedId].render.radiusKm, isMoon);
+      const desiredDistance = isMoon
+        ? Math.max(radius * 12, 1.8)
+        : Math.max(radius * 10, 4.5);
 
       direction.copy(camera.position).sub(controls.target);
       if (direction.lengthSq() === 0) {
@@ -110,8 +113,9 @@ export const useFocusTarget = ({
     camera.position.lerp(desiredPosition, positionEase);
     controls.target.lerp(target, targetEase);
 
+    const isMoon = selectedId ? planetData[selectedId].kind === "moon" : false;
     const minDistance = selectedId
-      ? Math.max(scalePlanetRadius(planetData[selectedId].render.radiusKm) * 1.2, 0.4)
+      ? Math.max(scalePlanetRadius(planetData[selectedId].render.radiusKm, isMoon) * 1.2, isMoon ? 0.2 : 0.4)
       : 8;
     const maxDistance = selectedId ? Math.max(minDistance * 10, 70) : 140;
 

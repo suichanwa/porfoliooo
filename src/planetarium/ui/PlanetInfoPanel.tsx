@@ -63,10 +63,14 @@ export default function PlanetInfoPanel({
       <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] sm:gap-3">
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">
           <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
-            Distance
+            {planet?.parentId && planet.parentId !== "sun" ? "Orbit Radius" : "Distance"}
           </div>
           <div className="mt-1 text-sm font-semibold text-white/80">
-            {planet?.orbit ? `${kmToAu(planet.orbit.semiMajorAxisKm).toFixed(2)} AU` : "-"}
+            {planet?.orbit
+              ? planet.parentId && planet.parentId !== "sun"
+                ? `${formatNumber(planet.orbit.semiMajorAxisKm)} km`
+                : `${kmToAu(planet.orbit.semiMajorAxisKm).toFixed(2)} AU`
+              : "-"}
           </div>
         </div>
         <div className="rounded-xl border border-white/5 bg-black/20 p-3">

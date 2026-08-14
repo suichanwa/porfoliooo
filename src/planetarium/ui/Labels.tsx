@@ -1,8 +1,8 @@
 import { useMemo, useRef } from "react";
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Group, Vector3 } from "three";
-import type { BodyData } from "../data/types";
+import { Group, Vector3, Object3D } from "three";
+import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import { getOrbitPosition } from "../orbits/orbitMath";
 
@@ -11,6 +11,7 @@ interface LabelsProps {
   timeRef: React.MutableRefObject<number>;
   showLabels: boolean;
   hoveredRef?: React.MutableRefObject<boolean>;
+  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
 }
@@ -22,12 +23,16 @@ export default function Labels({
   timeRef,
   showLabels,
   hoveredRef,
+  planetRefs,
   scaleMode,
   scaleParams
 }: LabelsProps) {
   const groupRef = useRef<Group>(null);
   const orbitPositionRef = useRef(new Vector3());
+  const parentWorldPosRef = useRef(new Vector3());
   const { camera } = useThree();
+  const isMoon = Boolean(data.parentId && data.parentId !== "sun");
+
   const initialPosition = useMemo(
     () =>
       data.orbit
@@ -36,10 +41,11 @@ export default function Labels({
             timeRef.current,
             scaleMode,
             scaleParams,
-            new Vector3()
+            new Vector3(),
+            isMoon
           )
         : new Vector3(),
-    [data.orbit, scaleMode, scaleParams, timeRef]
+    [data.orbit, isMoon, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {
@@ -49,8 +55,18 @@ export default function Labels({
       timeRef.current,
       scaleMode,
       scaleParams,
-      orbitPositionRef.current
+      orbitPositionRef.current,
+      isMoon
     );
+
+    if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
+      const parentObj = planetRefs.current[data.parentId];
+      if (parentObj) {
+        parentObj.getWorldPosition(parentWorldPosRef.current);
+        orbitPositionRef.current.add(parentWorldPosRef.current);
+      }
+    }
+
     groupRef.current.position.copy(orbitPositionRef.current);
 
     const distance = camera.position.distanceTo(orbitPositionRef.current);

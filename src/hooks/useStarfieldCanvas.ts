@@ -242,8 +242,14 @@ export default function useStarfieldCanvas({
     };
 
     const handleVisibilityChange = () => {
-      isVisible.current = !document.hidden;
-      if (isVisible.current && !animationRef.current) {
+      const hidden = document.hidden;
+      isVisible.current = !hidden;
+      if (hidden) {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = undefined;
+        }
+      } else if (!animationRef.current) {
         animationRef.current = requestAnimationFrame(render);
       }
     };

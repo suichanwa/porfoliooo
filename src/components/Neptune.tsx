@@ -536,7 +536,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     setCanvasSize();
 
     const animate = (timestamp: number) => {
-      if (!isRunning) return;
+      if (!isRunning || document.hidden) return;
       
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = canvas.width / dpr;
@@ -554,7 +554,19 @@ export default function Neptune({ className = '' }: NeptuneProps) {
       resizeTimeout = window.setTimeout(setCanvasSize, 150);
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = undefined;
+        }
+      } else if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       isRunning = false;
@@ -563,6 +575,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
       }
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [drawNeptune]);
 

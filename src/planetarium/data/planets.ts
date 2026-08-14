@@ -111,6 +111,34 @@ export const PLANETS: BodyData[] = [
     }
   },
   {
+    id: "moon",
+    name: "Moon",
+    kind: "moon",
+    parentId: "earth",
+    massKg: 7.342e22,
+    mu: toMu(7.342e22),
+    rotation: {
+      axialTiltDeg: 1.54,
+      rotationPeriodHours: 655.72,
+      tidallyLocked: true
+    },
+    render: {
+      radiusKm: 1737.4,
+      colorFallback: "#c2c2c2",
+      textureUrl: PLANET_TEXTURES.moon,
+      materialPreset: DEFAULT_MATERIAL,
+      glowPreset: { color: "#d8d8d8", intensity: 0.08 }
+    },
+    orbit: {
+      semiMajorAxisKm: 384400,
+      eccentricity: 0.0549,
+      inclinationDeg: 5.145,
+      orbitalPeriodDays: 27.32166,
+      meanLongitudeAtEpochDeg: 218.316,
+      longitudeOfPerihelionDeg: 83.353
+    }
+  },
+  {
     id: "mars",
     name: "Mars",
     kind: "planet",

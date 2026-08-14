@@ -19,18 +19,33 @@ const solveKepler = (meanAnomaly: number, eccentricity: number) => {
   return eccentricAnomaly;
 };
 
+const EARTH_RADIUS_KM = 6371;
+const EARTH_RENDER_RADIUS = 0.5;
+
 export const getOrbitPosition = (
   orbit: OrbitElements,
   timeDays: number,
   scaleMode: DistanceScaleMode,
   scaleParams: DistanceScaleParams,
-  out: Vector3 = new Vector3()
+  out: Vector3 = new Vector3(),
+  isMoon: boolean = false
 ) => {
-  const semiMajor = computeRenderOrbitRadius(
-    kmToAu(orbit.semiMajorAxisKm),
-    scaleMode,
-    scaleParams
-  );
+  let semiMajor: number;
+
+  if (isMoon) {
+    // Relative scaling: dynamically scales moon orbit distance relative to Earth's
+    // active render radius under the current DistanceScaleMode & spacing slider.
+    const earthRenderOrbit = computeRenderOrbitRadius(1.0, scaleMode, scaleParams);
+    const moonAu = kmToAu(orbit.semiMajorAxisKm);
+    const relativeFactor = Math.pow(moonAu, 0.45) * 2.2;
+    semiMajor = Math.max(1.0, earthRenderOrbit * relativeFactor);
+  } else {
+    semiMajor = computeRenderOrbitRadius(
+      kmToAu(orbit.semiMajorAxisKm),
+      scaleMode,
+      scaleParams
+    );
+  }
 
   // Mean motion since J2000 (radians).
   const meanMotion = (timeDays / orbit.orbitalPeriodDays) * Math.PI * 2;

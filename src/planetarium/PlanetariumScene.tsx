@@ -224,10 +224,12 @@ export default function PlanetariumScene({
           planet.orbit ? (
             <OrbitPath
               key={`${planet.id}-orbit`}
+              planet={planet}
               orbit={planet.orbit}
               segments={orbitSegments}
               scaleMode={distanceScaleMode}
               scaleParams={distanceScaleParams}
+              planetRefs={planetRefs}
             />
           ) : null
         )}
@@ -240,6 +242,7 @@ export default function PlanetariumScene({
           showLabels={showLabels}
           onSelect={onSelect}
           onObjectRef={handlePlanetRef}
+          planetRefs={planetRefs}
           scaleMode={distanceScaleMode}
           scaleParams={distanceScaleParams}
         />

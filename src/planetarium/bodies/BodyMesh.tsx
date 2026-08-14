@@ -49,8 +49,8 @@ export default function BodyMesh({
 }: BodyMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const radius = useMemo(
-    () => scalePlanetRadius(data.render.radiusKm),
-    [data.render.radiusKm]
+    () => scalePlanetRadius(data.render.radiusKm, data.kind === "moon"),
+    [data.render.radiusKm, data.kind]
   );
   const tilt = MathUtils.degToRad(data.rotation.axialTiltDeg);
 

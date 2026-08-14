@@ -3,6 +3,7 @@ export type BodyId =
   | "mercury"
   | "venus"
   | "earth"
+  | "moon"
   | "mars"
   | "jupiter"
   | "saturn"
