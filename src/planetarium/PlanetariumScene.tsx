@@ -229,7 +229,7 @@ export default function PlanetariumScene({
           key={planet.id}
           data={planet}
           timeRef={timeRef}
-          atmosphere={planet.id === "earth"}
+          atmosphere={false}
           showLabels={showLabels}
           onSelect={onSelect}
           onObjectRef={handlePlanetRef}

@@ -10,6 +10,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   NoColorSpace,
+  ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
   Vector3
@@ -26,6 +27,7 @@ interface BodyMeshProps {
   timeScale?: number;
   rimGlow?: boolean | RimGlowPreset;
   groupRef?: Ref<Group>;
+  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   onPointerOver?: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (event: ThreeEvent<PointerEvent>) => void;
   onClick?: (event: ThreeEvent<MouseEvent>) => void;
@@ -43,11 +45,19 @@ export default function BodyMesh({
   timeScale = 40,
   rimGlow,
   groupRef,
+  planetRefs,
   onPointerOver,
   onPointerOut,
   onClick
 }: BodyMeshProps) {
   const meshRef = useRef<Mesh>(null);
+  const shadowFactorRef = useRef(1.0);
+  const earthPosRef = useMemo(() => new Vector3(), []);
+  const moonPosRef = useMemo(() => new Vector3(), []);
+  const dirRef = useMemo(() => new Vector3(), []);
+  const moonOffsetRef = useMemo(() => new Vector3(), []);
+  const projRef = useMemo(() => new Vector3(), []);
+
   const radius = useMemo(
     () => scalePlanetRadius(data.render.radiusKm, data.kind === "moon"),
     [data.render.radiusKm, data.kind]
@@ -85,53 +95,38 @@ export default function BodyMesh({
   }, [data.rings]);
 
   const isEarth = data.id === "earth";
-  const material = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        map: baseMap ?? null,
-        normalMap: normalMap ?? null,
-        bumpMap: bumpMap ?? null,
-        roughness: isEarth ? 0.5 : materialPreset.roughness,
-        metalness: isEarth ? 0.05 : materialPreset.metalness,
-        // Remove emissive yellow overglow on Earth so textures render rich and realistic
-        emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
-        emissiveIntensity: isEarth ? 0 : 0.025
-      }),
-    [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap]
-  );
+  const nightMap = useTextureAsset(data.render.nightTextureUrl, {
+    colorSpace: SRGBColorSpace
+  });
 
-  const atmosphereMaterial = useMemo(
-    () =>
-      new ShaderMaterial({
-        uniforms: {
-          uColor: { value: new Color("#38bdf8") }
-        },
-        vertexShader: `
-          varying vec3 vNormal;
-          varying vec3 vPosition;
-          void main() {
-            vNormal = normalize(normalMatrix * normal);
-            vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 uColor;
-          varying vec3 vNormal;
-          varying vec3 vPosition;
-          void main() {
-            vec3 viewDir = normalize(-vPosition);
-            float fresnel = pow(1.0 - max(0.0, dot(vNormal, viewDir)), 3.2);
-            gl_FragColor = vec4(uColor, fresnel * 0.45);
-          }
-        `,
-        blending: AdditiveBlending,
-        side: BackSide,
-        transparent: true,
-        depthWrite: false
-      }),
-    []
-  );
+  const material = useMemo(() => {
+    const mat = new MeshStandardMaterial({
+      map: baseMap ?? null,
+      normalMap: normalMap ?? null,
+      bumpMap: bumpMap ?? null,
+      roughness: isEarth ? 0.5 : materialPreset.roughness,
+      metalness: isEarth ? 0.05 : materialPreset.metalness,
+      emissiveMap: isEarth ? (nightMap ?? null) : null,
+      emissive: isEarth ? new Color("#ffc87c") : new Color(glowPreset.color),
+      emissiveIntensity: isEarth ? (nightMap ? 2.2 : 0) : 0.025
+    });
+
+    if (isEarth && nightMap) {
+      mat.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          `#include <emissivemap_fragment>`,
+          `
+          #include <emissivemap_fragment>
+          // Earth Night Lights: Fade out city lights on the day side
+          float dayFactor = dot(normalize(vNormal), normalize(-vViewPosition));
+          float nightMask = smoothstep(0.15, -0.15, dayFactor);
+          totalEmissiveRadiance *= nightMask;
+          `
+        );
+      };
+    }
+    return mat;
+  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, nightMap, normalMap]);
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;
@@ -150,6 +145,44 @@ export default function BodyMesh({
     const rotationRate =
       (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
     meshRef.current.rotation.y += delta * rotationRate * timeScale;
+
+    // Dynamic Earth Shadow (Lunar Eclipse) when Moon moves behind Earth relative to Sun
+    if (data.id === "moon" && planetRefs?.current?.earth) {
+      const earthObj = planetRefs.current.earth;
+      earthObj.getWorldPosition(earthPosRef);
+      meshRef.current.getWorldPosition(moonPosRef);
+
+      // Direction vector from Sun (0,0,0) to Earth
+      dirRef.copy(earthPosRef).normalize();
+      moonOffsetRef.copy(moonPosRef).sub(earthPosRef);
+
+      const distAlongShadow = moonOffsetRef.dot(dirRef);
+      let targetShadow = 1.0;
+
+      if (distAlongShadow > 0) {
+        // Moon is behind Earth (night side)
+        projRef.copy(dirRef).multiplyScalar(distAlongShadow);
+        const perpDist = moonOffsetRef.sub(projRef).length();
+
+        // Umbra shadow cone radius at Moon distance
+        const umbraRadius = 0.55;
+        if (perpDist < umbraRadius) {
+          const t = Math.max(0, perpDist / umbraRadius);
+          targetShadow = MathUtils.lerp(0.06, 1.0, Math.pow(t, 1.8));
+        }
+      }
+
+      shadowFactorRef.current = MathUtils.lerp(
+        shadowFactorRef.current,
+        targetShadow,
+        Math.min(1.0, delta * 8.0)
+      );
+
+      if (material && "color" in material) {
+        const mat = material as MeshStandardMaterial;
+        mat.color.setHSL(0, 0, shadowFactorRef.current);
+      }
+    }
   });
 
   return (
@@ -165,14 +198,6 @@ export default function BodyMesh({
           onClick?.(event);
         }}
       />
-      {atmosphere && (
-        <mesh
-          geometry={geometry}
-          material={atmosphereMaterial}
-          scale={1.035}
-          raycast={() => null}
-        />
-      )}
       {rimMaterial && (
         <mesh
           geometry={geometry}

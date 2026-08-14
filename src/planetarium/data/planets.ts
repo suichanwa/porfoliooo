@@ -1,5 +1,5 @@
 import type { BodyData, GlowPreset, MaterialPreset } from "./types";
-import { PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
+import { EARTH_NIGHT_TEXTURE, PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
 import { auToKm } from "../utils/units";
 
 const G = 6.6743e-11;
@@ -99,6 +99,7 @@ export const PLANETS: BodyData[] = [
       radiusKm: 6371,
       colorFallback: "#4c8fbe",
       textureUrl: PLANET_TEXTURES.earth,
+      nightTextureUrl: EARTH_NIGHT_TEXTURE,
       materialPreset: DEFAULT_MATERIAL,
       glowPreset: PLANET_GLOW
     },

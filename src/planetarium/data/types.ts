@@ -53,6 +53,7 @@ export interface GlowPreset {
 export interface RenderPreset {
   radiusKm: number;
   textureUrl?: string | null;
+  nightTextureUrl?: string | null;
   normalUrl?: string | null;
   bumpUrl?: string | null;
   colorFallback: string;

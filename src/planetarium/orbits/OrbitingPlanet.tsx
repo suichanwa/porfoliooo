@@ -110,6 +110,7 @@ export default function OrbitingPlanet({
           position={initialPosition}
           atmosphere={atmosphere}
           groupRef={groupRef}
+          planetRefs={planetRefs}
           onPointerOver={() => {
             hoveredRef.current = true;
           }}
