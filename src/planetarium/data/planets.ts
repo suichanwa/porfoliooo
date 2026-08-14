@@ -6,6 +6,7 @@ const G = 6.6743e-11;
 const toMu = (massKg: number) => massKg * G;
 
 const DEFAULT_MATERIAL: MaterialPreset = { roughness: 0.85, metalness: 0 };
+
 const PLANET_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.12 };
 const DWARF_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.08 };
 const STAR_GLOW: GlowPreset = { color: "#f5c96b", intensity: 1.2 };

@@ -36,9 +36,11 @@ export default function PlanetInfoPanel({
           <div className="mt-1 text-xl font-semibold text-primary-accent">
             {planet?.name ?? "Select a planet"}
           </div>
-          <p className="mt-2 text-xs text-white/60">
-            {info?.summary ?? "Click a planet to learn more."}
-          </p>
+          {info?.summary && (
+            <p className="mt-2 text-xs text-white/60">
+              {info.summary}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto sm:flex-col sm:items-end">
           {onHide && (

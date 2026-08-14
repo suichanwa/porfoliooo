@@ -23,8 +23,8 @@ interface SpacetimeGridProps {
 
 export default function SpacetimeGrid({
   bodies,
-  gridSize = 260,
-  divisions = 180,
+  gridSize = 320,
+  divisions = 160,
   strength,
   softening,
   maxInfluence,
@@ -46,16 +46,14 @@ export default function SpacetimeGrid({
       uBodyCount: { value: 0 },
       uBodies: { value: bodyPositions },
       uMasses: { value: bodyMasses },
-      uSoftening: { value: softening },
       uStrength: { value: strength },
-      uMaxInfluence: { value: maxInfluence },
       uGridSize: { value: gridSize },
-      uGridSpacing: { value: 10 },
-      uBaseColor: { value: new Color("#05080f") },
-      uLineColor: { value: new Color("#1c2a3a") },
+      uGridSpacing: { value: 6.0 },
+      uLineColor: { value: new Color("#0284c7") }, // Soft slate cyan
+      uWarpColor: { value: new Color("#6366f1") }, // Subtle indigo well accent
       uDebug: { value: debug ? 1 : 0 }
     }),
-    [bodyPositions, bodyMasses, softening, strength, maxInfluence, gridSize, debug]
+    [bodyPositions, bodyMasses, strength, gridSize, debug]
   );
 
   const material = useMemo(
@@ -69,54 +67,70 @@ export default function SpacetimeGrid({
           uniform int uBodyCount;
           uniform vec3 uBodies[${MAX_BODIES}];
           uniform float uMasses[${MAX_BODIES}];
-          uniform float uSoftening;
           uniform float uStrength;
-          uniform float uMaxInfluence;
           varying vec3 vWorld;
           varying float vInfluence;
+
           void main() {
             vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
             float influence = 0.0;
+
             for (int i = 0; i < ${MAX_BODIES}; i++) {
               if (i >= uBodyCount) break;
               vec3 offset = worldPos - uBodies[i];
-              float distSq = dot(offset, offset);
-              influence += uMasses[i] / (distSq + uSoftening * uSoftening);
+              float distSq = offset.x * offset.x + offset.z * offset.z;
+              
+              // Clean Lorentzian gravity curve
+              float R2 = 16.0;
+              float mass = uMasses[i] * 3.5;
+              influence += mass / (1.0 + distSq / R2);
             }
-            influence = min(influence, uMaxInfluence);
-            vec3 displaced = position + normal * (-influence * uStrength);
+
+            influence = min(influence, 5.0);
+            
+            // Subtle, smooth downward gravity funnel
+            vec3 displaced = position + normal * (-influence * uStrength * 0.5);
             vWorld = (modelMatrix * vec4(displaced, 1.0)).xyz;
             vInfluence = influence;
+
             gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
           }
         `,
         fragmentShader: `
           uniform float uGridSize;
           uniform float uGridSpacing;
-          uniform vec3 uBaseColor;
           uniform vec3 uLineColor;
-          uniform float uMaxInfluence;
+          uniform vec3 uWarpColor;
           uniform float uDebug;
           varying vec3 vWorld;
           varying float vInfluence;
-          float gridLine(vec2 coord) {
-            vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
-            float line = 1.0 - min(min(grid.x, grid.y), 1.0);
-            return smoothstep(0.0, 1.0, line);
+
+          // Clean, thin procedural grid
+          float drawGrid(vec2 coord, float width) {
+            vec2 grid = abs(fract(coord - 0.5) - 0.5);
+            vec2 line = step(0.5 - width, grid);
+            return max(line.x, line.y);
           }
+
           void main() {
             vec2 coord = vWorld.xz / uGridSpacing;
-            float line = gridLine(coord);
-            float radius = length(vWorld.xz) / (uGridSize * 0.5);
-            float fade = smoothstep(1.0, 0.35, radius);
-            vec3 color = mix(uBaseColor, uLineColor, line);
-            color = mix(uBaseColor, color, fade);
+            float line = drawGrid(coord, 0.03);
+
+            // Soft radial edge dissolve towards horizon
+            float distFromCenter = length(vWorld.xz) / (uGridSize * 0.5);
+            float edgeFade = smoothstep(1.0, 0.2, distFromCenter);
+
+            float warpIntensity = clamp(vInfluence / 4.0, 0.0, 1.0);
+            vec3 color = mix(uLineColor, uWarpColor, warpIntensity * 0.7);
+
             if (uDebug > 0.5) {
-              float t = clamp(vInfluence / max(uMaxInfluence, 0.0001), 0.0, 1.0);
-              vec3 debugColor = mix(vec3(0.05, 0.15, 0.3), vec3(0.9, 0.3, 0.1), t);
+              vec3 debugColor = mix(vec3(0.05, 0.2, 0.5), vec3(0.95, 0.3, 0.1), warpIntensity);
               color = mix(color, debugColor, 0.85);
             }
-            gl_FragColor = vec4(color, 0.75 * fade);
+
+            // Minimalist, soft transparency
+            float alpha = (line * 0.3 + warpIntensity * 0.2) * edgeFade;
+            gl_FragColor = vec4(color, alpha);
           }
         `
       }),
@@ -126,9 +140,7 @@ export default function SpacetimeGrid({
   useFrame(() => {
     const count = Math.min(bodies.length, MAX_BODIES);
     uniforms.uBodyCount.value = count;
-    uniforms.uSoftening.value = softening;
     uniforms.uStrength.value = strength;
-    uniforms.uMaxInfluence.value = maxInfluence;
     uniforms.uDebug.value = debug ? 1 : 0;
 
     for (let i = 0; i < MAX_BODIES; i += 1) {
@@ -147,7 +159,7 @@ export default function SpacetimeGrid({
       geometry={geometry}
       material={material}
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -6, 0]}
+      position={[0, -0.1, 0]}
       renderOrder={-5}
       frustumCulled={false}
     />

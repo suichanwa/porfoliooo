@@ -84,29 +84,50 @@ export default function BodyMesh({
     return Array.isArray(data.rings) ? data.rings : [data.rings];
   }, [data.rings]);
 
+  const isEarth = data.id === "earth";
   const material = useMemo(
     () =>
       new MeshStandardMaterial({
         map: baseMap ?? null,
         normalMap: normalMap ?? null,
         bumpMap: bumpMap ?? null,
-        roughness: materialPreset.roughness,
-        metalness: materialPreset.metalness,
-        // No emissiveMap: planets must NOT self-illuminate their texture,
-        // otherwise the whole surface is lit and there is no terminator.
-        // A tiny flat emissive keeps the night side from going fully black.
-        emissive: new Color(glowPreset.color),
-        emissiveIntensity: 0.025
+        roughness: isEarth ? 0.5 : materialPreset.roughness,
+        metalness: isEarth ? 0.05 : materialPreset.metalness,
+        // Remove emissive yellow overglow on Earth so textures render rich and realistic
+        emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
+        emissiveIntensity: isEarth ? 0 : 0.025
       }),
-    [baseMap, bumpMap, glowPreset.color, materialPreset, normalMap]
+    [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap]
   );
 
   const atmosphereMaterial = useMemo(
     () =>
-      new MeshBasicMaterial({
-        color: "#6aa2ff",
+      new ShaderMaterial({
+        uniforms: {
+          uColor: { value: new Color("#38bdf8") }
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            vec3 viewDir = normalize(-vPosition);
+            float fresnel = pow(1.0 - max(0.0, dot(vNormal, viewDir)), 3.2);
+            gl_FragColor = vec4(uColor, fresnel * 0.45);
+          }
+        `,
+        blending: AdditiveBlending,
+        side: BackSide,
         transparent: true,
-        opacity: 0.08,
         depthWrite: false
       }),
     []

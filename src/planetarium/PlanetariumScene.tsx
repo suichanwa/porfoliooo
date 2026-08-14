@@ -197,23 +197,14 @@ export default function PlanetariumScene({
           debug={debugGravity}
         />
       )}
-      {/* Faint fill so the night side is not pure black, but stays dark
-          enough to keep a visible terminator. */}
-      <ambientLight intensity={0.12} />
-      <hemisphereLight intensity={0.05} color="#1a2336" groundColor="#02040a" />
-      {/* The Sun is the only real light source. Linear decay (decay=1) so
-          inner planets read brighter than outer ones; true inverse-square
-          (decay=2) leaves Neptune pitch black at our compressed distances.
-          Intensity calibrated so Earth-range planets match the old flat look.
-          Note: falloff follows render-space distance, so brightness shifts
-          slightly with the spacing slider — acceptable, still reads as
-          "farther = dimmer". */}
+      <ambientLight intensity={0.08} color="#0d1527" />
+      <hemisphereLight intensity={0.06} color="#1e293b" groundColor="#02040a" />
       <pointLight
         position={[0, 0, 0]}
-        intensity={34}
+        intensity={22}
         distance={0}
         decay={1}
-        color="#fff4e0"
+        color="#fffaf0"
       />
       <Sun
         meshRef={sunRef}

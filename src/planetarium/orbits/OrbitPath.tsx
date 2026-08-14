@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferGeometry, Line, LineBasicMaterial, Vector3 } from "three";
+import { BufferGeometry, Line, LineBasicMaterial, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import { getOrbitPosition } from "./orbitMath";
@@ -26,7 +26,6 @@ export default function OrbitPath({
   scaleParams,
   planetRefs
 }: OrbitPathProps) {
-  const lineRef = useRef<Line>(null);
   const parentWorldPosRef = useRef(new Vector3());
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
 
@@ -36,8 +35,7 @@ export default function OrbitPath({
       const time = (i / segments) * orbit.orbitalPeriodDays;
       points.push(getOrbitPosition(orbit, time, scaleMode, scaleParams, new Vector3(), isMoon));
     }
-    const geom = new BufferGeometry().setFromPoints(points);
-    return geom;
+    return new BufferGeometry().setFromPoints(points);
   }, [orbit, segments, scaleMode, scaleParams, isMoon]);
 
   const material = useMemo(
@@ -50,20 +48,21 @@ export default function OrbitPath({
     [color, opacity]
   );
 
+  const lineObject = useMemo(() => {
+    const line = new Line(geometry, material);
+    line.frustumCulled = false;
+    return line;
+  }, [geometry, material]);
+
   useFrame(() => {
-    if (!lineRef.current) return;
     if (isMoon && planet?.parentId && planetRefs?.current?.[planet.parentId]) {
       const parentObj = planetRefs.current[planet.parentId];
       if (parentObj) {
         parentObj.getWorldPosition(parentWorldPosRef.current);
-        lineRef.current.position.copy(parentWorldPosRef.current);
+        lineObject.position.copy(parentWorldPosRef.current);
       }
     }
   });
 
-  return (
-    <line ref={lineRef} geometry={geometry} frustumCulled={false}>
-      <primitive object={material} attach="material" />
-    </line>
-  );
+  return <primitive object={lineObject} />;
 }
