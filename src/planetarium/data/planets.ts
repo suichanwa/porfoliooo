@@ -302,7 +302,7 @@ export const PLANETS: BodyData[] = [
       radiusKm: 25362,
       colorFallback: "#93c7db",
       textureUrl: PLANET_TEXTURES.uranus,
-      materialPreset: DEFAULT_MATERIAL,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.15 },
       glowPreset: PLANET_GLOW,
       bendingDimensions: {
         topHeight: 0.75,
@@ -343,7 +343,7 @@ export const PLANETS: BodyData[] = [
       radiusKm: 24622,
       colorFallback: "#3f6fb3",
       textureUrl: PLANET_TEXTURES.neptune,
-      materialPreset: { roughness: 0.55, metalness: 0.4 },
+      materialPreset: { roughness: 0.55, metalness: 0.4, illuminationBoost: 0.18 },
       glowPreset: PLANET_GLOW,
       bendingDimensions: {
         topHeight: 0.72,
@@ -423,7 +423,7 @@ export const PLANETS: BodyData[] = [
       radiusKm: 473,
       colorFallback: "#8d8c89",
       textureUrl: PLANET_TEXTURES.ceres,
-      materialPreset: DEFAULT_MATERIAL,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.15 },
       glowPreset: DWARF_GLOW,
       bendingDimensions: {
         topHeight: 0.18,
@@ -456,7 +456,7 @@ export const PLANETS: BodyData[] = [
       radiusKm: 1188.3,
       colorFallback: "#b7a99a",
       textureUrl: PLANET_TEXTURES.pluto,
-      materialPreset: DEFAULT_MATERIAL,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
       glowPreset: DWARF_GLOW,
       bendingDimensions: {
         topHeight: 0.2,

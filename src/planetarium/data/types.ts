@@ -36,6 +36,7 @@ export interface RotationElements {
 export interface MaterialPreset {
   roughness: number;
   metalness: number;
+  illuminationBoost?: number;
 }
 
 export interface RimGlowPreset {

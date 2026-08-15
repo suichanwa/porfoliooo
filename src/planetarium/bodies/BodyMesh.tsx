@@ -88,7 +88,7 @@ export default function BodyMesh({
           ? {}
           : glowPreset.rim ?? null;
 
-  const geometry = useMemo(() => new SphereGeometry(radius, 48, 32), [radius]);
+  const geometry = useMemo(() => new SphereGeometry(radius, 64, 48), [radius]);
   const ringPresets = useMemo(() => {
     if (!data.rings) return null;
     return Array.isArray(data.rings) ? data.rings : [data.rings];
@@ -105,11 +105,11 @@ export default function BodyMesh({
         uCloudColor: { value: new Color("#ffffff") }
       },
       vertexShader: `
-        varying vec2 vUv;
+        varying vec3 vObjPos;
         varying vec3 vNormal;
         varying vec3 vWorldPos;
         void main() {
-          vUv = uv;
+          vObjPos = position;
           vNormal = normalize(mat3(modelMatrix) * normal);
           vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -118,45 +118,64 @@ export default function BodyMesh({
       fragmentShader: `
         uniform float uTime;
         uniform vec3 uCloudColor;
-        varying vec2 vUv;
+        varying vec3 vObjPos;
         varying vec3 vNormal;
         varying vec3 vWorldPos;
 
-        float hash(vec2 p) {
-          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        float hash3(vec3 p) {
+          p = fract(p * 0.3183099 + 0.1);
+          p *= 17.0;
+          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
         }
-        float noise(vec2 p) {
-          vec2 i = floor(p);
-          vec2 f = fract(p);
-          vec2 u = f * f * (3.0 - 2.0 * f);
-          return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
-                     mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+
+        float noise3(vec3 x) {
+          vec3 i = floor(x);
+          vec3 f = fract(x);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(mix(hash3(i + vec3(0,0,0)), hash3(i + vec3(1,0,0)), f.x),
+                         mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+                     mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
+                         mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z);
         }
-        float fbm(vec2 p) {
+
+        float fbm3(vec3 p) {
           float v = 0.0;
           float a = 0.5;
-          vec2 shift = vec2(100.0);
-          mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+          mat3 rot = mat3(
+             0.00,  0.80,  0.60,
+            -0.80,  0.36, -0.48,
+            -0.60, -0.48,  0.64
+          );
           for (int i = 0; i < 4; ++i) {
-            v += a * noise(p);
-            p = rot * p * 2.0 + shift;
+            v += a * noise3(p);
+            p = rot * p * 2.02 + vec3(1.2, 4.3, 2.1);
             a *= 0.5;
           }
           return v;
         }
 
         void main() {
-          vec2 uv = vUv * vec2(9.0, 4.5);
-          float n = fbm(uv + vec2(uTime * 0.002, 0.0));
-          float cloudDensity = smoothstep(0.40, 0.70, n);
+          // 3D Cartesian spherical coordinates: completely seamless with zero polar pinching
+          vec3 p = normalize(vObjPos) * 4.2;
+          
+          float cosT = cos(uTime * 0.03);
+          float sinT = sin(uTime * 0.03);
+          p.xz = mat2(cosT, -sinT, sinT, cosT) * p.xz;
+
+          float n = fbm3(p);
+          float cloudDensity = smoothstep(0.38, 0.70, n);
 
           // Sunlight calculation (Sun is at 0,0,0)
           vec3 sunDir = normalize(-vWorldPos);
-          float sunDot = max(0.0, dot(vNormal, sunDir));
-          float litCloud = smoothstep(-0.05, 0.25, sunDot);
+          float sunDot = dot(vNormal, sunDir);
+          float litCloud = smoothstep(-0.20, 0.35, sunDot);
+
+          // Polar fade so Arctic & Antarctic ice caps from 8K daymap remain crisp and clear
+          float polarLat = abs(normalize(vObjPos).y);
+          float polarFade = smoothstep(0.92, 0.72, polarLat);
 
           vec3 color = uCloudColor * (litCloud * 0.95 + 0.05);
-          gl_FragColor = vec4(color, cloudDensity * 0.42 * litCloud);
+          gl_FragColor = vec4(color, cloudDensity * 0.40 * litCloud * polarFade);
         }
       `,
       transparent: true,
@@ -164,19 +183,51 @@ export default function BodyMesh({
     });
   }, [isEarth]);
 
-  const material = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        map: baseMap ?? null,
-        normalMap: normalMap ?? null,
-        bumpMap: bumpMap ?? null,
-        roughness: materialPreset.roughness,
-        metalness: materialPreset.metalness,
-        emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
-        emissiveIntensity: isEarth ? 0 : 0.025
-      }),
-    [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap]
-  );
+  const boost = materialPreset.illuminationBoost ?? 0;
+
+  const material = useMemo(() => {
+    const mat = new MeshStandardMaterial({
+      map: baseMap ?? null,
+      normalMap: normalMap ?? null,
+      bumpMap: bumpMap ?? null,
+      roughness: materialPreset.roughness,
+      metalness: materialPreset.metalness,
+      emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
+      emissiveIntensity: isEarth ? 0 : 0.015
+    });
+
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uIlluminationBoost = { value: boost };
+      shader.fragmentShader = `
+        uniform float uIlluminationBoost;
+        ${shader.fragmentShader}
+      `
+        .replace(
+          "float dotNL = saturate( dot( geometryNormal, directLight.direction ) );",
+          `
+          // Soft atmospheric wrapped penumbra: creates smooth, photographic terminator falloff from bright to dark
+          float rawDotNL = dot( geometryNormal, directLight.direction );
+          float wrap = 0.30;
+          float softTerminator = smoothstep(-0.22, 0.42, rawDotNL);
+          float dotNL = pow(softTerminator, 1.2) * saturate((rawDotNL + wrap) / (1.0 + wrap));
+          `
+        )
+        .replace(
+          "#include <lights_fragment_end>",
+          `#include <lights_fragment_end>
+          // 1. Day-side direct sunlight boost:
+          reflectedLight.directDiffuse *= (1.0 + uIlluminationBoost * 4.5);
+          reflectedLight.directSpecular *= (1.0 + uIlluminationBoost * 2.0);
+
+          // 2. Subtle night-side ambient starlight illumination (softly reveals the dark hemisphere):
+          float nightAmbient = uIlluminationBoost * 0.05 + 0.015;
+          reflectedLight.indirectDiffuse += diffuseColor.rgb * nightAmbient;
+          `
+        );
+    };
+
+    return mat;
+  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap, boost]);
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;

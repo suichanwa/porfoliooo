@@ -3,6 +3,7 @@ import {
   Color,
   DataTexture,
   LinearFilter,
+  LinearMipmapLinearFilter,
   type ColorSpace,
   RGBAFormat,
   SRGBColorSpace,
@@ -50,6 +51,9 @@ const loadTexture = (url: string, colorSpace: ColorSpace) => {
       url,
       (loaded) => {
         loaded.colorSpace = colorSpace;
+        loaded.generateMipmaps = true;
+        loaded.minFilter = LinearMipmapLinearFilter;
+        loaded.magFilter = LinearFilter;
         loaded.needsUpdate = true;
         textureCache.set(key, loaded);
         pendingLoads.delete(key);
