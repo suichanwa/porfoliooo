@@ -50,15 +50,22 @@ export interface GlowPreset {
   rim?: RimGlowPreset;
 }
 
+export interface BendingDimensions {
+  topHeight: number;
+  bottomDepth: number;
+  contactRadius: number;
+  funnelReach: number;
+}
+
 export interface RenderPreset {
   radiusKm: number;
   textureUrl?: string | null;
-  nightTextureUrl?: string | null;
   normalUrl?: string | null;
   bumpUrl?: string | null;
   colorFallback: string;
   materialPreset?: MaterialPreset;
   glowPreset?: GlowPreset;
+  bendingDimensions?: BendingDimensions;
 }
 
 export interface RingPreset {

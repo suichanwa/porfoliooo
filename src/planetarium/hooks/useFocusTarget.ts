@@ -30,11 +30,15 @@ export const useFocusTarget = ({
   const resetTokenRef = useRef(resetSignal);
   const isResettingRef = useRef(false);
   const focusStateRef = useRef(false);
+  const isTransitioningRef = useRef(false);
+  const transitionTimeRef = useRef(0);
 
   useEffect(() => {
     if (resetSignal !== resetTokenRef.current) {
       resetTokenRef.current = resetSignal;
       isResettingRef.current = true;
+      isTransitioningRef.current = true;
+      transitionTimeRef.current = 0;
     }
   }, [resetSignal]);
 
@@ -50,27 +54,34 @@ export const useFocusTarget = ({
   const minDistanceRef = useRef<number | null>(null);
   const maxDistanceRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (selectedId) {
+      isTransitioningRef.current = true;
+      transitionTimeRef.current = 0;
+    }
+  }, [selectedId]);
+
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
 
     const camera = controls.object;
-    let shouldUpdate = false;
 
     if (selectedId) {
       const focusObject = planetRefs.current[selectedId];
       if (!focusObject) return;
       focusObject.getWorldPosition(target);
 
-      // Move camera and orbit target 1:1 with the planet's motion so the
-      // follow never lags at high orbit speeds; easing below only closes
-      // the initial approach gap.
+      // Move camera and orbit target 1:1 with planet orbital velocity
       if (trackedIdRef.current === selectedId) {
         displacement.copy(target).sub(prevTarget);
         camera.position.add(displacement);
         controls.target.add(displacement);
       } else {
         trackedIdRef.current = selectedId;
+        prevTarget.copy(target);
+        isTransitioningRef.current = true;
+        transitionTimeRef.current = 0;
       }
       prevTarget.copy(target);
 
@@ -80,80 +91,104 @@ export const useFocusTarget = ({
         ? Math.max(radius * 12, 1.8)
         : Math.max(radius * 10, 4.5);
 
-      direction.copy(camera.position).sub(controls.target);
-      if (direction.lengthSq() === 0) {
-        direction.copy(defaultDirection);
+      if (isTransitioningRef.current) {
+        transitionTimeRef.current += delta;
+
+        direction.copy(camera.position).sub(controls.target);
+        if (direction.lengthSq() === 0) {
+          direction.copy(defaultDirection);
+        } else {
+          direction.normalize();
+        }
+
+        desiredPosition.copy(target).add(direction.multiplyScalar(desiredDistance));
+        onDistanceTarget?.(desiredDistance);
+
+        const positionEase = 1 - Math.exp(-delta * 4.5);
+        const targetEase = 1 - Math.exp(-delta * 6.0);
+
+        camera.up.set(0, 1, 0);
+        camera.position.lerp(desiredPosition, positionEase);
+        controls.target.lerp(target, targetEase);
+
+        if (
+          (camera.position.distanceTo(desiredPosition) < 0.15 &&
+            controls.target.distanceTo(target) < 0.15) ||
+          transitionTimeRef.current > 1.2
+        ) {
+          isTransitioningRef.current = false;
+          controls.target.copy(target);
+        }
       } else {
-        direction.normalize();
+        // Locked Phase: strictly pinned to planet center
+        controls.target.copy(target);
       }
 
-      desiredPosition.copy(target).add(direction.multiplyScalar(desiredDistance));
-      onDistanceTarget?.(desiredDistance);
-      shouldUpdate = true;
+      const minDistance = Math.max(radius * 1.2, isMoon ? 0.2 : 0.4);
+      const maxDistance = Math.max(minDistance * 10, 70);
+
+      if (minDistanceRef.current !== minDistance) {
+        controls.minDistance = minDistance;
+        minDistanceRef.current = minDistance;
+      }
+      if (maxDistanceRef.current !== maxDistance) {
+        controls.maxDistance = maxDistance;
+        maxDistanceRef.current = maxDistance;
+      }
+
+      const nextNear = Math.max(0.05, minDistance * 0.04);
+      const nextFar = 800;
+      if (nearRef.current !== nextNear || farRef.current !== nextFar) {
+        camera.near = nextNear;
+        camera.far = nextFar;
+        camera.updateProjectionMatrix();
+        nearRef.current = nextNear;
+        farRef.current = nextFar;
+      }
+
+      controls.update();
+
+      const isFocused = !isTransitioningRef.current;
+      if (focusStateRef.current !== isFocused) {
+        focusStateRef.current = isFocused;
+        onFocusChange?.(isFocused);
+      }
     } else if (isResettingRef.current) {
       trackedIdRef.current = null;
       target.copy(DEFAULT_TARGET);
       desiredPosition.copy(DEFAULT_POSITION);
       onDistanceTarget?.(null);
-      shouldUpdate = true;
+
+      const positionEase = 1 - Math.exp(-delta * 3.5);
+      const targetEase = 1 - Math.exp(-delta * 5);
+
+      camera.up.set(0, 1, 0);
+      camera.position.lerp(desiredPosition, positionEase);
+      controls.target.lerp(target, targetEase);
+
+      controls.minDistance = 8;
+      controls.maxDistance = 140;
+
+      if (nearRef.current !== 0.1 || farRef.current !== 2000) {
+        camera.near = 0.1;
+        camera.far = 2000;
+        camera.updateProjectionMatrix();
+        nearRef.current = 0.1;
+        farRef.current = 2000;
+      }
+
+      controls.update();
+
+      if (camera.position.distanceTo(DEFAULT_POSITION) < 0.2) {
+        isResettingRef.current = false;
+      }
     } else {
       trackedIdRef.current = null;
       if (focusStateRef.current) {
         focusStateRef.current = false;
         onFocusChange?.(false);
       }
-      return;
-    }
-    if (!shouldUpdate) return;
-
-    const positionEase = 1 - Math.exp(-delta * 3.5);
-    const targetEase = 1 - Math.exp(-delta * 5);
-
-    camera.up.set(0, 1, 0);
-    camera.position.lerp(desiredPosition, positionEase);
-    controls.target.lerp(target, targetEase);
-
-    const isMoon = selectedId ? planetData[selectedId].kind === "moon" : false;
-    const minDistance = selectedId
-      ? Math.max(scalePlanetRadius(planetData[selectedId].render.radiusKm, isMoon) * 1.2, isMoon ? 0.2 : 0.4)
-      : 8;
-    const maxDistance = selectedId ? Math.max(minDistance * 10, 70) : 140;
-
-    if (minDistanceRef.current !== minDistance) {
-      controls.minDistance = minDistance;
-      minDistanceRef.current = minDistance;
-    }
-    if (maxDistanceRef.current !== maxDistance) {
-      controls.maxDistance = maxDistance;
-      maxDistanceRef.current = maxDistance;
-    }
-
-    const nextNear = selectedId ? Math.max(0.05, minDistance * 0.04) : 0.1;
-    const nextFar = selectedId ? 800 : 2000;
-    if (nearRef.current !== nextNear || farRef.current !== nextFar) {
-      camera.near = nextNear;
-      camera.far = nextFar;
-      camera.updateProjectionMatrix();
-      nearRef.current = nextNear;
-      farRef.current = nextFar;
-    }
-    controls.update();
-
-    if (selectedId) {
-      const isFocused =
-        camera.position.distanceTo(desiredPosition) < 0.2 &&
-        controls.target.distanceTo(target) < 0.2;
-      if (focusStateRef.current !== isFocused) {
-        focusStateRef.current = isFocused;
-        onFocusChange?.(isFocused);
-      }
-    } else if (focusStateRef.current) {
-      focusStateRef.current = false;
-      onFocusChange?.(false);
-    }
-
-    if (isResettingRef.current && camera.position.distanceTo(DEFAULT_POSITION) < 0.2) {
-      isResettingRef.current = false;
+      controls.update();
     }
   });
 };

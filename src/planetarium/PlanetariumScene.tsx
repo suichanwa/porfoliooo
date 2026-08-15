@@ -24,6 +24,7 @@ import {
   type GravitySettings,
   getMassScaleForVisuals
 } from "./gravity/gravityField";
+import { scalePlanetRadius } from "./utils/scale";
 import PerfOverlay from "./ui/PerfOverlay";
 
 interface PlanetariumSceneProps {
@@ -81,7 +82,7 @@ export default function PlanetariumScene({
   );
   const sunRef = useRef<Mesh | null>(null);
   const orbitSegments = isLowEnd ? 120 : 180;
-  const gridDivisions = isLowEnd ? 120 : 200;
+  const gridDivisions = isLowEnd ? 160 : 300;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
   const lensingSoftening = gravitySettings.softening * 0.03;
   const perfSampleRef = useRef({ elapsed: 0, frames: 0, logged: false });
@@ -96,6 +97,11 @@ export default function PlanetariumScene({
         id: planet.id,
         massKg: planet.massKg,
         radiusKm: planet.render.radiusKm,
+        renderRadius:
+          planet.id === "sun"
+            ? 2.6
+            : scalePlanetRadius(planet.render.radiusKm, planet.kind === "moon"),
+        bendingDimensions: planet.render.bendingDimensions,
         visualMass: getMassScaleForVisuals(
           planet.massKg,
           DEFAULT_MASS_SCALE_PARAMS

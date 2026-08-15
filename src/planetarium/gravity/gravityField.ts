@@ -1,12 +1,14 @@
 import { Vector3 } from "three";
-import type { BodyId } from "../data/types";
+import type { BendingDimensions, BodyId } from "../data/types";
 
 export interface GravityBody {
   id: BodyId;
   position: Vector3;
   massKg: number;
   radiusKm: number;
+  renderRadius: number;
   visualMass: number;
+  bendingDimensions?: BendingDimensions;
 }
 
 export interface MassScaleParams {

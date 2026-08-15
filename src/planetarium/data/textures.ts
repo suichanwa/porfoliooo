@@ -16,7 +16,6 @@ import milkyWayTexture from "../../assets/planetarium/BG_stars_milky_way.jpg";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 import earthTexture from "../../assets/planetarium/8k_earth_daymap.jpg";
 import moonTexture from "../../assets/planetarium/Solarsystemscope_texture_8k_moon.jpg";
-import earthNightTexture from "../../assets/planetarium/8k_earth_nightmap.jpg";
 
 type TextureAsset = string | { src: string };
 
@@ -40,7 +39,6 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   pluto: toUrl(plutoTexture)
 };
 
-export const EARTH_NIGHT_TEXTURE = toUrl(earthNightTexture);
 export const VENUS_ATMOSPHERE_TEXTURE = toUrl(venusAtmosphereTexture);
 export const SATURN_RING_ALPHA_TEXTURE = toUrl(saturnRingAlpha);
 export const STARFIELD_TEXTURE = toUrl(starfieldTexture);

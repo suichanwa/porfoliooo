@@ -55,27 +55,20 @@ export default function CameraRig({
 
   useEffect(() => {
     const controls = localControlsRef.current;
-    if (!controls || !onZoomOut) return;
+    if (!controls) return;
 
-    const handleChange = () => {
+    const updateOffset = () => {
       const camera = controls.object;
       const targetPoint = controls.target;
       offsetRef.current.copy(camera.position).sub(targetPoint);
-      const currentRadius = offsetRef.current.length();
-
-      // Detect zoom out (radius increasing by a meaningful amount)
-      if (currentRadius > previousRadiusRef.current + 0.5) {
-        onZoomOut();
-      }
-
-      previousRadiusRef.current = currentRadius;
+      previousRadiusRef.current = offsetRef.current.length();
     };
 
-    controls.addEventListener("change", handleChange);
+    controls.addEventListener("end", updateOffset);
     return () => {
-      controls.removeEventListener("change", handleChange);
+      controls.removeEventListener("end", updateOffset);
     };
-  }, [onZoomOut]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

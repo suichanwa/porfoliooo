@@ -1,5 +1,5 @@
 import type { BodyData, GlowPreset, MaterialPreset } from "./types";
-import { EARTH_NIGHT_TEXTURE, PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
+import { PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
 import { auToKm } from "../utils/units";
 
 const G = 6.6743e-11;
@@ -26,8 +26,14 @@ export const PLANETS: BodyData[] = [
       radiusKm: 696340,
       colorFallback: "#f6c453",
       textureUrl: PLANET_TEXTURES.sun,
-      materialPreset: { roughness: 0.9, metalness: 0 },
-      glowPreset: STAR_GLOW
+      materialPreset: { roughness: 0.9, metalness: 0.15 },
+      glowPreset: STAR_GLOW,
+      bendingDimensions: {
+        topHeight: 2.6,
+        bottomDepth: 6.5,
+        contactRadius: 2.6,
+        funnelReach: 18.0
+      }
     }
   },
   {
@@ -46,7 +52,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#9f9a91",
       textureUrl: PLANET_TEXTURES.mercury,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.35,
+        bottomDepth: 0.75,
+        contactRadius: 0.35,
+        funnelReach: 2.0
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(0.387),
@@ -73,7 +85,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d8c38f",
       textureUrl: PLANET_TEXTURES.venus,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.48,
+        bottomDepth: 1.35,
+        contactRadius: 0.48,
+        funnelReach: 3.2
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(0.723),
@@ -99,9 +117,14 @@ export const PLANETS: BodyData[] = [
       radiusKm: 6371,
       colorFallback: "#4c8fbe",
       textureUrl: PLANET_TEXTURES.earth,
-      nightTextureUrl: EARTH_NIGHT_TEXTURE,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.5,
+        bottomDepth: 1.45,
+        contactRadius: 0.5,
+        funnelReach: 3.5
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(1),
@@ -129,7 +152,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#c2c2c2",
       textureUrl: PLANET_TEXTURES.moon,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: { color: "#d8d8d8", intensity: 0.08 }
+      glowPreset: { color: "#d8d8d8", intensity: 0.08 },
+      bendingDimensions: {
+        topHeight: 0.22,
+        bottomDepth: 0.6,
+        contactRadius: 0.22,
+        funnelReach: 1.6
+      }
     },
     orbit: {
       semiMajorAxisKm: 384400,
@@ -156,7 +185,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#c96f49",
       textureUrl: PLANET_TEXTURES.mars,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.4,
+        bottomDepth: 1.05,
+        contactRadius: 0.4,
+        funnelReach: 2.6
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(1.524),
@@ -183,7 +218,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d1b38d",
       textureUrl: PLANET_TEXTURES.jupiter,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 1.15,
+        bottomDepth: 3.4,
+        contactRadius: 1.15,
+        funnelReach: 8.0
+      }
     },
     rings: {
       innerRadiusKm: 100000,
@@ -218,7 +259,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d8c190",
       textureUrl: PLANET_TEXTURES.saturn,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 1.0,
+        bottomDepth: 2.8,
+        contactRadius: 1.0,
+        funnelReach: 7.0
+      }
     },
     rings: SATURN_RING_ALPHA_TEXTURE
       ? {
@@ -256,7 +303,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#93c7db",
       textureUrl: PLANET_TEXTURES.uranus,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.75,
+        bottomDepth: 2.0,
+        contactRadius: 0.75,
+        funnelReach: 5.0
+      }
     },
     rings: {
       innerRadiusKm: 38000,
@@ -290,8 +343,14 @@ export const PLANETS: BodyData[] = [
       radiusKm: 24622,
       colorFallback: "#3f6fb3",
       textureUrl: PLANET_TEXTURES.neptune,
-      materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW
+      materialPreset: { roughness: 0.55, metalness: 0.4 },
+      glowPreset: PLANET_GLOW,
+      bendingDimensions: {
+        topHeight: 0.72,
+        bottomDepth: 1.95,
+        contactRadius: 0.72,
+        funnelReach: 4.8
+      }
     },
     rings: [
       {
@@ -365,7 +424,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#8d8c89",
       textureUrl: PLANET_TEXTURES.ceres,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: DWARF_GLOW
+      glowPreset: DWARF_GLOW,
+      bendingDimensions: {
+        topHeight: 0.18,
+        bottomDepth: 0.5,
+        contactRadius: 0.18,
+        funnelReach: 1.2
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(2.7675),
@@ -392,7 +457,13 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#b7a99a",
       textureUrl: PLANET_TEXTURES.pluto,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: DWARF_GLOW
+      glowPreset: DWARF_GLOW,
+      bendingDimensions: {
+        topHeight: 0.2,
+        bottomDepth: 0.55,
+        contactRadius: 0.2,
+        funnelReach: 1.3
+      }
     },
     orbit: {
       semiMajorAxisKm: auToKm(39.482),

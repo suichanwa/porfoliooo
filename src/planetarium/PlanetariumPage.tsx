@@ -329,7 +329,10 @@ export default function PlanetariumPage() {
             <button
               type="button"
               onClick={() => setInfoHidden(false)}
-              className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 shadow-lg backdrop-blur-sm transition hover:border-white/30 hover:text-white"
+              className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-100 shadow-xl backdrop-blur-md opacity-30 hover:opacity-100 transition-all duration-300 hover:border-white/30 hover:text-white"
+              style={{
+                backgroundColor: 'rgba(10, 14, 24, 0.45)'
+              }}
             >
               Show details
             </button>
