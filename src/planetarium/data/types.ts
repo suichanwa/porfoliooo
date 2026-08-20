@@ -10,9 +10,10 @@ export type BodyId =
   | "uranus"
   | "neptune"
   | "ceres"
-  | "pluto";
+  | "pluto"
+  | "joanne";
 
-export type BodyKind = "star" | "planet" | "dwarf" | "moon";
+export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object";
 
 export interface OrbitElements {
   semiMajorAxisKm: number;
@@ -63,6 +64,7 @@ export interface RenderPreset {
   textureUrl?: string | null;
   normalUrl?: string | null;
   bumpUrl?: string | null;
+  modelUrl?: string | null;
   colorFallback: string;
   materialPreset?: MaterialPreset;
   glowPreset?: GlowPreset;

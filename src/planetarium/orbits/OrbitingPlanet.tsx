@@ -5,6 +5,7 @@ import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import Planet from "../bodies/Planet";
 import Pluton from "../planets_render/pluton";
+import ModelMesh from "../bodies/ModelMesh";
 import { getOrbitPosition } from "./orbitMath";
 import Labels from "../ui/Labels";
 
@@ -89,7 +90,22 @@ export default function OrbitingPlanet({
 
   return (
     <>
-      {usePlutoFallback ? (
+      {data.render.modelUrl ? (
+        <ModelMesh
+          data={data}
+          position={initialPosition}
+          groupRef={groupRef}
+          onPointerOver={() => {
+            hoveredRef.current = true;
+          }}
+          onPointerOut={() => {
+            hoveredRef.current = false;
+          }}
+          onClick={() => {
+            onSelect?.(data.id);
+          }}
+        />
+      ) : usePlutoFallback ? (
         <Pluton
           data={data}
           position={initialPosition}

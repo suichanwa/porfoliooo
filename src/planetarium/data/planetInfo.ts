@@ -101,5 +101,13 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Highly elliptical and inclined orbit.",
       "Surface has nitrogen and methane ice."
     ]
+  },
+  joanne: {
+    summary: "A mysterious celestial entity named Joanne, drifting in an inner solar orbit.",
+    facts: [
+      "Rendered from a high-resolution PBR 3D model with meshopt compression.",
+      "Orbits close to the Sun at 0.85 AU between Venus and Earth.",
+      "Full interactive inspection and lighting support in the planetarium."
+    ]
   }
 };

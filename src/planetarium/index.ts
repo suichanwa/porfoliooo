@@ -11,6 +11,7 @@ export { default as useMediaQuery } from "./hooks/useMediaQuery";
 export { default as Sun } from "./bodies/Sun";
 export { default as BodyMesh } from "./bodies/BodyMesh";
 export { default as Planet } from "./bodies/Planet";
+export { default as ModelMesh } from "./bodies/ModelMesh";
 export { scalePlanetRadius } from "./utils/scale";
 export { useSimulationTime } from "./hooks/useSimulationTime";
 export { getOrbitPosition } from "./orbits/orbitMath";
