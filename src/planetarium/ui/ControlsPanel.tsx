@@ -8,30 +8,15 @@ import {
 import useMediaQuery from "../hooks/useMediaQuery";
 import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode } from "../utils/distanceScale";
+import { useSettings } from "../context/SettingsContext";
 import PlanetPicker from "./PlanetPicker";
+import {
+  trackPlanetariumDistanceScaleChanged,
+  trackPlanetariumToggleChanged,
+  trackPlanetariumViewModeChanged
+} from "../../utils/firebaseAnalytics";
 
 interface ControlsPanelProps {
-  distanceScaleMode: DistanceScaleMode;
-  onDistanceScaleModeChange: (mode: DistanceScaleMode) => void;
-  distanceScaleSpacing: number;
-  onSpacingChange: (value: number) => void;
-  viewMode: "overview" | "explore" | "custom";
-  onSetOverview: () => void;
-  onSetExplore: () => void;
-  showOrbits: boolean;
-  onShowOrbitsChange: (value: boolean) => void;
-  showLabels: boolean;
-  onShowLabelsChange: (value: boolean) => void;
-  showGrid: boolean;
-  onShowGridChange: (value: boolean) => void;
-  showLensing: boolean;
-  onShowLensingChange: (value: boolean) => void;
-  showPerf: boolean;
-  onShowPerfChange: (value: boolean) => void;
-  useMilkyWayBackground: boolean;
-  onToggleBackground: () => void;
-  orbitSpeed: number;
-  onOrbitSpeedChange: (value: number) => void;
   planets: BodyData[];
   pickerQuery: string;
   onPickerQueryChange: (value: string) => void;
@@ -46,27 +31,6 @@ interface ControlsPanelProps {
 const DEFAULT_POSITION = { x: 16, y: 96 };
 
 export default function ControlsPanel({
-  distanceScaleMode,
-  onDistanceScaleModeChange,
-  distanceScaleSpacing,
-  onSpacingChange,
-  viewMode,
-  onSetOverview,
-  onSetExplore,
-  showOrbits,
-  onShowOrbitsChange,
-  showLabels,
-  onShowLabelsChange,
-  showGrid,
-  onShowGridChange,
-  showLensing,
-  onShowLensingChange,
-  showPerf,
-  onShowPerfChange,
-  useMilkyWayBackground,
-  onToggleBackground,
-  orbitSpeed,
-  onOrbitSpeedChange,
   planets,
   pickerQuery,
   onPickerQueryChange,
@@ -77,6 +41,8 @@ export default function ControlsPanel({
   onOverview,
   isHidden = false
 }: ControlsPanelProps) {
+  const { settings, updateSetting, toggleSetting } = useSettings();
+
   const [controlsOpen, setControlsOpen] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState(DEFAULT_POSITION);
@@ -165,6 +131,63 @@ export default function ControlsPanel({
     [clampPosition, isMobile, position]
   );
 
+  const handleDistanceScaleModeChange = (mode: DistanceScaleMode) => {
+    updateSetting("distanceScaleMode", mode);
+    void trackPlanetariumDistanceScaleChanged({ mode });
+  };
+
+  const handleSpacingChange = (value: number) => {
+    updateSetting("distanceScaleSpacing", value);
+    if (settings.viewMode !== "custom") {
+      updateSetting("viewMode", "custom");
+      void trackPlanetariumViewModeChanged({ mode: "custom" });
+    }
+  };
+
+  const handleSetOverview = () => {
+    updateSetting("viewMode", "overview");
+    updateSetting("distanceScaleSpacing", 40);
+    void trackPlanetariumViewModeChanged({ mode: "overview" });
+  };
+
+  const handleSetExplore = () => {
+    updateSetting("viewMode", "explore");
+    updateSetting("distanceScaleSpacing", 75);
+    void trackPlanetariumViewModeChanged({ mode: "explore" });
+  };
+
+  const handleToggleOrbits = (checked: boolean) => {
+    updateSetting("showOrbits", checked);
+    void trackPlanetariumToggleChanged({
+      control: "show_orbits",
+      enabled: checked
+    });
+  };
+
+  const handleToggleLabels = (checked: boolean) => {
+    updateSetting("showLabels", checked);
+    void trackPlanetariumToggleChanged({
+      control: "show_labels",
+      enabled: checked
+    });
+  };
+
+  const handleToggleGrid = (checked: boolean) => {
+    updateSetting("showGrid", checked);
+    void trackPlanetariumToggleChanged({
+      control: "show_grid",
+      enabled: checked
+    });
+  };
+
+  const handleTogglePerf = (checked: boolean) => {
+    updateSetting("showPerf", checked);
+    void trackPlanetariumToggleChanged({
+      control: "show_perf",
+      enabled: checked
+    });
+  };
+
   return (
     <div
       ref={panelRef}
@@ -240,9 +263,9 @@ export default function ControlsPanel({
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.06)'
                 }}
-                value={distanceScaleMode}
+                value={settings.distanceScaleMode}
                 onChange={(event) =>
-                  onDistanceScaleModeChange(event.target.value as DistanceScaleMode)
+                  handleDistanceScaleModeChange(event.target.value as DistanceScaleMode)
                 }
               >
                 <option value="power">Power</option>
@@ -258,8 +281,8 @@ export default function ControlsPanel({
                 type="range"
                 min={0}
                 max={100}
-                value={distanceScaleSpacing}
-                onChange={(event) => onSpacingChange(Number(event.target.value))}
+                value={settings.distanceScaleSpacing}
+                onChange={(event) => handleSpacingChange(Number(event.target.value))}
                 className="range range-xs range-primary"
               />
             </label>
@@ -272,46 +295,51 @@ export default function ControlsPanel({
                 min={0}
                 max={20}
                 step={0.5}
-                value={orbitSpeed}
-                onChange={(event) => onOrbitSpeedChange(Number(event.target.value))}
+                value={settings.orbitSpeed}
+                onChange={(event) => updateSetting("orbitSpeed", Number(event.target.value))}
                 className="range range-xs range-primary"
               />
             </label>
             <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300/90">
-              {distanceScaleMode} - <span className="text-white font-medium">{Math.round(distanceScaleSpacing)}</span>
+              {settings.distanceScaleMode} -{" "}
+              <span className="text-white font-medium">
+                {Math.round(settings.distanceScaleSpacing)}
+              </span>
             </div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300/90">
-              Speed <span className="text-white font-medium">{orbitSpeed.toFixed(1)}x</span>
+              Speed <span className="text-white font-medium">{settings.orbitSpeed.toFixed(1)}x</span>
             </div>
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
               <button
                 type="button"
-                onClick={onSetOverview}
+                onClick={handleSetOverview}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
-                  viewMode === "overview"
+                  settings.viewMode === "overview"
                     ? "border-primary-accent text-primary-accent font-semibold"
                     : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
                 }`}
                 style={{
-                  backgroundColor: viewMode === "overview" 
-                    ? 'rgba(59, 130, 246, 0.2)' 
-                    : 'rgba(255, 255, 255, 0.06)'
+                  backgroundColor:
+                    settings.viewMode === "overview"
+                      ? "rgba(59, 130, 246, 0.2)"
+                      : "rgba(255, 255, 255, 0.06)"
                 }}
               >
                 Overview
               </button>
               <button
                 type="button"
-                onClick={onSetExplore}
+                onClick={handleSetExplore}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
-                  viewMode === "explore"
+                  settings.viewMode === "explore"
                     ? "border-primary-accent text-primary-accent font-semibold"
                     : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
                 }`}
                 style={{
-                  backgroundColor: viewMode === "explore" 
-                    ? 'rgba(59, 130, 246, 0.2)' 
-                    : 'rgba(255, 255, 255, 0.06)'
+                  backgroundColor:
+                    settings.viewMode === "explore"
+                      ? "rgba(59, 130, 246, 0.2)"
+                      : "rgba(255, 255, 255, 0.06)"
                 }}
               >
                 Explore
@@ -323,8 +351,8 @@ export default function ControlsPanel({
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
-              checked={showOrbits}
-              onChange={(event) => onShowOrbitsChange(event.target.checked)}
+              checked={settings.showOrbits}
+              onChange={(event) => handleToggleOrbits(event.target.checked)}
             />
             <span className="tracking-wide text-slate-100">Orbit paths</span>
           </label>
@@ -332,19 +360,19 @@ export default function ControlsPanel({
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
-              checked={showLabels}
-              onChange={(event) => onShowLabelsChange(event.target.checked)}
+              checked={settings.showLabels}
+              onChange={(event) => handleToggleLabels(event.target.checked)}
             />
             <span className="tracking-wide text-slate-100">Planet labels</span>
           </label>
           <button
             type="button"
-            onClick={onToggleBackground}
+            onClick={() => toggleSetting("useMilkyWayBackground")}
             className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
             style={{
-              backgroundColor: useMilkyWayBackground
-                ? 'rgba(59, 130, 246, 0.2)'
-                : 'rgba(255, 255, 255, 0.06)'
+              backgroundColor: settings.useMilkyWayBackground
+                ? "rgba(59, 130, 246, 0.2)"
+                : "rgba(255, 255, 255, 0.06)"
             }}
           >
             Switch background
@@ -357,8 +385,8 @@ export default function ControlsPanel({
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
-              checked={showGrid}
-              onChange={(event) => onShowGridChange(event.target.checked)}
+              checked={settings.showGrid}
+              onChange={(event) => handleToggleGrid(event.target.checked)}
             />
             <span className="tracking-wide text-slate-100">Spacetime grid</span>
           </label>
@@ -366,8 +394,7 @@ export default function ControlsPanel({
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
-              checked={showLensing}
-              onChange={(event) => onShowLensingChange(event.target.checked)}
+              checked={false}
               disabled
               aria-disabled="true"
               title="Temporarily disabled"
@@ -384,8 +411,8 @@ export default function ControlsPanel({
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
-              checked={showPerf}
-              onChange={(event) => onShowPerfChange(event.target.checked)}
+              checked={settings.showPerf}
+              onChange={(event) => handleTogglePerf(event.target.checked)}
             />
             <span className="tracking-wide text-slate-100">Perf graph</span>
           </label>

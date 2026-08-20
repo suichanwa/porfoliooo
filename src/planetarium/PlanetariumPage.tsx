@@ -13,10 +13,8 @@ import GravityPanel from "./ui/GravityPanel";
 import TimeControls from "./ui/TimeControls";
 import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
 import {
-  DEFAULT_DISTANCE_SCALE_MODE,
   computeDistanceScaleParams,
-  computeRenderOrbitRadius,
-  type DistanceScaleMode
+  computeRenderOrbitRadius
 } from "./utils/distanceScale";
 import {
   DEFAULT_GRAVITY_SETTINGS,
@@ -24,29 +22,21 @@ import {
 } from "./gravity/gravityField";
 import {
   trackPlanetariumBodySelected,
-  trackPlanetariumDistanceScaleChanged,
   trackPlanetariumPickerToggled,
-  trackPlanetariumToggleChanged,
-  trackPlanetariumViewModeChanged,
-  trackPlanetariumVisited,
+  trackPlanetariumVisited
 } from "../utils/firebaseAnalytics";
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
 
-const OVERVIEW_SPACING = 40;
-const EXPLORE_SPACING = 75;
 // Simulation speed presets (days per real second) for the time controls.
-// Negative side mirrors the positive one: stepping below 0.25 d/s (6 h/s)
-// flips time into reverse so users can scrub back and forth.
 const SPEED_LADDER = [0.25, 1, 2, 5, 10, 30, 90, 365, 1825];
 const SIGNED_SPEED_LADDER = [
   ...[...SPEED_LADDER].reverse().map((value) => -value),
   ...SPEED_LADDER
 ];
 
-export default function PlanetariumPage() {
-  const [showOrbits, setShowOrbits] = useState(false);
-  const [showLabels, setShowLabels] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const showLensing = false;
+function PlanetariumView() {
+  const { settings, updateSetting } = useSettings();
+
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
@@ -56,20 +46,9 @@ export default function PlanetariumPage() {
   const [resetSignal, setResetSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
-  const [showPerf, setShowPerf] = useState(false);
-  const [useMilkyWayBackground, setUseMilkyWayBackground] = useState(false);
-  const [orbitSpeed, setOrbitSpeed] = useState(1);
   const [simDateMs, setSimDateMs] = useState<number | null>(null);
   const [timeResetSignal, setTimeResetSignal] = useState(0);
   const prevSpeedRef = useRef(1);
-  const [distanceScaleMode, setDistanceScaleMode] = useState<DistanceScaleMode>(
-    DEFAULT_DISTANCE_SCALE_MODE
-  );
-  const [viewMode, setViewMode] = useState<"overview" | "explore" | "custom">(
-    "overview"
-  );
-  const [distanceScaleSpacing, setDistanceScaleSpacing] = useState(OVERVIEW_SPACING);
-  const [spacingTarget, setSpacingTarget] = useState(OVERVIEW_SPACING);
   const [debugGravity, setDebugGravity] = useState(false);
   const hasTrackedVisit = useRef(false);
   const isClient = useIsClient();
@@ -77,9 +56,14 @@ export default function PlanetariumPage() {
   const canvasDpr = deviceInfo.isLowEnd ? 1 : 1.5;
 
   const distanceScaleParams = useMemo(
-    () => computeDistanceScaleParams(distanceScaleMode, distanceScaleSpacing),
-    [distanceScaleMode, distanceScaleSpacing]
+    () =>
+      computeDistanceScaleParams(
+        settings.distanceScaleMode,
+        settings.distanceScaleSpacing
+      ),
+    [settings.distanceScaleMode, settings.distanceScaleSpacing]
   );
+
   const selectedPlanet = selectedId ? PLANET_BY_ID[selectedId] ?? null : null;
   const selectedInfo = useMemo(
     () => (selectedId ? PLANET_INFO[selectedId] : null),
@@ -87,16 +71,21 @@ export default function PlanetariumPage() {
   );
   const isInfoVisible = Boolean(selectedPlanet && !infoHidden);
   const shouldHideControls = isInfoVisible;
+
   const filteredPlanets = useMemo(() => {
     const query = pickerQuery.trim().toLowerCase();
     if (!query) return PLANETS;
-    return PLANETS.filter((planet) => planet.name.toLowerCase().includes(query));
+    return PLANETS.filter((planet) =>
+      planet.name.toLowerCase().includes(query)
+    );
   }, [pickerQuery]);
+
   const clearSelection = useCallback(() => {
     setSelectedId(null);
     setIsFocused(false);
     setInfoHidden(false);
   }, []);
+
   const handleSceneSelect = useCallback((id: BodyId | null) => {
     setSelectedId(id);
     setIsFocused(false);
@@ -104,18 +93,21 @@ export default function PlanetariumPage() {
     if (id) {
       void trackPlanetariumBodySelected({
         bodyId: id,
-        source: "canvas",
+        source: "canvas"
       });
     }
   }, []);
+
   const handlePointerMissed = useCallback(() => {
     setSelectedId(null);
     setIsFocused(false);
   }, []);
+
   const handleInfoClose = useCallback(() => {
     clearSelection();
     setResetSignal((prev) => prev + 1);
   }, [clearSelection]);
+
   const handleSelectPlanet = useCallback((id: BodyId) => {
     setSelectedId(id);
     setIsFocused(false);
@@ -123,103 +115,51 @@ export default function PlanetariumPage() {
     setPickerOpen(false);
     void trackPlanetariumBodySelected({
       bodyId: id,
-      source: "picker",
+      source: "picker"
     });
   }, []);
+
   const handleOverview = useCallback(() => {
     clearSelection();
     setResetSignal((prev) => prev + 1);
     setPickerOpen(false);
   }, [clearSelection]);
-  const handleSpacingChange = useCallback((value: number) => {
-    if (viewMode !== "custom") {
-      void trackPlanetariumViewModeChanged({
-        mode: "custom",
-      });
-    }
-    setViewMode("custom");
-    setSpacingTarget(value);
-    setDistanceScaleSpacing(value);
-  }, [viewMode]);
-  const handleSetOverview = useCallback(() => {
-    setViewMode("overview");
-    setSpacingTarget(OVERVIEW_SPACING);
-    void trackPlanetariumViewModeChanged({
-      mode: "overview",
-    });
-  }, []);
-  const handleSetExplore = useCallback(() => {
-    setViewMode("explore");
-    setSpacingTarget(EXPLORE_SPACING);
-    void trackPlanetariumViewModeChanged({
-      mode: "explore",
-    });
-  }, []);
+
   const handlePickerToggle = useCallback(() => {
     const nextOpen = !pickerOpen;
     setPickerOpen(nextOpen);
     void trackPlanetariumPickerToggled({
-      open: nextOpen,
+      open: nextOpen
     });
   }, [pickerOpen]);
-  const handleShowOrbitsChange = useCallback((value: boolean) => {
-    setShowOrbits(value);
-    void trackPlanetariumToggleChanged({
-      control: "show_orbits",
-      enabled: value,
-    });
-  }, []);
-  const handleShowLabelsChange = useCallback((value: boolean) => {
-    setShowLabels(value);
-    void trackPlanetariumToggleChanged({
-      control: "show_labels",
-      enabled: value,
-    });
-  }, []);
-  const handleShowGridChange = useCallback((value: boolean) => {
-    setShowGrid(value);
-    void trackPlanetariumToggleChanged({
-      control: "show_grid",
-      enabled: value,
-    });
-  }, []);
-  const handleShowPerfChange = useCallback((value: boolean) => {
-    setShowPerf(value);
-    void trackPlanetariumToggleChanged({
-      control: "show_perf",
-      enabled: value,
-    });
-  }, []);
-  const handleDistanceScaleModeChange = useCallback((mode: DistanceScaleMode) => {
-    setDistanceScaleMode(mode);
-    void trackPlanetariumDistanceScaleChanged({
-      mode,
-    });
-  }, []);
+
   const handleFaster = useCallback(() => {
-    setOrbitSpeed((current) => {
-      return (
-        SIGNED_SPEED_LADDER.find((value) => value > current + 1e-6) ?? current
-      );
-    });
-  }, []);
+    const higher = SIGNED_SPEED_LADDER.find(
+      (value) => value > settings.orbitSpeed + 1e-6
+    );
+    if (higher !== undefined) {
+      updateSetting("orbitSpeed", higher);
+    }
+  }, [settings.orbitSpeed, updateSetting]);
+
   const handleSlower = useCallback(() => {
-    setOrbitSpeed((current) => {
-      const lower = [...SIGNED_SPEED_LADDER]
-        .reverse()
-        .find((value) => value < current - 1e-6);
-      return lower ?? current;
-    });
-  }, []);
+    const lower = [...SIGNED_SPEED_LADDER]
+      .reverse()
+      .find((value) => value < settings.orbitSpeed - 1e-6);
+    if (lower !== undefined) {
+      updateSetting("orbitSpeed", lower);
+    }
+  }, [settings.orbitSpeed, updateSetting]);
+
   const handleTogglePause = useCallback(() => {
-    setOrbitSpeed((current) => {
-      if (current !== 0) {
-        prevSpeedRef.current = current;
-        return 0;
-      }
-      return prevSpeedRef.current || 1;
-    });
-  }, []);
+    if (settings.orbitSpeed !== 0) {
+      prevSpeedRef.current = settings.orbitSpeed;
+      updateSetting("orbitSpeed", 0);
+    } else {
+      updateSetting("orbitSpeed", prevSpeedRef.current || 1);
+    }
+  }, [settings.orbitSpeed, updateSetting]);
+
   const handleNow = useCallback(() => {
     setTimeResetSignal((signal) => signal + 1);
   }, []);
@@ -241,22 +181,6 @@ export default function PlanetariumPage() {
   }, [selectedId]);
 
   useEffect(() => {
-    let frame = 0;
-    const animate = () => {
-      setDistanceScaleSpacing((current) => {
-        const next = current + (spacingTarget - current) * 0.18;
-        if (Math.abs(spacingTarget - next) < 0.1) {
-          return spacingTarget;
-        }
-        frame = window.requestAnimationFrame(animate);
-        return next;
-      });
-    };
-    frame = window.requestAnimationFrame(animate);
-    return () => window.cancelAnimationFrame(frame);
-  }, [spacingTarget]);
-
-  useEffect(() => {
     if (!isClient) return;
     preloadPlanetTextures(PLANETS.map((planet) => planet.render.textureUrl));
   }, [isClient]);
@@ -266,9 +190,9 @@ export default function PlanetariumPage() {
     const params = new URLSearchParams(window.location.search);
     setDebugGravity(params.get("debugGravity") === "1");
     if (params.has("perf")) {
-      setShowPerf(params.get("perf") === "1");
+      updateSetting("showPerf", params.get("perf") === "1");
     }
-  }, [isClient]);
+  }, [isClient, updateSetting]);
 
   useEffect(() => {
     if (!isClient || hasTrackedVisit.current) {
@@ -279,43 +203,41 @@ export default function PlanetariumPage() {
     void trackPlanetariumVisited({
       isMobile: deviceInfo.isMobile,
       isLowEnd: deviceInfo.isLowEnd,
-      prefersReducedMotion: deviceInfo.prefersReducedMotion,
+      prefersReducedMotion: deviceInfo.prefersReducedMotion
     });
   }, [
     deviceInfo.isLowEnd,
     deviceInfo.isMobile,
     deviceInfo.prefersReducedMotion,
-    isClient,
+    isClient
   ]);
 
   return (
     <div className="relative min-h-screen">
-      <PlanetariumCanvas
-        dpr={canvasDpr}
-        onPointerMissed={handlePointerMissed}
-      >
-      <PlanetariumScene
-        showOrbits={showOrbits}
-        showLabels={showLabels}
-        showGrid={showGrid}
-        showLensing={showLensing}
-        selectedId={selectedId}
-        resetSignal={resetSignal}
-        onSelect={handleSceneSelect}
-        isLowEnd={deviceInfo.isLowEnd}
-        prefersReducedMotion={deviceInfo.prefersReducedMotion}
-        onFocusChange={setIsFocused}
-        distanceScaleMode={distanceScaleMode}
-        distanceScaleParams={distanceScaleParams}
-        gravitySettings={gravitySettings}
-        debugGravity={debugGravity}
-        showPerf={showPerf}
-        orbitSpeed={orbitSpeed}
-        timeResetSignal={timeResetSignal}
-        onSimDateChange={setSimDateMs}
-        useMilkyWayBackground={useMilkyWayBackground}
-      />
+      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={handlePointerMissed}>
+        <PlanetariumScene
+          showOrbits={settings.showOrbits}
+          showLabels={settings.showLabels}
+          showGrid={settings.showGrid}
+          showLensing={false}
+          selectedId={selectedId}
+          resetSignal={resetSignal}
+          onSelect={handleSceneSelect}
+          isLowEnd={deviceInfo.isLowEnd}
+          prefersReducedMotion={deviceInfo.prefersReducedMotion}
+          onFocusChange={setIsFocused}
+          distanceScaleMode={settings.distanceScaleMode}
+          distanceScaleParams={distanceScaleParams}
+          gravitySettings={gravitySettings}
+          debugGravity={debugGravity}
+          showPerf={settings.showPerf}
+          orbitSpeed={settings.orbitSpeed}
+          timeResetSignal={timeResetSignal}
+          onSimDateChange={setSimDateMs}
+          useMilkyWayBackground={settings.useMilkyWayBackground}
+        />
       </PlanetariumCanvas>
+
       <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
         <PlanetInfoPanel
           planet={selectedPlanet}
@@ -331,7 +253,7 @@ export default function PlanetariumPage() {
               onClick={() => setInfoHidden(false)}
               className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-100 shadow-xl backdrop-blur-md opacity-30 hover:opacity-100 transition-all duration-300 hover:border-white/30 hover:text-white"
               style={{
-                backgroundColor: 'rgba(10, 14, 24, 0.45)'
+                backgroundColor: "rgba(10, 14, 24, 0.45)"
               }}
             >
               Show details
@@ -339,28 +261,8 @@ export default function PlanetariumPage() {
           </div>
         )}
       </div>
+
       <ControlsPanel
-        distanceScaleMode={distanceScaleMode}
-        onDistanceScaleModeChange={handleDistanceScaleModeChange}
-        distanceScaleSpacing={distanceScaleSpacing}
-        onSpacingChange={handleSpacingChange}
-        viewMode={viewMode}
-        onSetOverview={handleSetOverview}
-        onSetExplore={handleSetExplore}
-        showOrbits={showOrbits}
-        onShowOrbitsChange={handleShowOrbitsChange}
-        showLabels={showLabels}
-        onShowLabelsChange={handleShowLabelsChange}
-        showGrid={showGrid}
-        onShowGridChange={handleShowGridChange}
-        showLensing={showLensing}
-        onShowLensingChange={() => {}}
-        showPerf={showPerf}
-        onShowPerfChange={handleShowPerfChange}
-        useMilkyWayBackground={useMilkyWayBackground}
-        onToggleBackground={() => setUseMilkyWayBackground((prev) => !prev)}
-        orbitSpeed={orbitSpeed}
-        onOrbitSpeedChange={setOrbitSpeed}
         planets={filteredPlanets}
         pickerQuery={pickerQuery}
         onPickerQueryChange={setPickerQuery}
@@ -371,32 +273,52 @@ export default function PlanetariumPage() {
         onOverview={handleOverview}
         isHidden={shouldHideControls}
       />
+
       <TimeControls
-        speed={orbitSpeed}
-        isPaused={orbitSpeed === 0}
+        speed={settings.orbitSpeed}
+        isPaused={settings.orbitSpeed === 0}
         onSlower={handleSlower}
         onFaster={handleFaster}
         onTogglePause={handleTogglePause}
         onNow={handleNow}
         simDateMs={simDateMs}
       />
+
       <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">
-        <GravityPanel settings={gravitySettings} onChange={setGravitySettings} />
+        <GravityPanel
+          settings={gravitySettings}
+          onChange={setGravitySettings}
+        />
       </div>
+
       <div className="pointer-events-none absolute bottom-6 left-4 z-20 flex flex-col gap-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
         <div>
-          {distanceScaleMode} scale - 1 AU ~{" "}
-          {computeRenderOrbitRadius(1, distanceScaleMode, distanceScaleParams).toFixed(2)} units
+          {settings.distanceScaleMode} scale - 1 AU ~{" "}
+          {computeRenderOrbitRadius(
+            1,
+            settings.distanceScaleMode,
+            distanceScaleParams
+          ).toFixed(2)}{" "}
+          units
         </div>
         <div>
-          Quality: DPR {canvasDpr.toFixed(2)} - Post {showLensing ? "On" : "Off"}
+          Quality: DPR {canvasDpr.toFixed(2)} - Post Off
         </div>
       </div>
+
       {debugGravity && (
         <div className="pointer-events-none absolute bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
           Gravity debug
         </div>
       )}
     </div>
+  );
+}
+
+export default function PlanetariumPage() {
+  return (
+    <SettingsProvider>
+      <PlanetariumView />
+    </SettingsProvider>
   );
 }

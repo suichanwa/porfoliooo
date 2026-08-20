@@ -24,3 +24,8 @@ export {
   DEFAULT_DISTANCE_SCALE_MODE,
   DEFAULT_DISTANCE_SCALE_PARAMS
 } from "./utils/distanceScale";
+export {
+  SettingsProvider,
+  useSettings,
+  type PlanetariumSettings
+} from "./context/SettingsContext";
