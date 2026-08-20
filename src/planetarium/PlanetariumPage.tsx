@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
-import type { BodyId } from "./data/types";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
 import { PLANETS } from "./data/planets";
-import { PLANET_BY_ID } from "./data/planetRegistry";
-import { PLANET_INFO } from "./data/planetInfo";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
@@ -20,12 +17,9 @@ import {
   DEFAULT_GRAVITY_SETTINGS,
   type GravitySettings
 } from "./gravity/gravityField";
-import {
-  trackPlanetariumBodySelected,
-  trackPlanetariumPickerToggled,
-  trackPlanetariumVisited
-} from "../utils/firebaseAnalytics";
+import { trackPlanetariumVisited } from "../utils/firebaseAnalytics";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
+import { SelectionProvider, usePlanetSelection } from "./context/SelectionContext";
 
 // Simulation speed presets (days per real second) for the time controls.
 const SPEED_LADDER = [0.25, 1, 2, 5, 10, 30, 90, 365, 1825];
@@ -36,16 +30,17 @@ const SIGNED_SPEED_LADDER = [
 
 function PlanetariumView() {
   const { settings, updateSetting } = useSettings();
+  const {
+    selectedId,
+    resetSignal,
+    selectPlanet,
+    clearSelection,
+    setIsFocused
+  } = usePlanetSelection();
 
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
-  const [selectedId, setSelectedId] = useState<BodyId | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
-  const [infoHidden, setInfoHidden] = useState(false);
-  const [resetSignal, setResetSignal] = useState(0);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState("");
   const [simDateMs, setSimDateMs] = useState<number | null>(null);
   const [timeResetSignal, setTimeResetSignal] = useState(0);
   const prevSpeedRef = useRef(1);
@@ -64,74 +59,12 @@ function PlanetariumView() {
     [settings.distanceScaleMode, settings.distanceScaleSpacing]
   );
 
-  const selectedPlanet = selectedId ? PLANET_BY_ID[selectedId] ?? null : null;
-  const selectedInfo = useMemo(
-    () => (selectedId ? PLANET_INFO[selectedId] : null),
-    [selectedId]
+  const handleSceneSelect = useCallback(
+    (id: string | null) => {
+      selectPlanet(id as any, "canvas");
+    },
+    [selectPlanet]
   );
-  const isInfoVisible = Boolean(selectedPlanet && !infoHidden);
-  const shouldHideControls = isInfoVisible;
-
-  const filteredPlanets = useMemo(() => {
-    const query = pickerQuery.trim().toLowerCase();
-    if (!query) return PLANETS;
-    return PLANETS.filter((planet) =>
-      planet.name.toLowerCase().includes(query)
-    );
-  }, [pickerQuery]);
-
-  const clearSelection = useCallback(() => {
-    setSelectedId(null);
-    setIsFocused(false);
-    setInfoHidden(false);
-  }, []);
-
-  const handleSceneSelect = useCallback((id: BodyId | null) => {
-    setSelectedId(id);
-    setIsFocused(false);
-    setInfoHidden(false);
-    if (id) {
-      void trackPlanetariumBodySelected({
-        bodyId: id,
-        source: "canvas"
-      });
-    }
-  }, []);
-
-  const handlePointerMissed = useCallback(() => {
-    setSelectedId(null);
-    setIsFocused(false);
-  }, []);
-
-  const handleInfoClose = useCallback(() => {
-    clearSelection();
-    setResetSignal((prev) => prev + 1);
-  }, [clearSelection]);
-
-  const handleSelectPlanet = useCallback((id: BodyId) => {
-    setSelectedId(id);
-    setIsFocused(false);
-    setInfoHidden(false);
-    setPickerOpen(false);
-    void trackPlanetariumBodySelected({
-      bodyId: id,
-      source: "picker"
-    });
-  }, []);
-
-  const handleOverview = useCallback(() => {
-    clearSelection();
-    setResetSignal((prev) => prev + 1);
-    setPickerOpen(false);
-  }, [clearSelection]);
-
-  const handlePickerToggle = useCallback(() => {
-    const nextOpen = !pickerOpen;
-    setPickerOpen(nextOpen);
-    void trackPlanetariumPickerToggled({
-      open: nextOpen
-    });
-  }, [pickerOpen]);
 
   const handleFaster = useCallback(() => {
     const higher = SIGNED_SPEED_LADDER.find(
@@ -177,10 +110,6 @@ function PlanetariumView() {
   }, []);
 
   useEffect(() => {
-    setInfoHidden(false);
-  }, [selectedId]);
-
-  useEffect(() => {
     if (!isClient) return;
     preloadPlanetTextures(PLANETS.map((planet) => planet.render.textureUrl));
   }, [isClient]);
@@ -214,7 +143,7 @@ function PlanetariumView() {
 
   return (
     <div className="relative min-h-screen">
-      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={handlePointerMissed}>
+      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={clearSelection}>
         <PlanetariumScene
           showOrbits={settings.showOrbits}
           showLabels={settings.showLabels}
@@ -238,41 +167,9 @@ function PlanetariumView() {
         />
       </PlanetariumCanvas>
 
-      <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
-        <PlanetInfoPanel
-          planet={selectedPlanet}
-          info={selectedInfo}
-          isVisible={isInfoVisible}
-          onHide={() => setInfoHidden(true)}
-          onClose={handleInfoClose}
-        />
-        {selectedPlanet && infoHidden && (
-          <div className="pointer-events-auto ml-auto">
-            <button
-              type="button"
-              onClick={() => setInfoHidden(false)}
-              className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-100 shadow-xl backdrop-blur-md opacity-30 hover:opacity-100 transition-all duration-300 hover:border-white/30 hover:text-white"
-              style={{
-                backgroundColor: "rgba(10, 14, 24, 0.45)"
-              }}
-            >
-              Show details
-            </button>
-          </div>
-        )}
-      </div>
+      <PlanetInfoPanel />
 
-      <ControlsPanel
-        planets={filteredPlanets}
-        pickerQuery={pickerQuery}
-        onPickerQueryChange={setPickerQuery}
-        pickerOpen={pickerOpen}
-        onPickerToggle={handlePickerToggle}
-        selectedId={selectedId}
-        onSelectPlanet={handleSelectPlanet}
-        onOverview={handleOverview}
-        isHidden={shouldHideControls}
-      />
+      <ControlsPanel />
 
       <TimeControls
         speed={settings.orbitSpeed}
@@ -318,7 +215,9 @@ function PlanetariumView() {
 export default function PlanetariumPage() {
   return (
     <SettingsProvider>
-      <PlanetariumView />
+      <SelectionProvider>
+        <PlanetariumView />
+      </SelectionProvider>
     </SettingsProvider>
   );
 }

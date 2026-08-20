@@ -29,3 +29,7 @@ export {
   useSettings,
   type PlanetariumSettings
 } from "./context/SettingsContext";
+export {
+  SelectionProvider,
+  usePlanetSelection
+} from "./context/SelectionContext";
