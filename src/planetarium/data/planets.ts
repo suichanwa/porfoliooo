@@ -473,38 +473,5 @@ export const PLANETS: BodyData[] = [
       meanLongitudeAtEpochDeg: 238.92903833,
       longitudeOfPerihelionDeg: 224.06891629
     }
-  },
-  {
-    id: "joanne",
-    name: "Joanne",
-    kind: "object",
-    parentId: "sun",
-    massKg: 5e19,
-    mu: toMu(5e19),
-    rotation: {
-      axialTiltDeg: 0,
-      rotationPeriodHours: 12.0
-    },
-    render: {
-      radiusKm: 22000,
-      colorFallback: "#78a6ff",
-      modelUrl: "/models/tripo_pbr_model_9f2f457d-8183-4924-a7ce-32b41d53d24d_meshopt.glb",
-      materialPreset: { roughness: 0.4, metalness: 0.6, illuminationBoost: 0.15 },
-      glowPreset: { color: "#78a6ff", intensity: 0.25 },
-      bendingDimensions: {
-        topHeight: 0.45,
-        bottomDepth: 1.2,
-        contactRadius: 0.45,
-        funnelReach: 2.8
-      }
-    },
-    orbit: {
-      semiMajorAxisKm: auToKm(0.85),
-      eccentricity: 0.045,
-      inclinationDeg: 4.2,
-      orbitalPeriodDays: 286.0,
-      meanLongitudeAtEpochDeg: 85.0,
-      longitudeOfPerihelionDeg: 40.0
-    }
   }
 ];

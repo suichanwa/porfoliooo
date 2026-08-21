@@ -36,8 +36,7 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   uranus: toUrl(uranusTexture),
   neptune: toUrl(neptuneTexture),
   ceres: toUrl(ceresTexture),
-  pluto: toUrl(plutoTexture),
-  joanne: null
+  pluto: toUrl(plutoTexture)
 };
 
 export const VENUS_ATMOSPHERE_TEXTURE = toUrl(venusAtmosphereTexture);

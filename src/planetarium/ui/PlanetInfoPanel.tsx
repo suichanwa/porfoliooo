@@ -4,6 +4,18 @@ import { usePlanetSelection } from "../context/SelectionContext";
 const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-US").format(Math.round(value));
 
+const formatMass = (massKg?: number) => {
+  if (!massKg) return "-";
+  const expStr = massKg.toExponential(3);
+  const [mantissa, exp] = expStr.split(/e\+?/i);
+  const cleanExp = exp ? parseInt(exp, 10) : "";
+  return (
+    <span>
+      {mantissa} &times; 10<sup>{cleanExp}</sup> kg
+    </span>
+  );
+};
+
 export default function PlanetInfoPanel() {
   const {
     selectedPlanet: planet,
@@ -90,6 +102,14 @@ export default function PlanetInfoPanel() {
             </div>
             <div className="mt-1 text-sm font-semibold text-white/80">
               {planet ? `${planet.rotation.axialTiltDeg.toFixed(1)} deg` : "-"}
+            </div>
+          </div>
+          <div className="col-span-2 rounded-xl border border-white/5 bg-black/20 p-3">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+              Mass
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white/80">
+              {formatMass(planet?.massKg)}
             </div>
           </div>
         </div>

@@ -10,8 +10,7 @@ export type BodyId =
   | "uranus"
   | "neptune"
   | "ceres"
-  | "pluto"
-  | "joanne";
+  | "pluto";
 
 export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object";
 
