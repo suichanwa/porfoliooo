@@ -473,5 +473,46 @@ export const PLANETS: BodyData[] = [
       meanLongitudeAtEpochDeg: 238.92903833,
       longitudeOfPerihelionDeg: 224.06891629
     }
+  },
+  {
+    id: "voyager1",
+    name: "Voyager 1",
+    kind: "probe",
+    parentId: "sun",
+    massKg: 825.5,
+    mu: toMu(825.5),
+    rotation: {
+      axialTiltDeg: 35.5,
+      rotationPeriodHours: 0.0,
+      tidallyLocked: false
+    },
+    render: {
+      radiusKm: 5500,
+      colorFallback: "#d4af37",
+      modelUrl: "/models/voyager.glb",
+      materialPreset: {
+        roughness: 0.35,
+        metalness: 0.75,
+        illuminationBoost: 0.25
+      },
+      glowPreset: {
+        color: "#ffd700",
+        intensity: 0.2
+      },
+      bendingDimensions: {
+        topHeight: 0.02,
+        bottomDepth: 0.04,
+        contactRadius: 0.05,
+        funnelReach: 0.2
+      }
+    },
+    orbit: {
+      semiMajorAxisKm: auToKm(171.5),
+      eccentricity: 0.01,
+      inclinationDeg: 35.5,
+      orbitalPeriodDays: 820000.0,
+      meanLongitudeAtEpochDeg: 255.4,
+      longitudeOfPerihelionDeg: 255.4
+    }
   }
 ];

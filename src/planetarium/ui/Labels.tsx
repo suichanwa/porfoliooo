@@ -80,7 +80,7 @@ export default function Labels({
   return (
     <group ref={groupRef} position={initialPosition}>
       <Html center distanceFactor={10} style={{ pointerEvents: "none" }}>
-        <div className="rounded-full border border-white/10 bg-black/40 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70">
+        <div className="whitespace-nowrap select-none rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-white/80 shadow-md backdrop-blur-sm">
           {data.name}
         </div>
       </Html>

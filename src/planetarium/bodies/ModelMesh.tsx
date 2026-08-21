@@ -3,14 +3,18 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
   Box3,
   Color,
+  DoubleSide,
   Group,
   MathUtils,
   Mesh,
   MeshStandardMaterial,
   SphereGeometry,
+  SRGBColorSpace,
+  Texture,
   Vector3
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import type { BodyData } from "../data/types";
 import { scalePlanetRadius } from "../utils/scale";
@@ -51,10 +55,22 @@ export default function ModelMesh({
     let isMounted = true;
     const loader = new GLTFLoader();
 
+    // Configure Draco Decoder
+    try {
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath(
+        "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
+      );
+      loader.setDRACOLoader(dracoLoader);
+    } catch (err) {
+      console.warn("[ModelMesh] DRACOLoader initialization warning:", err);
+    }
+
+    // Configure Meshopt Decoder
     try {
       loader.setMeshoptDecoder(MeshoptDecoder);
     } catch (err) {
-      console.warn("[ModelMesh] Could not initialize MeshoptDecoder:", err);
+      console.warn("[ModelMesh] MeshoptDecoder initialization warning:", err);
     }
 
     loader.load(
@@ -62,35 +78,54 @@ export default function ModelMesh({
       (gltf) => {
         if (!isMounted) return;
 
-        const scene = gltf.scene.clone(true);
+        const rawScene = gltf.scene.clone(true);
 
-        // Compute bounding box and center geometry
-        const box = new Box3().setFromObject(scene);
+        // Compute bounding box accurately across all meshes
+        const box = new Box3().setFromObject(rawScene);
         const center = new Vector3();
         box.getCenter(center);
         const size = new Vector3();
         box.getSize(size);
-
-        // Center the model at local (0, 0, 0)
-        scene.position.sub(center);
-
-        // Normalize scale to match the target render radius
         const maxDim = Math.max(size.x, size.y, size.z);
+
+        // Build a centered container group so position is at exact 0,0,0
+        const wrapper = new Group();
+        rawScene.position.set(-center.x, -center.y, -center.z);
+        wrapper.add(rawScene);
+
         if (maxDim > 0) {
-          const targetScale = (radius * 2.2) / maxDim;
-          scene.scale.setScalar(targetScale);
+          const targetScale = (radius * 2.6) / maxDim;
+          wrapper.scale.setScalar(targetScale);
         }
 
-        // Enable shadows and enhance materials if needed
-        scene.traverse((child) => {
+        // Configure authentic materials and textures (no artificial color tinting)
+        rawScene.traverse((child) => {
           if ((child as Mesh).isMesh) {
             const mesh = child as Mesh;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
+
+            if (mesh.material) {
+              const materials = Array.isArray(mesh.material)
+                ? mesh.material
+                : [mesh.material];
+
+              materials.forEach((mat) => {
+                mat.side = DoubleSide;
+                if ("map" in mat && mat.map instanceof Texture) {
+                  mat.map.colorSpace = SRGBColorSpace;
+                }
+                if (mat instanceof MeshStandardMaterial) {
+                  // Keep true material colors without artificial yellow emissive tint
+                  mat.emissive = new Color(0x050508);
+                  mat.emissiveIntensity = 0.05;
+                }
+              });
+            }
           }
         });
 
-        setLoadedScene(scene);
+        setLoadedScene(wrapper);
       },
       undefined,
       (err) => {
@@ -108,25 +143,31 @@ export default function ModelMesh({
 
   useFrame((_, delta) => {
     if (!modelGroupRef.current) return;
-    const rotationRate =
-      (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
-    modelGroupRef.current.rotation.y += delta * rotationRate * timeScale;
+    if (data.rotation.rotationPeriodHours > 0) {
+      const rotationRate =
+        (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
+      modelGroupRef.current.rotation.y += delta * rotationRate * timeScale;
+    }
   });
 
   const fallbackGeometry = useMemo(() => new SphereGeometry(radius, 24, 24), [radius]);
   const fallbackMaterial = useMemo(
     () =>
       new MeshStandardMaterial({
-        color: new Color(data.render.colorFallback || "#78a6ff"),
-        roughness: 0.6,
-        metalness: 0.4,
-        wireframe: !loadedScene && !loadError
+        color: new Color("#e2e8f0"),
+        roughness: 0.4,
+        metalness: 0.6
       }),
-    [data.render.colorFallback, loadedScene, loadError]
+    []
   );
 
   return (
     <group ref={groupRef} position={position} rotation={[0, 0, tilt]}>
+      {/* Neutral white lighting rig ensuring authentic PBR material colors in deep space */}
+      <directionalLight position={[radius * 4, radius * 3, radius * 4]} intensity={2.2} color="#ffffff" />
+      <directionalLight position={[-radius * 4, -radius * 2, -radius * 4]} intensity={0.9} color="#cbd5e1" />
+      <ambientLight intensity={0.65} color="#ffffff" />
+
       <group
         ref={modelGroupRef}
         onPointerOver={onPointerOver}

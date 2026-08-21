@@ -29,7 +29,7 @@ export default function PlanetInfoPanel() {
   return (
     <div className="pointer-events-none absolute left-4 right-4 bottom-24 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex w-full max-w-none justify-center sm:bottom-auto sm:left-auto sm:right-4 sm:top-24 sm:max-w-sm sm:justify-end">
       <div
-        className={`pointer-events-auto w-full max-w-none rounded-2xl border border-white/10 bg-base-100/10 p-4 text-[13px] text-white/80 shadow-xl backdrop-blur-sm transition-all duration-500 ease-out sm:max-w-sm sm:p-5 sm:text-sm max-h-[60vh] overflow-y-auto sm:max-h-none sm:overflow-visible ${
+        className={`pointer-events-auto w-full max-w-none rounded-2xl border border-white/10 bg-base-100/10 p-4 text-[13px] text-white/80 shadow-xl backdrop-blur-sm transition-all duration-500 ease-out sm:max-w-sm sm:p-5 sm:text-sm max-h-[calc(100vh-12rem)] overflow-y-auto ${
           isInfoVisible ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0 pointer-events-none hidden"
         }`}
         style={{ pointerEvents: isInfoVisible ? "auto" : "none" }}

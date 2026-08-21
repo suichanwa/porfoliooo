@@ -10,9 +10,10 @@ export type BodyId =
   | "uranus"
   | "neptune"
   | "ceres"
-  | "pluto";
+  | "pluto"
+  | "voyager1";
 
-export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object";
+export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object" | "probe";
 
 export interface OrbitElements {
   semiMajorAxisKm: number;

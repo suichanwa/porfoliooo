@@ -101,5 +101,13 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Highly elliptical and inclined orbit.",
       "Surface has nitrogen and methane ice."
     ]
+  },
+  voyager1: {
+    summary: "NASA's interstellar probe launched in 1977, currently exploring space beyond the heliosphere.",
+    facts: [
+      "Farthest human-made object from Earth (~171.5 AU).",
+      "Entered interstellar space on August 25, 2012.",
+      "Carries the Golden Record with sounds and images of Earth."
+    ]
   }
 };
