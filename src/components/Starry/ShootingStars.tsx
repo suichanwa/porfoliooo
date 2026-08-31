@@ -124,10 +124,24 @@ export default function ShootingStars({
       }, delay);
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (spawnTimeoutRef.current) {
+          window.clearTimeout(spawnTimeoutRef.current);
+          spawnTimeoutRef.current = undefined;
+        }
+      } else if (!spawnTimeoutRef.current) {
+        scheduleNextSpawn();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     spawnStar(2);
     scheduleNextSpawn();
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (spawnTimeoutRef.current) {
         window.clearTimeout(spawnTimeoutRef.current);
       }

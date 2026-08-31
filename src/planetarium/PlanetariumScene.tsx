@@ -33,6 +33,7 @@ interface PlanetariumSceneProps {
   showGrid: boolean;
   showLensing: boolean;
   selectedId: BodyId | null;
+  isInfoVisible?: boolean;
   resetSignal: number;
   onSelect: (id: BodyId | null) => void;
   isLowEnd?: boolean;
@@ -58,6 +59,7 @@ export default function PlanetariumScene({
   showGrid,
   showLensing,
   selectedId,
+  isInfoVisible = false,
   resetSignal,
   onSelect,
   isLowEnd = false,
@@ -237,6 +239,8 @@ export default function PlanetariumScene({
           timeRef={timeRef}
           atmosphere={false}
           showLabels={showLabels}
+          isSelected={selectedId === planet.id}
+          isInfoVisible={isInfoVisible}
           onSelect={onSelect}
           onObjectRef={handlePlanetRef}
           planetRefs={planetRefs}

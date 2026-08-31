@@ -524,10 +524,12 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     if (!ctx) return;
 
     let isRunning = true;
+    let isIntersecting = false;
 
     const setCanvasSize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
@@ -536,7 +538,10 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     setCanvasSize();
 
     const animate = (timestamp: number) => {
-      if (!isRunning || document.hidden) return;
+      if (!isRunning || !isIntersecting || document.hidden) {
+        animationRef.current = undefined;
+        return;
+      }
       
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = canvas.width / dpr;
@@ -546,7 +551,33 @@ export default function Neptune({ className = '' }: NeptuneProps) {
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    const startAnimation = () => {
+      if (!animationRef.current && isRunning && isIntersecting && !document.hidden) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    const stopAnimation = () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
+      }
+    };
+
+    // Pause rendering when Neptune widget is scrolled off-screen
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isIntersecting = entry.isIntersecting;
+        if (isIntersecting) {
+          startAnimation();
+        } else {
+          stopAnimation();
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(canvas);
 
     let resizeTimeout: number;
     const handleResize = () => {
@@ -556,12 +587,9 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          animationRef.current = undefined;
-        }
-      } else if (!animationRef.current) {
-        animationRef.current = requestAnimationFrame(animate);
+        stopAnimation();
+      } else {
+        startAnimation();
       }
     };
 
@@ -570,9 +598,8 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
     return () => {
       isRunning = false;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      stopAnimation();
+      observer.disconnect();
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);

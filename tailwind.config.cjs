@@ -9,6 +9,15 @@ module.exports = {
         'text-light-bg': 'var(--text-light-bg)',
         'primary-accent': 'var(--primary-accent)', 
         'secondary-accent': 'var(--secondary-accent)'
+      },
+      keyframes: {
+        'avatar-enter': {
+          '0%': { opacity: '0', transform: 'scale(0.8)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        }
+      },
+      animation: {
+        'avatar-enter': 'avatar-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       }
     },
   },

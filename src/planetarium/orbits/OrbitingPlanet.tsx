@@ -14,6 +14,8 @@ interface OrbitingPlanetProps {
   timeRef: React.MutableRefObject<number>;
   atmosphere?: boolean;
   showLabels?: boolean;
+  isSelected?: boolean;
+  isInfoVisible?: boolean;
   onSelect?: (id: BodyId | null) => void;
   onObjectRef?: (id: BodyId, object: Object3D | null) => void;
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
@@ -26,6 +28,8 @@ export default function OrbitingPlanet({
   timeRef,
   atmosphere = false,
   showLabels = false,
+  isSelected = false,
+  isInfoVisible = false,
   onSelect,
   onObjectRef,
   planetRefs,
@@ -143,6 +147,8 @@ export default function OrbitingPlanet({
           data={data}
           timeRef={timeRef}
           showLabels={showLabels}
+          isSelected={isSelected}
+          isInfoVisible={isInfoVisible}
           hoveredRef={hoveredRef}
           planetRefs={planetRefs}
           scaleMode={scaleMode}
