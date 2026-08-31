@@ -39,8 +39,8 @@ export default function TimeControls({
     simDateMs !== null ? dateFormatter.formatToParts(new Date(simDateMs)) : null;
   const speedStr = formatSpeed(speed);
   return (
-    <div className="pointer-events-none fixed bottom-6 left-1/2 z-30 -translate-x-1/2">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-2.5 py-2 shadow-lg backdrop-blur-md">
+    <div className="pointer-events-none fixed bottom-4 sm:bottom-6 left-1/2 z-30 -translate-x-1/2 max-w-[calc(100vw-5.5rem)] sm:max-w-none">
+      <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/10 bg-black/45 px-2 sm:px-2.5 py-1.5 sm:py-2 shadow-lg backdrop-blur-md">
         <button
           type="button"
           onClick={onSlower}
@@ -81,11 +81,11 @@ export default function TimeControls({
           </svg>
         </button>
 
-        <div className="mx-1 flex min-w-[9.5rem] flex-col overflow-hidden leading-tight">
+        <div className="mx-1 flex min-w-[7.5rem] sm:min-w-[9.5rem] flex-col overflow-hidden leading-tight">
           <style>{`@keyframes ponytailRoll{from{opacity:0;transform:translateY(0.45em)}to{opacity:1;transform:translateY(0)}}`}</style>
           {/* Each part keyed by type:value → only the part whose value changes
               remounts and replays the roll animation (day, then month, etc). */}
-          <span className="text-[12px] font-medium text-white/90 tabular-nums">
+          <span className="text-[11px] sm:text-[12px] font-medium text-white/90 tabular-nums">
             {dateParts
               ? dateParts.map((p, i) =>
                   p.type === "literal" ? (

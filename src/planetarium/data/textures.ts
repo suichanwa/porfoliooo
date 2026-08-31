@@ -1,21 +1,21 @@
 import type { BodyId } from "./types";
 
-import sunTexture from "../../assets/planetarium/2k_sun.webp";
-import mercuryTexture from "../../assets/planetarium/2k_mercury.webp";
-import venusSurfaceTexture from "../../assets/planetarium/2k_venus_surface.webp";
-import venusAtmosphereTexture from "../../assets/planetarium/2k_venus_atmosphere.webp";
-import marsTexture from "../../assets/planetarium/2k_mars.webp";
-import jupiterTexture from "../../assets/planetarium/2k_jupiter.webp";
-import saturnTexture from "../../assets/planetarium/2k_saturn.webp";
+import sunTexture from "../../assets/planetarium/2k_sun.jpg";
+import mercuryTexture from "../../assets/planetarium/2k_mercury.jpg";
+import venusSurfaceTexture from "../../assets/planetarium/2k_venus_surface.jpg";
+import venusAtmosphereTexture from "../../assets/planetarium/2k_venus_atmosphere.jpg";
+import marsTexture from "../../assets/planetarium/2k_mars.jpg";
+import jupiterTexture from "../../assets/planetarium/2k_jupiter.jpg";
+import saturnTexture from "../../assets/planetarium/2k_saturn.jpg";
 import saturnRingAlpha from "../../assets/planetarium/2k_saturn_ring_alpha.png";
-import uranusTexture from "../../assets/planetarium/2k_uranus.webp";
-import neptuneTexture from "../../assets/planetarium/2k_neptune.webp";
-import ceresTexture from "../../assets/planetarium/2k_ceres_fictional.webp";
-import starfieldTexture from "../../assets/planetarium/2k_stars.webp";
-import milkyWayTexture from "../../assets/planetarium/2k_milky_way.webp";
+import uranusTexture from "../../assets/planetarium/2k_uranus.jpg";
+import neptuneTexture from "../../assets/planetarium/2k_neptune.jpg";
+import ceresTexture from "../../assets/planetarium/2k_ceres_fictional.jpg";
+import starfieldTexture from "../../assets/planetarium/2k_stars.jpg";
+import milkyWayTexture from "../../assets/planetarium/BG_stars_milky_way.jpg";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
-import earthTexture from "../../assets/planetarium/2k_earth_daymap.webp";
-import moonTexture from "../../assets/planetarium/2k_moon.webp";
+import earthTexture from "../../assets/planetarium/8k_earth_daymap.jpg";
+import moonTexture from "../../assets/planetarium/Solarsystemscope_texture_8k_moon.jpg";
 
 type TextureAsset = string | { src: string };
 

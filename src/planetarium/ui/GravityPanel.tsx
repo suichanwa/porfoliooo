@@ -49,15 +49,15 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
   );
 
   return (
-    <div className="pointer-events-auto w-full max-w-[18rem] rounded-2xl border border-white/10 bg-base-100/10 px-3 py-3 text-[11px] text-white/80 shadow-lg backdrop-blur-sm">
+    <div className="pointer-events-auto w-full max-w-[18rem] rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.94),rgba(20,28,40,0.85))] px-3.5 py-3 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">
-          Gravity
+        <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-secondary-accent">
+          Spacetime Gravity
         </span>
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70 transition hover:border-white/30 hover:text-white"
+          className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:border-secondary-accent/40 hover:text-white"
           aria-expanded={open}
         >
           {open ? "Hide" : "Show"}
@@ -68,21 +68,21 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
           open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] uppercase tracking-[0.2em] text-white/50">
+        <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300">
           {Object.entries(PRESETS).map(([label, preset]) => (
             <button
               key={label}
               type="button"
-              className="rounded-full border border-white/10 px-2 py-1 transition hover:border-white/40 hover:text-white"
+              className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-2 py-1 transition hover:border-primary-accent/40 hover:text-white active:scale-95"
               onClick={() => onChange(preset)}
             >
               {label}
             </button>
           ))}
         </div>
-        <label className="flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-            Grid strength
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+            Grid curvature
           </span>
           <input
             type="range"
@@ -103,11 +103,11 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
                 )
               })
             }
-            className="range range-xs"
+            className="range range-xs range-secondary"
           />
         </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
             Lensing strength
           </span>
           <input
@@ -129,11 +129,11 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
                 )
               })
             }
-            className="range range-xs"
+            className="range range-xs range-secondary"
           />
         </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
             Softening radius
           </span>
           <input
@@ -155,38 +155,12 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
                 )
               })
             }
-            className="range range-xs"
+            className="range range-xs range-secondary"
           />
         </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-            Max influence
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={toSlider(
-              settings.maxInfluence,
-              sliderRanges.maxInfluence.min,
-              sliderRanges.maxInfluence.max
-            )}
-            onChange={(event) =>
-              onChange({
-                ...settings,
-                maxInfluence: fromSlider(
-                  Number(event.target.value),
-                  sliderRanges.maxInfluence.min,
-                  sliderRanges.maxInfluence.max
-                )
-              })
-            }
-            className="range range-xs"
-          />
-        </label>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
-          Grid {settings.gridStrength.toFixed(2)} / Lens{" "}
-          {settings.lensingStrength.toFixed(2)}
+        <div className="text-[10px] uppercase tracking-[0.15em] text-slate-400 font-medium">
+          Grid: <span className="text-white">{settings.gridStrength.toFixed(2)}</span> / Lens:{" "}
+          <span className="text-white">{settings.lensingStrength.toFixed(2)}</span>
         </div>
       </div>
     </div>

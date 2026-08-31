@@ -7,7 +7,7 @@ import { PLANETS } from "./data/planets";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
-import TimeControls from "./ui/TimeControls";
+import PlanetariumNavbar from "./ui/PlanetariumNavbar";
 import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
 import {
   computeDistanceScaleParams,
@@ -39,6 +39,7 @@ function PlanetariumView() {
     setIsFocused
   } = usePlanetSelection();
 
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
@@ -171,9 +172,12 @@ function PlanetariumView() {
 
       <PlanetInfoPanel />
 
-      <ControlsPanel />
+      <ControlsPanel
+        isOpen={controlsOpen}
+        onToggle={() => setControlsOpen((prev) => !prev)}
+      />
 
-      <TimeControls
+      <PlanetariumNavbar
         speed={settings.orbitSpeed}
         isPaused={settings.orbitSpeed === 0}
         onSlower={handleSlower}
@@ -181,16 +185,17 @@ function PlanetariumView() {
         onTogglePause={handleTogglePause}
         onNow={handleNow}
         simDateMs={simDateMs}
+        onToggleControls={() => setControlsOpen((prev) => !prev)}
       />
 
-      <div className="pointer-events-none absolute bottom-6 right-4 z-20 flex w-full max-w-xs justify-end">
+      <div className="pointer-events-none absolute bottom-4 sm:bottom-6 right-3 sm:right-4 z-20 flex w-auto justify-end">
         <GravityPanel
           settings={gravitySettings}
           onChange={setGravitySettings}
         />
       </div>
 
-      <div className="pointer-events-none absolute bottom-6 left-4 z-20 flex flex-col gap-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
+      <div className="pointer-events-none absolute bottom-6 left-4 z-20 hidden sm:flex flex-col gap-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
         <div>
           {settings.distanceScaleMode} scale - 1 AU ~{" "}
           {computeRenderOrbitRadius(

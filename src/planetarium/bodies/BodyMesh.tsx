@@ -193,7 +193,7 @@ export default function BodyMesh({
       roughness: materialPreset.roughness,
       metalness: materialPreset.metalness,
       emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
-      emissiveIntensity: isEarth ? 0 : 0.015
+      emissiveIntensity: isEarth ? 0 : 0.005
     });
 
     mat.onBeforeCompile = (shader) => {
@@ -205,22 +205,22 @@ export default function BodyMesh({
         .replace(
           "float dotNL = saturate( dot( geometryNormal, directLight.direction ) );",
           `
-          // Soft atmospheric wrapped penumbra: creates smooth, photographic terminator falloff from bright to dark
+          // Realistic astronomical terminator falloff with balanced penumbra
           float rawDotNL = dot( geometryNormal, directLight.direction );
-          float wrap = 0.30;
-          float softTerminator = smoothstep(-0.22, 0.42, rawDotNL);
-          float dotNL = pow(softTerminator, 1.2) * saturate((rawDotNL + wrap) / (1.0 + wrap));
+          float wrap = 0.08;
+          float softTerminator = smoothstep(-0.06, 0.35, rawDotNL);
+          float dotNL = pow(softTerminator, 1.1) * saturate((rawDotNL + wrap) / (1.0 + wrap));
           `
         )
         .replace(
           "#include <lights_fragment_end>",
           `#include <lights_fragment_end>
-          // 1. Day-side direct sunlight boost:
-          reflectedLight.directDiffuse *= (1.0 + uIlluminationBoost * 4.5);
-          reflectedLight.directSpecular *= (1.0 + uIlluminationBoost * 2.0);
+          // 1. Day-side direct sunlight (naturally balanced, not overblown):
+          reflectedLight.directDiffuse *= (1.0 + uIlluminationBoost * 1.2);
+          reflectedLight.directSpecular *= (1.0 + uIlluminationBoost * 0.8);
 
-          // 2. Subtle night-side ambient starlight illumination (softly reveals the dark hemisphere):
-          float nightAmbient = uIlluminationBoost * 0.05 + 0.015;
+          // 2. Subtle night-side ambient starlight illumination (clean deep space shadow, not flat pitch black):
+          float nightAmbient = 0.018 + uIlluminationBoost * 0.02;
           reflectedLight.indirectDiffuse += diffuseColor.rgb * nightAmbient;
           `
         );

@@ -18,18 +18,31 @@ import {
 
 interface ControlsPanelProps {
   className?: string;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 const DEFAULT_POSITION = { x: 16, y: 96 };
 
-export default function ControlsPanel({ className = "" }: ControlsPanelProps = {}) {
+export default function ControlsPanel({
+  className = "",
+  isOpen,
+  onToggle
+}: ControlsPanelProps = {}) {
   const { settings, updateSetting, toggleSetting } = useSettings();
   const { isInfoVisible } = usePlanetSelection();
 
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const isMobile = useMediaQuery("(max-width: 639px)");
+  const [internalOpen, setInternalOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth >= 640;
+  });
+
+  const controlsOpen = isOpen !== undefined ? isOpen : internalOpen;
+  const toggleControls = onToggle ?? (() => setInternalOpen((prev) => !prev));
+
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState(DEFAULT_POSITION);
-  const isMobile = useMediaQuery("(max-width: 639px)");
   const panelRef = useRef<HTMLDivElement | null>(null);
   const isPositionedRef = useRef(false);
   const dragStateRef = useRef({
@@ -179,50 +192,39 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
       className={`pointer-events-auto fixed z-20 max-h-[calc(100vh-2rem)] transition-opacity duration-300 ${
         isInfoVisible
           ? "opacity-0 pointer-events-none sm:pointer-events-auto"
-          : hovered
+          : hovered || isMobile
             ? "opacity-100"
-            : "opacity-30 hover:opacity-100"
+            : "opacity-40 hover:opacity-100"
       } ${className}`}
       style={{
         transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
-        left: isMobile ? 8 : undefined,
-        bottom: isMobile ? 96 : undefined,
+        left: isMobile ? 12 : undefined,
+        top: isMobile ? 16 : undefined,
+        bottom: isMobile ? "auto" : undefined,
         right: isMobile ? "auto" : undefined,
-        top: isMobile ? "auto" : undefined,
-        width: "min(92vw, 20rem)"
+        width: isMobile ? "min(calc(100vw - 24px), 20rem)" : "min(92vw, 20rem)"
       }}
     >
-      <div
-        className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 px-3 py-3 text-[11px] text-slate-100 shadow-xl backdrop-blur-md sm:px-4 sm:text-xs"
-        style={{
-          backgroundColor: "rgba(10, 14, 24, 0.45)"
-        }}
-      >
+      <div className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.94),rgba(20,28,40,0.85))] px-3.5 py-3.5 text-[11px] text-slate-100 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:px-4 sm:text-xs">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onPointerDown={handleDragStart}
-              className="flex items-center gap-2 rounded-full border border-slate-700/80 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300 transition-all duration-200 hover:border-slate-500/90 hover:text-white cursor-grab active:cursor-grabbing select-none"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.06)"
-              }}
+              className="flex items-center gap-1.5 rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
               aria-label="Drag controls panel"
             >
               <span className="text-[10px] tracking-[0.1em]">:::</span>
               Drag
             </button>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-primary-accent font-semibold">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-primary-accent font-bold">
               Controls
             </span>
           </div>
           <button
             type="button"
-            onClick={() => setControlsOpen((prev) => !prev)}
-            className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.06)"
-            }}
+            onClick={toggleControls}
+            className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-200 transition hover:border-primary-accent/40 hover:text-white active:scale-95"
             aria-expanded={controlsOpen}
           >
             {controlsOpen ? "Hide" : "Show"}
@@ -237,15 +239,12 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
           style={{ scrollbarGutter: "stable" }}
         >
           <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
                 Distance scale
               </span>
               <select
-                className="select select-sm border-slate-700/80 text-slate-100 focus:border-primary-accent focus:outline-none"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.06)"
-                }}
+                className="select select-sm border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.55)] text-slate-100 focus:border-primary-accent focus:outline-none rounded-xl"
                 value={settings.distanceScaleMode}
                 onChange={(event) =>
                   handleDistanceScaleModeChange(event.target.value as DistanceScaleMode)
@@ -256,8 +255,8 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
                 <option value="hybrid">Hybrid</option>
               </select>
             </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
                 Spacing
               </span>
               <input
@@ -269,8 +268,8 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
                 className="range range-xs range-primary"
               />
             </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
                 Orbit speed
               </span>
               <input
@@ -283,30 +282,22 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
                 className="range range-xs range-primary"
               />
             </label>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300/90">
-              {settings.distanceScaleMode} -{" "}
-              <span className="text-white font-medium">
-                {Math.round(settings.distanceScaleSpacing)}
-              </span>
+            <div className="text-[10px] uppercase tracking-[0.15em] text-slate-300 font-medium">
+              Scale: <span className="text-white font-bold">{settings.distanceScaleMode}</span> (
+              <span className="text-white font-bold">{Math.round(settings.distanceScaleSpacing)}</span>)
             </div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300/90">
-              Speed <span className="text-white font-medium">{settings.orbitSpeed.toFixed(1)}x</span>
+            <div className="text-[10px] uppercase tracking-[0.15em] text-slate-300 font-medium">
+              Speed: <span className="text-white font-bold">{settings.orbitSpeed.toFixed(1)}x</span>
             </div>
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em]">
               <button
                 type="button"
                 onClick={handleSetOverview}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
                   settings.viewMode === "overview"
-                    ? "border-primary-accent text-primary-accent font-semibold"
-                    : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
+                    ? "border-primary-accent bg-primary-accent/25 text-white shadow-[0_0_8px_rgba(94,159,255,0.3)]"
+                    : "border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] text-slate-200 hover:border-primary-accent/40 hover:text-white"
                 }`}
-                style={{
-                  backgroundColor:
-                    settings.viewMode === "overview"
-                      ? "rgba(59, 130, 246, 0.2)"
-                      : "rgba(255, 255, 255, 0.06)"
-                }}
               >
                 Overview
               </button>
@@ -315,91 +306,67 @@ export default function ControlsPanel({ className = "" }: ControlsPanelProps = {
                 onClick={handleSetExplore}
                 className={`rounded-full border px-3 py-1 transition-all duration-200 ${
                   settings.viewMode === "explore"
-                    ? "border-primary-accent text-primary-accent font-semibold"
-                    : "border-slate-700/80 text-slate-100 hover:border-slate-500/90 hover:text-white"
+                    ? "border-primary-accent bg-primary-accent/25 text-white shadow-[0_0_8px_rgba(94,159,255,0.3)]"
+                    : "border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] text-slate-200 hover:border-primary-accent/40 hover:text-white"
                 }`}
-                style={{
-                  backgroundColor:
-                    settings.viewMode === "explore"
-                      ? "rgba(59, 130, 246, 0.2)"
-                      : "rgba(255, 255, 255, 0.06)"
-                }}
               >
                 Explore
               </button>
             </div>
           </div>
-          <div className="h-px bg-slate-700/60" />
-          <label className="flex items-center gap-3">
+          <div className="h-px bg-slate-700/50" />
+          <label className="flex items-center justify-between cursor-pointer py-0.5">
+            <span className="tracking-wide text-slate-200 text-xs font-medium">Orbit Paths</span>
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
               checked={settings.showOrbits}
               onChange={(event) => handleToggleOrbits(event.target.checked)}
             />
-            <span className="tracking-wide text-slate-100">Orbit paths</span>
           </label>
-          <label className="flex items-center gap-3">
+          <label className="flex items-center justify-between cursor-pointer py-0.5">
+            <span className="tracking-wide text-slate-200 text-xs font-medium">Planet Labels</span>
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
               checked={settings.showLabels}
               onChange={(event) => handleToggleLabels(event.target.checked)}
             />
-            <span className="tracking-wide text-slate-100">Planet labels</span>
           </label>
           <button
             type="button"
             onClick={() => toggleSetting("useMilkyWayBackground")}
-            className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100 transition-all duration-200 hover:border-slate-500/90 hover:text-white"
-            style={{
-              backgroundColor: settings.useMilkyWayBackground
-                ? "rgba(59, 130, 246, 0.2)"
-                : "rgba(255, 255, 255, 0.06)"
-            }}
+            className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-200 transition hover:border-secondary-accent/40 hover:text-white"
           >
-            Switch background
+            Toggle Milky Way Galaxy
           </button>
-          <div className="h-px bg-slate-700/60" />
-          <div className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
-            Gravity visuals
+          <div className="h-px bg-slate-700/50" />
+          <div className="text-[10px] uppercase tracking-[0.2em] text-secondary-accent font-bold">
+            Gravity Visuals
           </div>
-          <label className="flex items-center gap-3">
+          <label className="flex items-center justify-between cursor-pointer py-0.5">
+            <span className="tracking-wide text-slate-200 text-xs font-medium">Spacetime Grid</span>
             <input
               type="checkbox"
-              className="toggle toggle-sm toggle-primary"
+              className="toggle toggle-sm toggle-secondary"
               checked={settings.showGrid}
               onChange={(event) => handleToggleGrid(event.target.checked)}
             />
-            <span className="tracking-wide text-slate-100">Spacetime grid</span>
           </label>
-          <label className="flex items-center gap-3 opacity-50">
-            <input
-              type="checkbox"
-              className="toggle toggle-sm toggle-primary"
-              checked={false}
-              disabled
-              aria-disabled="true"
-              title="Temporarily disabled"
-            />
-            <span className="tracking-wide text-slate-300">
-              Gravitational lensing (disabled)
-            </span>
-          </label>
-          <div className="h-px bg-slate-700/60" />
-          <div className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-semibold">
-            Performance
+          <div className="h-px bg-slate-700/50" />
+          <div className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
+            Diagnostics
           </div>
-          <label className="flex items-center gap-3">
+          <label className="flex items-center justify-between cursor-pointer py-0.5">
+            <span className="tracking-wide text-slate-200 text-xs font-medium">Perf Graph</span>
             <input
               type="checkbox"
               className="toggle toggle-sm toggle-primary"
               checked={settings.showPerf}
               onChange={(event) => handleTogglePerf(event.target.checked)}
             />
-            <span className="tracking-wide text-slate-100">Perf graph</span>
           </label>
-          <div className="h-px bg-slate-700/60" />
+          <div className="h-px bg-slate-700/50" />
           <PlanetPicker />
         </div>
       </div>

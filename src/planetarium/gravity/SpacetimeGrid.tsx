@@ -149,7 +149,7 @@ export default function SpacetimeGrid({
           gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
         }
       `,
-      fragmentShader: `
+        fragmentShader: `
         const float PI = 3.141592653589793;
         const int MAX_BODIES = ${MAX_BODIES};
         uniform float uTime;
@@ -175,14 +175,24 @@ export default function SpacetimeGrid({
           float spokeFract = abs(fract((theta / (2.0 * PI)) * numSpokes + 0.5) - 0.5);
           float globalSpokes = smoothstep(0.045, 0.012, spokeFract) * smoothstep(3.0, 12.0, r);
 
+          // Concentric Geodesic Circles / Orbit Grid Rings
+          float ringSpacing = 12.0;
+          float ringFract = abs(fract(r / ringSpacing + 0.5) - 0.5);
+          float globalRings = smoothstep(0.065, 0.015, ringFract) * smoothstep(3.0, 8.0, r);
+
+          float gridLines = max(globalSpokes, globalRings);
+
           // 2. Subtle Gravitational Pulse Wave
           float pulse = sin(r * 0.35 - uTime * 0.6) * 0.5 + 0.5;
 
           // 3. Volumetric Curvature Lighting & Depth Glow
           vec3 viewDir = normalize(cameraPosition - vWorld);
           vec3 normal = normalize(vWorldNormal);
+
+          // Use abs(dot) to ensure identical, symmetric lighting from BOTH sides (above and below/behind)
+          float cosTheta = abs(dot(viewDir, normal));
           float slope = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-          float fresnel = pow(1.0 - max(0.0, dot(viewDir, normal)), 2.5) * slope;
+          float fresnel = pow(1.0 - cosTheta, 2.5) * slope;
 
           float warpFactor = clamp(vInfluence / 4.0, 0.0, 1.0);
           float wellGlow = pow(warpFactor, 1.2) * 0.45;
@@ -191,13 +201,13 @@ export default function SpacetimeGrid({
           float distFromCenter = length(vWorld.xz) / (uGridSize * 0.48);
           float edgeFade = smoothstep(1.0, 0.12, distFromCenter);
 
-          // Color Palette: Cyan geodesic spokes -> Luminous violet in wells
+          // Color Palette: Cyan geodesic lines -> Luminous violet in wells
           vec3 baseWebColor = uLineColor;
           vec3 wellWebColor = mix(uLineColor, uWarpColor, warpFactor);
 
           vec3 finalColor = mix(baseWebColor, wellWebColor, warpFactor);
           finalColor += uWarpColor * fresnel * 0.85;
-          finalColor += vec3(0.2, 0.6, 1.0) * pulse * 0.08 * globalSpokes;
+          finalColor += vec3(0.2, 0.6, 1.0) * pulse * 0.08 * gridLines;
 
           if (uDebug > 0.5) {
             vec3 debugColor = mix(vec3(0.05, 0.2, 0.6), vec3(0.98, 0.35, 0.1), warpFactor);
@@ -205,8 +215,8 @@ export default function SpacetimeGrid({
           }
 
           // Composite Alpha
-          float spokeAlpha = globalSpokes * 0.4;
-          float totalAlpha = (spokeAlpha + wellGlow + fresnel * 0.35) * edgeFade;
+          float lineAlpha = gridLines * 0.45;
+          float totalAlpha = (lineAlpha + wellGlow + fresnel * 0.35) * edgeFade;
 
           gl_FragColor = vec4(finalColor, clamp(totalAlpha, 0.0, 0.92));
         }
