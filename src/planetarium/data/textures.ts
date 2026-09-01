@@ -12,7 +12,7 @@ import uranusTexture from "../../assets/planetarium/2k_uranus.webp";
 import neptuneTexture from "../../assets/planetarium/2k_neptune.webp";
 import ceresTexture from "../../assets/planetarium/2k_ceres_fictional.webp";
 import starfieldTexture from "../../assets/planetarium/2k_stars.webp";
-import milkyWayTexture from "../../assets/planetarium/2k_milky_way.webp";
+import milkyWayTexture from "../../assets/planetarium/BG_stars_milky_way.jpg";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 import earthTexture from "../../assets/planetarium/2k_earth_daymap.webp";
 import moonTexture from "../../assets/planetarium/2k_moon.webp";
