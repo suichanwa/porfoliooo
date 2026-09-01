@@ -15,7 +15,7 @@ export interface PlanetariumSettings {
 
 const DEFAULT_SETTINGS: PlanetariumSettings = {
   showOrbits: true,
-  showLabels: true,
+  showLabels: false,
   showGrid: false,
   showPerf: false,
   useMilkyWayBackground: false,
