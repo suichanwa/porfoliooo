@@ -1,6 +1,8 @@
 ---
+import { render } from "astro:content";
+
 const { entry } = Astro.props;
-const { Content } = await entry.render();
+const { Content } = await render(entry);
 const parseDate = (value: unknown) => {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(String(value));

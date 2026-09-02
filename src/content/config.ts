@@ -1,7 +1,8 @@
-import { defineCollection, z } from "astro:content";
+import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
 
 const changelog = defineCollection({
-  type: "content",
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/changelog' }),
   schema: z.object({
     title: z.any().optional().nullable(),
     date: z.any().optional().nullable(),
@@ -16,3 +17,4 @@ const changelog = defineCollection({
 });
 
 export const collections = { changelog };
+
