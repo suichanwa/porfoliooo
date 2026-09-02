@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   trackMusicToggled,
   trackNavigationClicked,
@@ -18,12 +18,24 @@ export default function Navigation() {
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const path = window.location.pathname;
-    setActiveHash(path);
-    // On the planetarium, the nav auto-hides so it doesn't cover the canvas/controls.
-    const planetarium = path.replace(/\/$/, "") === "/planetarium";
-    setIsPlanetarium(planetarium);
-    setNavRevealed(!planetarium);
+    const updateLocation = () => {
+      const path = window.location.pathname;
+      setActiveHash(path);
+      // On the planetarium, the nav auto-hides so it doesn't cover the canvas/controls.
+      const planetarium = path.replace(/\/$/, "") === "/planetarium";
+      setIsPlanetarium(planetarium);
+      setNavRevealed(!planetarium);
+      setIsMenuOpen(false);
+      setIsDropdownOpen(false);
+    };
+
+    updateLocation();
+    document.addEventListener("astro:page-load", updateLocation);
+    window.addEventListener("popstate", updateLocation);
+    return () => {
+      document.removeEventListener("astro:page-load", updateLocation);
+      window.removeEventListener("popstate", updateLocation);
+    };
   }, []);
 
   // Planetarium: reveal the nav only when the pointer is near the top edge.

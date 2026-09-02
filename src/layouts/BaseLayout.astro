@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import Navigation from "../components/Navigation";
 import StarryBackground from "../components/Starry";
 import FirebaseAnalytics from "../components/FirebaseAnalytics.astro";
@@ -23,15 +24,25 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     <meta name="theme-color" content="#0a0d18" />
     <link rel="icon" type="image/jpg" href="/images/pfp.jpg" />
     <link rel="preload" as="image" href="/images/pfp.jpg" fetchpriority="high" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <ClientRouter />
   </head>
   <body data-theme="dark" class={useVoidBackground ? 'void-body' : 'starry-body'}>
     <FirebaseAnalytics />
     <!-- Only render StarryBackground if NOT using void background -->
-    {!useVoidBackground && <StarryBackground client:load enableNeptuneTransition={enableNeptuneTransition} neptuneSectionId={neptuneSectionId} />}
+    {!useVoidBackground && (
+      <div transition:persist="starry-background-layer">
+        <StarryBackground client:idle enableNeptuneTransition={enableNeptuneTransition} neptuneSectionId={neptuneSectionId} />
+      </div>
+    )}
     
-    <Navigation client:load />
+    <div transition:persist="main-navigation-layer">
+      <Navigation client:idle />
+    </div>
     
     <main class="main-content">
       <slot />
