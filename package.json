@@ -27,7 +27,7 @@
     "astro-remote": "^0.3.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "daisyui": "^4.12.24",
+    "daisyui": "^5.7.27",
     "firebase": "^12.18.0",
     "framer-motion": "^12.43.0",
     "gsap": "^3.15.0",
