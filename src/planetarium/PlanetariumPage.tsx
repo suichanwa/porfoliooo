@@ -8,6 +8,7 @@ import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
 import PlanetariumNavbar from "./ui/PlanetariumNavbar";
+import PerfOverlay from "./ui/PerfOverlay";
 import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
 import {
   computeDistanceScaleParams,
@@ -176,6 +177,8 @@ function PlanetariumView() {
         isOpen={controlsOpen}
         onToggle={() => setControlsOpen((prev) => !prev)}
       />
+
+      <PerfOverlay enabled={settings.showPerf} />
 
       <PlanetariumNavbar
         speed={settings.orbitSpeed}

@@ -25,7 +25,6 @@ import {
   getMassScaleForVisuals
 } from "./gravity/gravityField";
 import { scalePlanetRadius } from "./utils/scale";
-import PerfOverlay from "./ui/PerfOverlay";
 
 interface PlanetariumSceneProps {
   showOrbits: boolean;
@@ -194,7 +193,6 @@ export default function PlanetariumScene({
           useMilkyWay={useMilkyWayBackground}
         />
       )}
-      <PerfOverlay enabled={showPerf} />
       {showGrid && (
         <SpacetimeGrid
           bodies={gravityBodies}

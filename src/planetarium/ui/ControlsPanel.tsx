@@ -5,6 +5,16 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent
 } from "react";
+import {
+  Activity,
+  GripHorizontal,
+  Grid,
+  Orbit,
+  Sliders,
+  Sparkles,
+  Tag,
+  X
+} from "lucide-react";
 import useMediaQuery from "../hooks/useMediaQuery";
 import type { DistanceScaleMode } from "../utils/distanceScale";
 import { useSettings } from "../context/SettingsContext";
@@ -23,6 +33,55 @@ interface ControlsPanelProps {
 }
 
 const DEFAULT_POSITION = { x: 16, y: 96 };
+
+interface CustomToggleProps {
+  label: string;
+  icon?: React.ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  accent?: "primary" | "secondary";
+}
+
+function CustomToggle({
+  label,
+  icon,
+  checked,
+  onChange,
+  accent = "primary"
+}: CustomToggleProps) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      className="group flex items-center justify-between py-1.5 px-2 rounded-xl cursor-pointer select-none transition-all duration-150 hover:bg-white/[0.05]"
+      role="switch"
+      aria-checked={checked}
+    >
+      <div className="flex items-center gap-2 text-slate-300 group-hover:text-white transition-colors">
+        {icon}
+        <span className="text-[11px] font-medium tracking-wide">{label}</span>
+      </div>
+      <div
+        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border transition-colors duration-200 ease-in-out ${
+          checked
+            ? accent === "secondary"
+              ? "bg-secondary-accent/30 border-secondary-accent/70"
+              : "bg-primary-accent/30 border-primary-accent/70"
+            : "bg-slate-800/90 border-slate-700/60"
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full shadow-md transition duration-200 ease-in-out mt-[2px] ml-[2px] ${
+            checked
+              ? accent === "secondary"
+                ? "translate-x-4 bg-secondary-accent shadow-[0_0_8px_rgba(199,146,234,0.9)]"
+                : "translate-x-4 bg-primary-accent shadow-[0_0_8px_rgba(94,159,255,0.9)]"
+              : "translate-x-0 bg-slate-400"
+          }`}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function ControlsPanel({
   className = "",
@@ -189,12 +248,14 @@ export default function ControlsPanel({
       ref={panelRef}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      className={`pointer-events-auto fixed z-20 max-h-[calc(100vh-2rem)] transition-opacity duration-300 ${
-        isInfoVisible
-          ? "opacity-0 pointer-events-none sm:pointer-events-auto"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      className={`fixed z-30 transition-all duration-300 ${
+        !controlsOpen
+          ? "pointer-events-none opacity-0"
           : hovered || isMobile
-            ? "opacity-100"
-            : "opacity-40 hover:opacity-100"
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-auto opacity-85 hover:opacity-100"
       } ${className}`}
       style={{
         transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
@@ -202,101 +263,106 @@ export default function ControlsPanel({
         top: isMobile ? 16 : undefined,
         bottom: isMobile ? "auto" : undefined,
         right: isMobile ? "auto" : undefined,
-        width: isMobile ? "min(calc(100vw - 24px), 20rem)" : "min(92vw, 20rem)"
+        width: isMobile ? "min(calc(100vw - 24px), 21rem)" : "min(92vw, 21rem)"
       }}
     >
-      <div className="flex min-h-0 max-h-full flex-col gap-4 overflow-hidden rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.94),rgba(20,28,40,0.85))] px-3.5 py-3.5 text-[11px] text-slate-100 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:px-4 sm:text-xs">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl">
+        {/* Header / Title Bar */}
+        <div className="flex items-center justify-between border-b border-slate-700/40 px-3.5 py-2.5">
           <div className="flex items-center gap-2">
+            <Sliders className="h-4 w-4 text-primary-accent" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+              Simulation Controls
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onPointerDown={handleDragStart}
-              className="flex items-center gap-1.5 rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
+              className="flex items-center gap-1 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] px-2 py-1 text-[10px] uppercase tracking-wider text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
+              title="Drag to reposition"
               aria-label="Drag controls panel"
             >
-              <span className="text-[10px] tracking-[0.1em]">:::</span>
-              Drag
+              <GripHorizontal className="h-3 w-3" />
+              <span className="hidden sm:inline">Move</span>
             </button>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-primary-accent font-bold">
-              Controls
-            </span>
+
+            <button
+              type="button"
+              onClick={toggleControls}
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.6)] hover:text-white active:scale-95"
+              title={controlsOpen ? "Collapse controls" : "Expand controls"}
+              aria-expanded={controlsOpen}
+            >
+              {controlsOpen ? <X className="h-3.5 w-3.5" /> : <Sliders className="h-3.5 w-3.5" />}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={toggleControls}
-            className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-200 transition hover:border-primary-accent/40 hover:text-white active:scale-95"
-            aria-expanded={controlsOpen}
-          >
-            {controlsOpen ? "Hide" : "Show"}
-          </button>
         </div>
+
+        {/* Panel Body */}
         <div
-          className={`flex min-h-0 flex-col gap-4 pr-1 transition-all duration-300 ${
-            controlsOpen
-              ? "max-h-[calc(100vh-12rem)] opacity-100 overflow-y-auto"
-              : "max-h-0 opacity-0 overflow-y-hidden"
+          className={`flex flex-col gap-3 p-3.5 transition-all duration-300 overflow-y-auto max-h-[calc(100vh-10rem)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            controlsOpen ? "block opacity-100" : "hidden opacity-0"
           }`}
-          style={{ scrollbarGutter: "stable" }}
         >
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
-                Distance scale
+          {/* Section 1: Distance Scale & View Mode */}
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.15em] text-primary-accent">
+              <span>Distance Scale</span>
+              <span className="text-slate-400 font-normal capitalize">
+                {settings.distanceScaleMode}
               </span>
-              <select
-                className="select select-sm border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.55)] text-slate-100 focus:border-primary-accent focus:outline-none rounded-xl"
-                value={settings.distanceScaleMode}
-                onChange={(event) =>
-                  handleDistanceScaleModeChange(event.target.value as DistanceScaleMode)
-                }
-              >
-                <option value="power">Power</option>
-                <option value="log">Log</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
-                Spacing
-              </span>
+            </div>
+
+            {/* Segmented Mode Selector */}
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-700/50 bg-[rgba(var(--primary-bg-rgb),0.4)] p-1">
+              {(["power", "log", "hybrid"] as const).map((mode) => {
+                const isActive = settings.distanceScaleMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => handleDistanceScaleModeChange(mode)}
+                    className={`rounded-lg py-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                        : "text-slate-400 hover:text-slate-200 border border-transparent hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Spacing Range Slider */}
+            <div className="flex flex-col gap-1.5 mt-1">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
+                <span className="text-slate-400">Spacing</span>
+                <span className="text-primary-accent tabular-nums font-bold">
+                  {Math.round(settings.distanceScaleSpacing)}
+                </span>
+              </div>
               <input
                 type="range"
                 min={0}
                 max={100}
                 value={settings.distanceScaleSpacing}
                 onChange={(event) => handleSpacingChange(Number(event.target.value))}
-                className="range range-xs range-primary"
+                className="w-full h-1.5 bg-slate-800/90 rounded-lg appearance-none cursor-pointer accent-primary-accent focus:outline-none"
               />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
-                Orbit speed
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={20}
-                step={0.5}
-                value={settings.orbitSpeed}
-                onChange={(event) => updateSetting("orbitSpeed", Number(event.target.value))}
-                className="range range-xs range-primary"
-              />
-            </label>
-            <div className="text-[10px] uppercase tracking-[0.15em] text-slate-300 font-medium">
-              Scale: <span className="text-white font-bold">{settings.distanceScaleMode}</span> (
-              <span className="text-white font-bold">{Math.round(settings.distanceScaleSpacing)}</span>)
             </div>
-            <div className="text-[10px] uppercase tracking-[0.15em] text-slate-300 font-medium">
-              Speed: <span className="text-white font-bold">{settings.orbitSpeed.toFixed(1)}x</span>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em]">
+
+            {/* View Mode Presets */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-700/50 bg-[rgba(var(--primary-bg-rgb),0.4)] p-1 mt-1">
               <button
                 type="button"
                 onClick={handleSetOverview}
-                className={`rounded-full border px-3 py-1 transition-all duration-200 ${
+                className={`rounded-lg py-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
                   settings.viewMode === "overview"
-                    ? "border-primary-accent bg-primary-accent/25 text-white shadow-[0_0_8px_rgba(94,159,255,0.3)]"
-                    : "border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] text-slate-200 hover:border-primary-accent/40 hover:text-white"
+                    ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                    : "text-slate-400 hover:text-slate-200 border border-transparent hover:bg-white/[0.04]"
                 }`}
               >
                 Overview
@@ -304,72 +370,115 @@ export default function ControlsPanel({
               <button
                 type="button"
                 onClick={handleSetExplore}
-                className={`rounded-full border px-3 py-1 transition-all duration-200 ${
+                className={`rounded-lg py-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
                   settings.viewMode === "explore"
-                    ? "border-primary-accent bg-primary-accent/25 text-white shadow-[0_0_8px_rgba(94,159,255,0.3)]"
-                    : "border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] text-slate-200 hover:border-primary-accent/40 hover:text-white"
+                    ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                    : "text-slate-400 hover:text-slate-200 border border-transparent hover:bg-white/[0.04]"
                 }`}
               >
                 Explore
               </button>
             </div>
           </div>
-          <div className="h-px bg-slate-700/50" />
-          <label className="flex items-center justify-between cursor-pointer py-0.5">
-            <span className="tracking-wide text-slate-200 text-xs font-medium">Orbit Paths</span>
+
+          {/* Section 2: Orbit Speed Slider */}
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.15em] text-primary-accent">
+              <span>Simulation Speed</span>
+              <span className="text-white tabular-nums font-bold">
+                {settings.orbitSpeed.toFixed(1)}x
+              </span>
+            </div>
+
             <input
-              type="checkbox"
-              className="toggle toggle-sm toggle-primary"
+              type="range"
+              min={0}
+              max={20}
+              step={0.5}
+              value={settings.orbitSpeed}
+              onChange={(event) => updateSetting("orbitSpeed", Number(event.target.value))}
+              className="w-full h-1.5 bg-slate-800/90 rounded-lg appearance-none cursor-pointer accent-primary-accent focus:outline-none"
+            />
+
+            <div className="flex items-center justify-between gap-1 mt-0.5">
+              {[0, 1, 5, 10, 20].map((spd) => (
+                <button
+                  key={spd}
+                  type="button"
+                  onClick={() => updateSetting("orbitSpeed", spd)}
+                  className={`flex-1 rounded-lg py-0.5 text-[9px] font-semibold transition ${
+                    settings.orbitSpeed === spd
+                      ? "bg-primary-accent/30 text-white font-bold border border-primary-accent/60"
+                      : "text-slate-400 hover:text-slate-200 bg-white/[0.03] hover:bg-white/[0.08]"
+                  }`}
+                >
+                  {spd}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 3: Visual Overlays (Sleek Toggles) */}
+          <div className="flex flex-col gap-1 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2">
+            <div className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary-accent">
+              Visual Overlays
+            </div>
+
+            <CustomToggle
+              label="Orbit Paths"
+              icon={<Orbit className="h-3.5 w-3.5 text-primary-accent" />}
               checked={settings.showOrbits}
-              onChange={(event) => handleToggleOrbits(event.target.checked)}
+              onChange={handleToggleOrbits}
+              accent="primary"
             />
-          </label>
-          <label className="flex items-center justify-between cursor-pointer py-0.5">
-            <span className="tracking-wide text-slate-200 text-xs font-medium">Planet Labels</span>
-            <input
-              type="checkbox"
-              className="toggle toggle-sm toggle-primary"
+
+            <CustomToggle
+              label="Planet Labels"
+              icon={<Tag className="h-3.5 w-3.5 text-primary-accent" />}
               checked={settings.showLabels}
-              onChange={(event) => handleToggleLabels(event.target.checked)}
+              onChange={handleToggleLabels}
+              accent="primary"
             />
-          </label>
-          <button
-            type="button"
-            onClick={() => toggleSetting("useMilkyWayBackground")}
-            className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-200 transition hover:border-secondary-accent/40 hover:text-white"
-          >
-            Toggle Milky Way Galaxy
-          </button>
-          <div className="h-px bg-slate-700/50" />
-          <div className="text-[10px] uppercase tracking-[0.2em] text-secondary-accent font-bold">
-            Gravity Visuals
-          </div>
-          <label className="flex items-center justify-between cursor-pointer py-0.5">
-            <span className="tracking-wide text-slate-200 text-xs font-medium">Spacetime Grid</span>
-            <input
-              type="checkbox"
-              className="toggle toggle-sm toggle-secondary"
+
+            <CustomToggle
+              label="Milky Way Galaxy"
+              icon={<Sparkles className="h-3.5 w-3.5 text-secondary-accent" />}
+              checked={settings.useMilkyWayBackground}
+              onChange={() => toggleSetting("useMilkyWayBackground")}
+              accent="secondary"
+            />
+
+            <CustomToggle
+              label="Spacetime Grid"
+              icon={<Grid className="h-3.5 w-3.5 text-secondary-accent" />}
               checked={settings.showGrid}
-              onChange={(event) => handleToggleGrid(event.target.checked)}
+              onChange={handleToggleGrid}
+              accent="secondary"
             />
-          </label>
-          <div className="h-px bg-slate-700/50" />
-          <div className="text-[10px] uppercase tracking-[0.2em] text-primary-accent font-bold">
-            Diagnostics
           </div>
-          <label className="flex items-center justify-between cursor-pointer py-0.5">
-            <span className="tracking-wide text-slate-200 text-xs font-medium">Perf Graph</span>
-            <input
-              type="checkbox"
-              className="toggle toggle-sm toggle-primary"
+
+          {/* Section 4: Diagnostics */}
+          <div className="flex flex-col gap-1 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2">
+            <div className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-accent">
+              Diagnostics
+            </div>
+
+            <CustomToggle
+              label="Performance Graph"
+              icon={<Activity className="h-3.5 w-3.5 text-primary-accent" />}
               checked={settings.showPerf}
-              onChange={(event) => handleTogglePerf(event.target.checked)}
+              onChange={handleTogglePerf}
+              accent="primary"
             />
-          </label>
-          <div className="h-px bg-slate-700/50" />
-          <PlanetPicker />
+          </div>
+
+          {/* Celestial Picker */}
+          <div className="mt-0.5">
+            <PlanetPicker />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

@@ -49,7 +49,7 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
   );
 
   return (
-    <div className="pointer-events-auto w-full max-w-[18rem] rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.94),rgba(20,28,40,0.85))] px-3.5 py-3 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+    <div className="pointer-events-auto w-full max-w-[18rem] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.45),rgba(20,28,40,0.30))] px-3.5 py-3 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(99,102,241,0.35)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-secondary-accent">
           Spacetime Gravity
@@ -57,7 +57,7 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:border-secondary-accent/40 hover:text-white"
+          className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:border-secondary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white"
           aria-expanded={open}
         >
           {open ? "Hide" : "Show"}
@@ -73,7 +73,7 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
             <button
               key={label}
               type="button"
-              className="rounded-full border border-slate-700/60 bg-[rgba(var(--primary-bg-rgb),0.45)] px-2 py-1 transition hover:border-primary-accent/40 hover:text-white active:scale-95"
+              className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-2 py-1 text-slate-200 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
               onClick={() => onChange(preset)}
             >
               {label}
