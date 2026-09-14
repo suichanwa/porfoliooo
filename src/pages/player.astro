@@ -167,10 +167,11 @@ const moodNotes = [
     </div>
   </section>
 
-  <script is:inline>
-    (() => {
+  <script>
+    function initAudioPlayer() {
       const root = document.querySelector("[data-player-root]");
-      if (!root) return;
+      if (!root || root.dataset.playerInitialized === "true") return;
+      root.dataset.playerInitialized = "true";
 
       const audio = root.querySelector("[data-audio]");
       const title = root.querySelector("[data-title]");
@@ -368,7 +369,9 @@ const moodNotes = [
       audio.volume = Number(volume.value);
       setPlayingState(false);
       setActiveButton(activeIndex);
-    })();
+    }
+
+    document.addEventListener("astro:page-load", initAudioPlayer);
   </script>
 </BaseLayout>
 

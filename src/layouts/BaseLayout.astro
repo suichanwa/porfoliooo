@@ -7,19 +7,30 @@ import "../styles/global.css";
 
 interface Props {
   title: string;
+  description?: string;
+  image?: string;
   useVoidBackground?: boolean;
   enableNeptuneTransition?: boolean;
   neptuneSectionId?: string;
 }
 
-const { title, useVoidBackground = false, enableNeptuneTransition = false, neptuneSectionId = 'neptune-widget' } = Astro.props;
+const {
+  title,
+  description = "Personal portfolio, interactive planetarium, celestial visualizer, and projects by suiseika.",
+  image = "/images/pfp.jpg",
+  useVoidBackground = false,
+  enableNeptuneTransition = false,
+  neptuneSectionId = 'neptune-widget'
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://suichanwa.github.io");
+const ogImageURL = new URL(image, canonicalURL);
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="My personal portfolio" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0d18" />
     <link rel="icon" type="image/jpg" href="/images/pfp.jpg" />
@@ -29,6 +40,24 @@ const { title, useVoidBackground = false, enableNeptuneTransition = false, neptu
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph / Social Embeds -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:site_name" content="suiseika's portfolio" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={ogImageURL} />
+
     <ClientRouter />
   </head>
   <body data-theme="dark" class={useVoidBackground ? 'void-body' : 'starry-body'}>

@@ -1,52 +1,31 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
+import { getCollection, render } from "astro:content";
 
-// Define types for diary entries
-interface DiaryEntryData {
-  id: string;
-  title: string;
-  date: Date;
-  coverImage?: string;
-  tags: string[];
-  content: string;
-}
+// Get all diary entries from Content Layer
+const rawEntries = await getCollection("diary");
 
-// Create a function to import markdown files dynamically
-async function importDiaryEntries(): Promise<DiaryEntryData[]> {
-  const markdownFiles = import.meta.glob<{
-    frontmatter: {
-      title: string;
-      date: string;
-      coverImage?: string;
-      tags?: string[];
+// Sort entries by date (newest first)
+const sortedEntries = rawEntries.sort((a, b) => {
+  const timeA = a.data.date ? new Date(a.data.date).getTime() : 0;
+  const timeB = b.data.date ? new Date(b.data.date).getTime() : 0;
+  return timeB - timeA;
+});
+
+const diaryEntries = await Promise.all(
+  sortedEntries.map(async (entry) => {
+    const { Content } = await render(entry);
+    return {
+      id: entry.id,
+      title: entry.data.title || entry.id,
+      date: entry.data.date ? new Date(entry.data.date) : new Date(),
+      coverImage: entry.data.coverImage,
+      tags: entry.data.tags || [],
+      Content,
     };
-    compiledContent: () => string;
-  }>('../content/diary/*.md');
-  
-  const entries: DiaryEntryData[] = [];
-
-  for (const path in markdownFiles) {
-    const module = await markdownFiles[path]();
-    const filename = path.split('/').pop()?.replace('.md', '') || '';
-    
-    // Extract metadata and content from the markdown file
-    entries.push({
-      id: filename,
-      title: module.frontmatter.title || filename,
-      date: new Date(module.frontmatter.date),
-      coverImage: module.frontmatter.coverImage,
-      tags: module.frontmatter.tags || [],
-      content: module.compiledContent()
-    });
-  }
-
-  // Sort entries by date (newest first)
-  return entries.sort((a, b) => b.date.getTime() - a.date.getTime());
-}
-
-// Get all diary entries
-const diaryEntries = await importDiaryEntries();
+  })
+);
 
 // Get the entry ID from the URL or use the first entry
 const urlParams = new URL(Astro.request.url).searchParams;
@@ -154,7 +133,9 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
               </header>
 
               {/* Entry Content */}
-              <div class="diary-content prose prose-invert max-w-none" set:html={entry.content} />
+              <div class="diary-content prose prose-invert max-w-none">
+                <entry.Content />
+              </div>
             </article>
           ))}
         </main>
@@ -163,8 +144,7 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
   </section>
 
   <script>
-    // Add smooth scroll behavior for entry navigation
-    document.addEventListener('DOMContentLoaded', () => {
+    function initDiaryNavigation() {
       const entryLinks = document.querySelectorAll('[data-entry-index]');
       
       entryLinks.forEach(link => {
@@ -197,7 +177,9 @@ const currentEntryId = urlParams.get('entry') || diaryEntries[0]?.id || "";
           window.history.pushState({}, '', url);
         });
       });
-    });
+    }
+
+    document.addEventListener('astro:page-load', initDiaryNavigation);
   </script>
 </BaseLayout>
 

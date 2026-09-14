@@ -2,11 +2,11 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import TypeWriter from "../../components/TypeWriter.tsx";
 import GameCanvas from "../../game/GameCanvas.tsx";
-import Scroll from "../../utils/Scroll.tsx";
+import Scroll from "../../components/Scroll.astro";
 ---
 
 <BaseLayout title="Mystic Ruins | My Portfolio">
-    <Scroll client:load />
+    <Scroll />
     <section class="py-12 max-w-4xl mx-auto">
         <div data-scroll class="opacity-0">
             <h1

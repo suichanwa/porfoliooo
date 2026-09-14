@@ -3,12 +3,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
 import PushLetteres from "../components/PushLetteres.tsx";
-import Scroll from "../utils/Scroll.tsx";
+import Scroll from "../components/Scroll.astro";
 ---
 
 <BaseLayout title="Write Me a Letter | My Portfolio">
     <PushLetteres client:load />
-    <Scroll client:load />
+    <Scroll />
     <section class="py-12 md:py-16 max-w-2xl mx-auto px-4">
         <div data-scroll class="opacity-0">
             <h1

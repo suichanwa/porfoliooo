@@ -16,5 +16,15 @@ const changelog = defineCollection({
   }).passthrough(),
 });
 
-export const collections = { changelog };
+const diary = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/diary' }),
+  schema: z.object({
+    title: z.string().optional(),
+    date: z.any().optional(),
+    coverImage: z.string().optional(),
+    tags: z.array(z.string()).optional().default([]),
+  }).passthrough(),
+});
+
+export const collections = { changelog, diary };
 

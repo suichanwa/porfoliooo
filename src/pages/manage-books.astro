@@ -2,11 +2,11 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import Scroll from "../utils/Scroll.tsx";
+import Scroll from "../components/Scroll.astro";
 ---
 
 <BaseLayout title="Manage Books | My Portfolio">
-    <Scroll client:load />
+    <Scroll />
     <section class="py-12 max-w-4xl mx-auto">
         <div data-scroll class="opacity-0 text-center mb-12">
             <h1 class="text-3xl md:text-4xl font-bold mb-6 min-h-[3.5rem]">
