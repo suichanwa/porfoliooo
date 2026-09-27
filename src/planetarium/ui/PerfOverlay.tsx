@@ -11,8 +11,13 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
   const [mounted, setMounted] = useState(false);
 
   const [position, setPosition] = useState(() => ({
-    x: typeof window !== "undefined" ? Math.max(16, window.innerWidth - 300) : 700,
-    y: 80
+    x:
+      typeof window !== "undefined"
+        ? window.innerWidth < 640
+          ? 12
+          : Math.max(16, window.innerWidth - 280)
+        : 700,
+    y: typeof window !== "undefined" && window.innerWidth < 640 ? 12 : 80
   }));
 
   const dragStateRef = useRef({
@@ -49,10 +54,13 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
   useEffect(() => {
     if (!mounted) return;
     const handleResize = () => {
-      setPosition((pos) => ({
-        x: Math.max(8, Math.min(window.innerWidth - 290, pos.x)),
-        y: Math.max(8, Math.min(window.innerHeight - 150, pos.y))
-      }));
+      setPosition((pos) => {
+        const overlayWidth = window.innerWidth < 640 ? 215 : 265;
+        return {
+          x: Math.max(8, Math.min(window.innerWidth - overlayWidth, pos.x)),
+          y: Math.max(8, Math.min(window.innerHeight - 120, pos.y))
+        };
+      });
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -136,8 +144,9 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
   const handleDragMove = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
     const state = dragStateRef.current;
     if (!state.active || state.pointerId !== event.pointerId) return;
-    const nextX = Math.max(8, Math.min(window.innerWidth - 290, state.startX + (event.clientX - state.originX)));
-    const nextY = Math.max(8, Math.min(window.innerHeight - 150, state.startY + (event.clientY - state.originY)));
+    const overlayWidth = window.innerWidth < 640 ? 215 : 265;
+    const nextX = Math.max(8, Math.min(window.innerWidth - overlayWidth, state.startX + (event.clientX - state.originX)));
+    const nextY = Math.max(8, Math.min(window.innerHeight - 120, state.startY + (event.clientY - state.originY)));
     setPosition({ x: nextX, y: nextY });
   }, []);
 
@@ -170,7 +179,7 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
     <div
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      className="pointer-events-auto fixed z-50 flex w-72 flex-col gap-2 rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.88),rgba(20,28,40,0.76))] p-3 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.2)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 select-none"
+      className="pointer-events-auto fixed z-50 flex w-52 sm:w-64 flex-col gap-1.5 sm:gap-2 rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.88),rgba(20,28,40,0.76))] p-2 sm:p-3 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.2)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 select-none"
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
         left: 0,
@@ -178,11 +187,11 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
       }}
     >
       {/* Title / Drag Bar */}
-      <div className="flex items-center justify-between border-b border-slate-700/40 pb-2">
+      <div className="flex items-center justify-between border-b border-slate-700/40 pb-1.5">
         <div className="flex items-center gap-1.5">
-          <Activity className="h-3.5 w-3.5 text-primary-accent" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-accent">
-            Telemetry
+          <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary-accent" />
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-primary-accent">
+            Performance
           </span>
         </div>
 
@@ -193,18 +202,18 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
             onPointerMove={handleDragMove}
             onPointerUp={handleDragEnd}
             onPointerCancel={handleDragEnd}
-            className="flex items-center gap-1 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] px-2 py-0.5 text-[9px] uppercase tracking-wider text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
-            title="Drag telemetry"
+            className="flex items-center gap-1 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[9px] uppercase tracking-wider text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
+            title="Drag performance overlay"
           >
-            <GripHorizontal className="h-3 w-3" />
-            <span>Move</span>
+            <GripHorizontal className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <span className="hidden sm:inline">Move</span>
           </button>
 
           <button
             type="button"
             onClick={() => updateSetting("showPerf", false)}
             className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.6)] hover:text-white active:scale-95"
-            title="Close telemetry"
+            title="Close performance overlay"
           >
             <X className="h-3 w-3" />
           </button>
@@ -212,21 +221,23 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
       </div>
 
       {/* Main FPS & Sparkline */}
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.3)] px-3 py-2">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.3)] px-2 sm:px-3 py-1.5 sm:py-2">
         <div className="flex flex-col leading-none">
           <div className="flex items-baseline gap-1">
-            <span className={`text-xl font-extrabold tabular-nums tracking-tight ${fpsColor}`}>
+            <span className={`text-base sm:text-xl font-extrabold tabular-nums tracking-tight ${fpsColor}`}>
               {displayStats.fps}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">FPS</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              FPS
+            </span>
           </div>
-          <span className="mt-1 text-[10px] font-medium text-slate-400 tabular-nums">
+          <span className="mt-0.5 sm:mt-1 text-[9px] sm:text-[10px] font-medium text-slate-400 tabular-nums">
             {displayStats.frameMs} ms
           </span>
         </div>
 
         {/* Real-time SVG Frame Graph */}
-        <div className="relative h-6 w-24 overflow-hidden rounded bg-slate-900/60 p-0.5">
+        <div className="relative h-5 w-16 sm:h-6 sm:w-24 overflow-hidden rounded bg-slate-900/60 p-0.5">
           <svg className="h-full w-full overflow-visible" viewBox="0 0 96 24">
             <polyline
               fill="none"
@@ -242,29 +253,34 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
       </div>
 
       {/* Hardware & Runtime Stats */}
-      <div className="grid grid-cols-3 gap-1.5 text-center">
-        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1.5 px-1">
-          <div className="text-[8px] font-semibold uppercase tracking-wider text-slate-400">Latency</div>
-          <div className="mt-0.5 text-[11px] font-bold text-white tabular-nums">
+      <div className="grid grid-cols-3 gap-1 sm:gap-1.5 text-center">
+        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1 px-0.5 sm:py-1.5 sm:px-1">
+          <div className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-wider text-slate-400">
+            Latency
+          </div>
+          <div className="mt-0.5 text-[9px] sm:text-[11px] font-bold text-white tabular-nums">
             {displayStats.frameMs} ms
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1.5 px-1">
-          <div className="text-[8px] font-semibold uppercase tracking-wider text-slate-400">DPR</div>
-          <div className="mt-0.5 text-[11px] font-bold text-white tabular-nums">
+        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1 px-0.5 sm:py-1.5 sm:px-1">
+          <div className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-wider text-slate-400">
+            DPR
+          </div>
+          <div className="mt-0.5 text-[9px] sm:text-[11px] font-bold text-white tabular-nums">
             {displayStats.dpr.toFixed(1)}x
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1.5 px-1">
-          <div className="text-[8px] font-semibold uppercase tracking-wider text-slate-400">Memory</div>
-          <div className="mt-0.5 text-[11px] font-bold text-white tabular-nums">
-            {displayStats.memoryMb ? `${displayStats.memoryMb} MB` : "Normal"}
+        <div className="rounded-lg border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] py-1 px-0.5 sm:py-1.5 sm:px-1">
+          <div className="text-[7px] sm:text-[8px] font-semibold uppercase tracking-wider text-slate-400">
+            Memory
+          </div>
+          <div className="mt-0.5 text-[9px] sm:text-[11px] font-bold text-white tabular-nums truncate">
+            {displayStats.memoryMb ? `${displayStats.memoryMb}M` : "Normal"}
           </div>
         </div>
       </div>
     </div>
   );
 }
-
