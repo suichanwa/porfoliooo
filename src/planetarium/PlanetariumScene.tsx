@@ -82,7 +82,7 @@ export default function PlanetariumScene({
     createBodyRefStore<Object3D | null>(null)
   );
   const sunRef = useRef<Mesh | null>(null);
-  const orbitSegments = isLowEnd ? 120 : 180;
+  const orbitSegments = isLowEnd ? 180 : 320;
   const gridDivisions = isLowEnd ? 160 : 300;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
   const lensingSoftening = gravitySettings.softening * 0.03;

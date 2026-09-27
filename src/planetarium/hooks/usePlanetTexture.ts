@@ -54,6 +54,7 @@ const loadTexture = (url: string, colorSpace: ColorSpace) => {
         loaded.generateMipmaps = true;
         loaded.minFilter = LinearMipmapLinearFilter;
         loaded.magFilter = LinearFilter;
+        loaded.anisotropy = 4;
         loaded.needsUpdate = true;
         textureCache.set(key, loaded);
         pendingLoads.delete(key);

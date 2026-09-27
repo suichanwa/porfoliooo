@@ -51,7 +51,12 @@ function PlanetariumView() {
   const hasTrackedVisit = useRef(false);
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
-  const canvasDpr = deviceInfo.isLowEnd ? 1 : 1.5;
+  const canvasDpr: [number, number] = useMemo(() => {
+    if (typeof window === "undefined") return [1, 2];
+    if (deviceInfo.isLowEnd) return [1, 1.5];
+    const maxDpr = Math.min(window.devicePixelRatio || 2, 2.25);
+    return [1.25, Math.max(1.5, maxDpr)];
+  }, [deviceInfo.isLowEnd]);
 
   const distanceScaleParams = useMemo(
     () =>
@@ -211,7 +216,7 @@ function PlanetariumView() {
           units
         </div>
         <div>
-          Quality: DPR {canvasDpr.toFixed(2)} - Post Off
+          Quality: DPR {Array.isArray(canvasDpr) ? canvasDpr[1].toFixed(2) : Number(canvasDpr).toFixed(2)} - Post Off
         </div>
       </div>
 

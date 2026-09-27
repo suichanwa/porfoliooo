@@ -14,9 +14,7 @@ export default function useDeviceInfo(isClient: boolean): DeviceInfo {
 
     return {
       isMobile: window.innerWidth < 768,
-      isLowEnd:
-        (navigator?.hardwareConcurrency || 4) <= 2 ||
-        (window.devicePixelRatio > 2 && window.innerWidth < 1024),
+      isLowEnd: (navigator?.hardwareConcurrency || 4) <= 2,
       prefersReducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches
     };
   }, [isClient]);

@@ -51,7 +51,7 @@ export default function PlanetariumCanvas({
         frameloop={frameloop}
         dpr={dpr}
         camera={{ position: [0, 0, 20], fov: 45, near: 0.1, far: 2000 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         onPointerMissed={onPointerMissed}
       >
         <color attach="background" args={["#05070d"]} />
