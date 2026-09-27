@@ -270,25 +270,14 @@ export default function PlanetariumNavbar({
                   )}
                 </div>
                 <div className="grid grid-cols-3 gap-1">
-                  {[
-                    { label: "Subtle", grid: 0.35, lens: 0.15, soft: 6, max: 1.6 },
-                    { label: "Cinematic", grid: 0.75, lens: 0.32, soft: 4, max: 2.6 },
-                    { label: "Debug", grid: 1.2, lens: 0.45, soft: 2.8, max: 4 }
-                  ].map((preset) => (
+                  {Object.entries(GRAVITY_PRESETS).map(([label, preset]) => (
                     <button
-                      key={preset.label}
+                      key={label}
                       type="button"
-                      onClick={() =>
-                        onGravityChange({
-                          gridStrength: preset.grid,
-                          lensingStrength: preset.lens,
-                          softening: preset.soft,
-                          maxInfluence: preset.max
-                        })
-                      }
+                      onClick={() => onGravityChange(preset)}
                       className="rounded-lg bg-white/[0.04] hover:bg-white/[0.09] py-1 text-[9px] font-bold uppercase tracking-wider text-slate-300 hover:text-white border border-slate-700/50 hover:border-secondary-accent/40 active:scale-95 transition"
                     >
-                      {preset.label}
+                      {label}
                     </button>
                   ))}
                 </div>
