@@ -227,6 +227,7 @@ export default function PlanetariumScene({
               scaleMode={distanceScaleMode}
               scaleParams={distanceScaleParams}
               planetRefs={planetRefs}
+              isSelected={selectedId === planet.id}
             />
           ) : null
         )}
