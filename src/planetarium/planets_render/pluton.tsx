@@ -31,9 +31,9 @@ interface PlutonProps {
 
 const createFallbackTexture = (hex: string) => {
   const data = new Uint8Array([
-    parseInt(hex.slice(1, 3), 16),
-    parseInt(hex.slice(3, 5), 16),
-    parseInt(hex.slice(5, 7), 16),
+    Number.parseInt(hex.slice(1, 3), 16),
+    Number.parseInt(hex.slice(3, 5), 16),
+    Number.parseInt(hex.slice(5, 7), 16),
     255
   ]);
   const texture = new DataTexture(data, 1, 1, RGBAFormat);

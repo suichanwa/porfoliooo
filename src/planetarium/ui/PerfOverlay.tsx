@@ -179,6 +179,10 @@ export default function PerfOverlay({ enabled = false }: PerfOverlayProps) {
     <div
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      role="region"
+      aria-label="Performance overlay"
+      tabIndex={-1}
       className="pointer-events-auto fixed z-50 flex w-52 sm:w-64 flex-col gap-1.5 sm:gap-2 rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.88),rgba(20,28,40,0.76))] p-2 sm:p-3 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.2)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 select-none"
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,

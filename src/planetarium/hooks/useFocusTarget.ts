@@ -169,7 +169,8 @@ export const useFocusTarget = ({
       controls.minDistance = 8;
       controls.maxDistance = 140;
 
-      if (nearRef.current !== 0.1 || farRef.current !== 2000) {
+      const EPS = 1e-9;
+      if (Math.abs(nearRef.current - 0.1) > EPS || Math.abs(farRef.current - 2000) > EPS) {
         camera.near = 0.1;
         camera.far = 2000;
         camera.updateProjectionMatrix();

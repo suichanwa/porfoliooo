@@ -398,9 +398,9 @@ export const Button: React.FC<ButtonProps> = ({
   // Helper function to lighten a color
   const lightenColor = (color: string, amount: number): string => {
     // Convert hex to RGB
-    let r = parseInt(color.slice(1, 3), 16);
-    let g = parseInt(color.slice(3, 5), 16);
-    let b = parseInt(color.slice(5, 7), 16);
+    let r = Number.parseInt(color.slice(1, 3), 16);
+    let g = Number.parseInt(color.slice(3, 5), 16);
+    let b = Number.parseInt(color.slice(5, 7), 16);
     
     // Increase each component by the amount
     r = Math.min(255, r + amount);
@@ -414,9 +414,9 @@ export const Button: React.FC<ButtonProps> = ({
   // Helper function to darken a color
   const darkenColor = (color: string, amount: number): string => {
     // Convert hex to RGB
-    let r = parseInt(color.slice(1, 3), 16);
-    let g = parseInt(color.slice(3, 5), 16);
-    let b = parseInt(color.slice(5, 7), 16);
+    let r = Number.parseInt(color.slice(1, 3), 16);
+    let g = Number.parseInt(color.slice(3, 5), 16);
+    let b = Number.parseInt(color.slice(5, 7), 16);
     
     // Decrease each component by the amount
     r = Math.max(0, r - amount);
@@ -430,9 +430,9 @@ export const Button: React.FC<ButtonProps> = ({
   // Helper function to desaturate a color
   const desaturateColor = (color: string): string => {
     // Convert hex to RGB
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
+    const r = Number.parseInt(color.slice(1, 3), 16);
+    const g = Number.parseInt(color.slice(3, 5), 16);
+    const b = Number.parseInt(color.slice(5, 7), 16);
     
     // Calculate grayscale value (simple average)
     const gray = Math.floor((r + g + b) / 3);

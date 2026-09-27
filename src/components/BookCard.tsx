@@ -35,8 +35,8 @@ export default function BookCard({ book }: BookCardProps) {
         cookie.trim().startsWith(`book_${book.id}_page=`)
       );
       if (pageCookie) {
-        const page = parseInt(pageCookie.split('=')[1]);
-        return isNaN(page) ? 1 : page;
+        const page = Number.parseInt(pageCookie.split('=')[1]);
+        return Number.isNaN(page) ? 1 : page;
       }
     }
     return 1;

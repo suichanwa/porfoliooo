@@ -35,12 +35,12 @@ export default function SettingsPanel({ settingsSystem, show, onClose }: Setting
   };
 
   const handleSfxVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const volume = parseFloat(event.target.value);
+    const volume = Number.parseFloat(event.target.value);
     settingsSystem.setSfxVolume(volume);
   };
 
   const handleMusicVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const volume = parseFloat(event.target.value);
+    const volume = Number.parseFloat(event.target.value);
     settingsSystem.setMusicVolume(volume);
   };
 

@@ -10,7 +10,7 @@ const formatMass = (massKg?: number) => {
   if (!massKg) return "-";
   const expStr = massKg.toExponential(3);
   const [mantissa, exp] = expStr.split(/e\+?/i);
-  const cleanExp = exp ? parseInt(exp, 10) : "";
+  const cleanExp = exp ? Number.parseInt(exp, 10) : "";
   return (
     <span>
       {mantissa} &times; 10<sup>{cleanExp}</sup> kg
@@ -57,6 +57,10 @@ export default function PlanetInfoPanel() {
             <div
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              role="region"
+              aria-label="Planet info card"
+              tabIndex={-1}
               className="pointer-events-auto w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.92),rgba(20,28,40,0.86))] p-3 text-[12px] text-slate-200 shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(99,102,241,0.2)] backdrop-blur-2xl transition-all duration-300 ease-out"
             >
               {/* Drag / Tap Handle Pill */}
@@ -248,6 +252,10 @@ export default function PlanetInfoPanel() {
         <div
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="region"
+          aria-label="Planet details panel"
+          tabIndex={-1}
           className={`pointer-events-auto w-full max-w-sm rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-5 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10rem)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             isInfoVisible
               ? "translate-x-0 opacity-100"

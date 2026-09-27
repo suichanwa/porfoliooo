@@ -68,7 +68,7 @@ export function pickStarByIndex(index: number): StarName {
 export function pickStarBySeed(seed: string): StarName {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+    hash = Math.trunc(hash * 31 + seed.charCodeAt(i));
   }
   return pickStarByIndex(hash);
 }

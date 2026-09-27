@@ -52,9 +52,11 @@ function CustomToggle({
   return (
     <div
       onClick={() => onChange(!checked)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(!checked); } }}
       className="group flex items-center justify-between py-1.5 px-2 rounded-xl cursor-pointer select-none transition-all duration-150 hover:bg-white/[0.05]"
       role="switch"
       aria-checked={checked}
+      tabIndex={0}
     >
       <div className="flex items-center gap-2 text-slate-300 group-hover:text-white transition-colors">
         {icon}
@@ -250,6 +252,10 @@ export default function ControlsPanel({
       onPointerLeave={() => setHovered(false)}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      role="region"
+      aria-label="Simulation controls panel"
+      tabIndex={-1}
       className={`fixed z-30 transition-all duration-300 ${
         !controlsOpen
           ? "pointer-events-none opacity-0"

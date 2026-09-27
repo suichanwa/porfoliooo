@@ -77,7 +77,7 @@ export default function ControlPanel({
         >
           <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-blue-300">
+              <label htmlFor="speed-control" className="text-sm font-semibold text-blue-300">
                 <span className="inline-flex items-center gap-2">
                   <GaugeIcon />
                   Speed Control
@@ -91,6 +91,7 @@ export default function ControlPanel({
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-400 w-6 sm:w-8">10</span>
               <input
+                id="speed-control"
                 type="range"
                 min="10"
                 max="150"

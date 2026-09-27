@@ -219,7 +219,7 @@ export default function BookReader({ book }: BookReaderProps) {
                   <input
                     type="number"
                     value={currentPage}
-                    onChange={(e) => handlePageChange(parseInt(e.target.value) || 1, "input")}
+                    onChange={(e) => handlePageChange(Number.parseInt(e.target.value) || 1, "input")}
                     className="input input-bordered input-xs w-16 text-center"
                     min="1"
                     max={book.pages}
