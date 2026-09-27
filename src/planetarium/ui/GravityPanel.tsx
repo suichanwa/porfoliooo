@@ -15,7 +15,7 @@ const toSlider = (value: number, min: number, max: number) =>
 const fromSlider = (value: number, min: number, max: number) =>
   min + (max - min) * (value / 100);
 
-const PRESETS: Record<string, GravitySettings> = {
+export const GRAVITY_PRESETS: Record<string, GravitySettings> = {
   Subtle: {
     gridStrength: 0.35,
     lensingStrength: 0.15,
@@ -35,6 +35,8 @@ const PRESETS: Record<string, GravitySettings> = {
     maxInfluence: 4
   }
 };
+
+const PRESETS = GRAVITY_PRESETS;
 
 export default function GravityPanel({ settings, onChange }: GravityPanelProps) {
   const [open, setOpen] = useState(false);

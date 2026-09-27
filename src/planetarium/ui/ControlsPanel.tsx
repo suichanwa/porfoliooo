@@ -258,12 +258,12 @@ export default function ControlsPanel({
             : "pointer-events-auto opacity-85 hover:opacity-100"
       } ${className}`}
       style={{
-        transform: isMobile ? "none" : `translate3d(${position.x}px, ${position.y}px, 0)`,
-        left: isMobile ? 12 : undefined,
-        top: isMobile ? 16 : undefined,
+        transform: isMobile ? "translateX(-50%)" : `translate3d(${position.x}px, ${position.y}px, 0)`,
+        left: isMobile ? "50%" : undefined,
+        top: isMobile ? "calc(1rem + env(safe-area-inset-top))" : undefined,
         bottom: isMobile ? "auto" : undefined,
         right: isMobile ? "auto" : undefined,
-        width: isMobile ? "min(calc(100vw - 24px), 21rem)" : "min(92vw, 21rem)"
+        width: isMobile ? "min(calc(100vw - 24px), 22rem)" : "min(92vw, 21rem)"
       }}
     >
       <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl">
@@ -280,12 +280,12 @@ export default function ControlsPanel({
             <button
               type="button"
               onPointerDown={handleDragStart}
-              className="flex items-center gap-1 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] px-2 py-1 text-[10px] uppercase tracking-wider text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
+              className="hidden sm:flex items-center gap-1 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.3)] px-2 py-1 text-[10px] uppercase tracking-wider text-slate-300 transition hover:border-primary-accent/40 hover:text-white cursor-grab active:cursor-grabbing select-none"
               title="Drag to reposition"
               aria-label="Drag controls panel"
             >
               <GripHorizontal className="h-3 w-3" />
-              <span className="hidden sm:inline">Move</span>
+              <span>Move</span>
             </button>
 
             <button
