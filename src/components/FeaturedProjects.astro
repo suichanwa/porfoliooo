@@ -154,7 +154,6 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
 
     <!-- ── Mobile: a magnitude ladder ─────────────────────────────────── -->
     <div class="pladder">
-      <div class="pladder-spine"></div>
       {ladder.map((n) => (
         <div class="pladder-item">
           <button type="button" class="pladder-row" data-rung aria-expanded="false">
@@ -220,13 +219,17 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     // Draw the connecting line in once.
     const line = chart.querySelector<SVGPolylineElement>(".plines polyline");
     if (line) {
-      const len = line.getTotalLength();
-      line.style.strokeDasharray = `${len}`;
-      line.style.strokeDashoffset = `${len}`;
-      requestAnimationFrame(() => {
-        line.style.transition = "stroke-dashoffset 2s ease .2s";
-        line.style.strokeDashoffset = "0";
-      });
+      try {
+        const len = line.getTotalLength();
+        line.style.strokeDasharray = `${len}`;
+        line.style.strokeDashoffset = `${len}`;
+        requestAnimationFrame(() => {
+          line.style.transition = "stroke-dashoffset 2s ease .2s";
+          line.style.strokeDashoffset = "0";
+        });
+      } catch {
+        // Ignored if non-rendered (e.g. mobile view where .pconstellation is display: none)
+      }
     }
 
     // Parallax on the whole group, scoped to the section so it only responds
@@ -358,7 +361,10 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
       closeLog();
     });
 
-    // Mobile ladder accordions.
+    });
+  }
+
+  function initMobileLadder() {
     document.querySelectorAll<HTMLButtonElement>("[data-rung]").forEach((row) => {
       row.addEventListener("click", () => {
         const panel = row.parentElement?.querySelector<HTMLElement>("[data-rung-panel]");
@@ -376,8 +382,13 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     });
   }
 
-  initProjectConstellation();
-  document.addEventListener("astro:page-load", initProjectConstellation);
+  function initFeaturedProjects() {
+    initProjectConstellation();
+    initMobileLadder();
+  }
+
+  initFeaturedProjects();
+  document.addEventListener("astro:page-load", initFeaturedProjects);
 </script>
 
 <style>
@@ -774,22 +785,47 @@ const linePoints = nodes.map((n) => `${n.x},${n.y}`).join(" ");
     display: none;
   }
 
-  .pladder-spine {
+  .pladder-item {
+    position: relative;
+  }
+
+  .pladder-item::before {
+    content: "";
     position: absolute;
-    left: 26px;
-    top: 10px;
-    bottom: 34px;
+    left: 30px;
     width: 1px;
-    background: linear-gradient(
-      180deg,
-      transparent,
-      rgba(180, 194, 214, 0.2) 12%,
-      rgba(180, 194, 214, 0.2) 88%,
-      transparent
-    );
+    transform: translateX(-50%);
+    background: rgba(180, 194, 214, 0.22);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* First rung: spine originates at the center of its star (y = 28px) */
+  .pladder-item:first-child::before {
+    top: 28px;
+    bottom: 0;
+  }
+
+  /* Intermediate rungs: spine connects through from top to bottom */
+  .pladder-item:not(:first-child):not(:last-child)::before {
+    top: 0;
+    bottom: 0;
+  }
+
+  /* Last rung: spine terminates cleanly at the center of its star (y = 28px) */
+  .pladder-item:last-child::before {
+    top: 0;
+    height: 28px;
+  }
+
+  /* Edge case: single item requires no connecting spine */
+  .pladder-item:first-child:last-child::before {
+    display: none;
   }
 
   .pladder-row {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 16px;
