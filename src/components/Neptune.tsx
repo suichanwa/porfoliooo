@@ -100,6 +100,23 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     }
   }), []);
 
+  const drawTritonOrbit = useCallback((
+    ctx: CanvasRenderingContext2D,
+    planetX: number,
+    planetY: number,
+    planetRadius: number
+  ) => {
+    const orbitRadius = planetRadius * 3.2;
+    const orbitTilt = 0.25;
+    ctx.strokeStyle = 'rgba(150, 180, 220, 0.08)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.ellipse(planetX, planetY, orbitRadius, orbitRadius * orbitTilt, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }, []);
+
   const drawTriton = useCallback((
     ctx: CanvasRenderingContext2D,
     planetX: number,
@@ -108,24 +125,12 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     time: number
   ) => {
     const orbitRadius = planetRadius * 3.2;
-    const orbitTilt = 0.35;
+    const orbitTilt = 0.25;
     const tritonAngle = -time;
     
     const tritonX = planetX + Math.cos(tritonAngle) * orbitRadius;
     const tritonY = planetY + Math.sin(tritonAngle) * orbitRadius * orbitTilt;
     const tritonRadius = planetRadius * 0.12;
-    
-    const isInFront = Math.sin(tritonAngle) > -0.3;
-    
-    ctx.strokeStyle = 'rgba(150, 180, 220, 0.08)';
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([4, 8]);
-    ctx.beginPath();
-    ctx.ellipse(planetX, planetY, orbitRadius, orbitRadius * orbitTilt, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    
-    if (!isInFront) return;
     
     const tritonGlow = ctx.createRadialGradient(
       tritonX, tritonY, 0,
@@ -312,8 +317,11 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     const planetY = orbitCenterY + Math.sin(neptuneAngle) * orbitRadius * 0.3;
     const planetRadius = Math.min(width, height) * (isMobile ? 0.18 : 0.15);
 
-    const tritonAngle = rotationRef.current.triton;
-    if (Math.sin(-tritonAngle) <= -0.3) {
+    const tritonAngle = -rotationRef.current.triton;
+    const isTritonInFront = Math.sin(tritonAngle) >= 0;
+
+    drawTritonOrbit(ctx, planetX, planetY, planetRadius);
+    if (!isTritonInFront) {
       drawTriton(ctx, planetX, planetY, planetRadius, rotationRef.current.triton);
     }
 
@@ -503,7 +511,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
 
     drawRings(ctx, planetX, planetY, planetRadius, false);
     
-    if (Math.sin(-tritonAngle) > -0.3) {
+    if (isTritonInFront) {
       drawTriton(ctx, planetX, planetY, planetRadius, rotationRef.current.triton);
     }
 
@@ -514,7 +522,7 @@ export default function Neptune({ className = '' }: NeptuneProps) {
     rotationRef.current.triton += 0.003;
 
     return true;
-  }, [drawTriton, drawRings]);
+  }, [drawTriton, drawTritonOrbit, drawRings]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
