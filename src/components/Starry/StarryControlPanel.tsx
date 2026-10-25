@@ -5,9 +5,14 @@ import {
   X,
   Moon,
   CloudFog,
-  Waypoints
+  Waypoints,
+  Wand2,
+  ArrowUpRight
 } from "lucide-react";
-import type { ObservatoryConfig } from "./types/starry";
+import {
+  triggerShootingStar,
+  type ObservatoryConfig
+} from "./types/starry";
 
 interface StarryControlPanelProps {
   isOpen: boolean;
@@ -46,6 +51,21 @@ export default function StarryControlPanel({
     window.addEventListener("pointerdown", handlePointerDown);
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [isOpen, onClose]);
+
+  const getAtmosphereTabStyle = (id: "void" | "nebula" | "radiant", isActive: boolean) => {
+    if (!isActive) {
+      return "text-slate-400 hover:text-slate-200 border border-transparent";
+    }
+
+    switch (id) {
+      case "void":
+        return "bg-white/[0.07] border border-white/[0.12] text-white shadow-sm font-medium";
+      case "nebula":
+        return "bg-gradient-to-r from-[#5e9fff]/15 to-[#c792ea]/15 border border-[#5e9fff]/30 text-white shadow-[0_0_12px_rgba(94,159,255,0.15)] font-medium";
+      case "radiant":
+        return "bg-[#5e9fff]/15 border border-[#5e9fff]/35 text-white shadow-[0_0_12px_rgba(94,159,255,0.2)] font-medium";
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -92,11 +112,10 @@ export default function StarryControlPanel({
                     key={id}
                     type="button"
                     onClick={() => onUpdateConfig({ celestialLens: id })}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all duration-200 ${getAtmosphereTabStyle(
+                      id,
                       isActive
-                        ? "bg-white/[0.06] border border-white/[0.1] text-white font-medium shadow-sm"
-                        : "text-slate-400 hover:text-slate-200 border border-transparent"
-                    }`}
+                    )}`}
                   >
                     <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
                     <span>{label}</span>
@@ -106,8 +125,9 @@ export default function StarryControlPanel({
             </div>
           </div>
 
-          {/* Control 2 — Constellations Toggle */}
-          <div className="mt-4">
+          {/* Control 2 — Action Rows */}
+          <div className="mt-4 space-y-2">
+            {/* Row 1: Constellations Toggle */}
             <button
               type="button"
               onClick={() => onUpdateConfig({ showConstellations: !config.showConstellations })}
@@ -139,6 +159,27 @@ export default function StarryControlPanel({
                   }`}
                 />
               </div>
+            </button>
+
+            {/* Row 2: Shooting Star Trigger */}
+            <button
+              type="button"
+              onClick={triggerShootingStar}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.07] transition-all text-left group cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/[0.04] text-slate-400 group-hover:text-slate-200 transition-colors">
+                  <Wand2 className="w-4 h-4" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-slate-200">Shooting Star</div>
+                  <div className="text-[11px] text-slate-500">Send a shooting star</div>
+                </div>
+              </div>
+              <ArrowUpRight
+                className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-colors"
+                strokeWidth={1.75}
+              />
             </button>
           </div>
         </motion.div>

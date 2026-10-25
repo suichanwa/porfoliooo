@@ -120,19 +120,22 @@ export default function StarryBackground({
           transition: "background 0.3s ease-out"
         }}
       >
-        {/* Celestial Lens: Nebula Aura Layer (Zero-cost CSS radial washes) */}
+        {/* Celestial Lens: Deep-Space Sculpted Nebula Ribbons */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 transition-opacity duration-1000 ${
+          className={`pointer-events-none absolute inset-[-10%] transition-opacity duration-1000 ${
             config.celestialLens === "nebula" ? "opacity-100" : "opacity-0"
           }`}
           style={{
+            transform: "rotate(-18deg)",
+            transformOrigin: "center center",
             background: `
-              radial-gradient(circle at 18% 28%, rgba(94, 159, 255, 0.18) 0%, transparent 48%),
-              radial-gradient(circle at 82% 68%, rgba(199, 146, 234, 0.16) 0%, transparent 52%),
-              radial-gradient(circle at 50% 45%, rgba(99, 102, 241, 0.12) 0%, transparent 60%)
+              radial-gradient(ellipse 45% 28% at 78% 38%, rgba(94, 159, 255, 0.16) 0%, rgba(37, 99, 235, 0.07) 45%, transparent 75%),
+              radial-gradient(ellipse 50% 30% at 65% 78%, rgba(199, 146, 234, 0.13) 0%, rgba(126, 34, 206, 0.06) 50%, transparent 75%),
+              radial-gradient(ellipse 38% 22% at 18% 18%, rgba(94, 159, 255, 0.09) 0%, rgba(199, 146, 234, 0.04) 50%, transparent 70%)
             `,
-            filter: "blur(32px)",
+            filter: "blur(40px)",
+            mixBlendMode: "screen",
             willChange: "opacity"
           }}
         />

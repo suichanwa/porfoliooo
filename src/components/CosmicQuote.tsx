@@ -35,14 +35,19 @@ export default function CosmicQuote() {
   return (
     <div
       ref={quoteRef}
-      className="mt-3 mb-6 text-sm sm:text-base font-normal tracking-wide select-none group cursor-default inline-flex flex-wrap items-center justify-center md:justify-start gap-x-1.5"
+      className="group relative my-6 inline-flex items-center gap-3 py-1 select-none cursor-default"
     >
-      <span className="text-slate-500 transition-colors duration-500 group-hover:text-slate-400">
-        &ldquo;The darkest nights
-      </span>
-      <span className="bg-gradient-to-r from-[#5e9fff] via-[#c7d2fe] to-[#c792ea] bg-clip-text text-transparent transition-all duration-500 group-hover:drop-shadow-[0_0_12px_rgba(94,159,255,0.5)]">
-        produce the brightest stars.&rdquo;
-      </span>
+      {/* Subtle vertical gradient accent pill */}
+      <span className="h-4 w-[2px] rounded-full bg-gradient-to-b from-[#5e9fff] via-[#c792ea] to-transparent opacity-70 transition-all duration-500 group-hover:h-5 group-hover:opacity-100 group-hover:shadow-[0_0_8px_#5e9fff]" />
+
+      <p className="text-xs sm:text-sm tracking-[0.04em] leading-relaxed">
+        <span className="text-slate-400/75 font-light transition-colors duration-500 group-hover:text-slate-300">
+          The darkest nights{" "}
+        </span>
+        <span className="font-medium bg-gradient-to-r from-[#7eb6ff] via-[#e0e7ff] to-[#c792ea] bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(94,159,255,0.25)] transition-all duration-500 group-hover:drop-shadow-[0_0_16px_rgba(199,146,234,0.6)]">
+          produce the brightest stars
+        </span>
+      </p>
     </div>
   );
 }
