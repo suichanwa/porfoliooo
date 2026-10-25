@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Avatar from "../components/Avatar.astro";
 import TypeWriter from "../components/TypeWriter.tsx";
+import CosmicQuote from "../components/CosmicQuote.tsx";
 import Neptune from "../components/Neptune.tsx";
 import FeaturedProjects from "../components/FeaturedProjects.astro";
 
@@ -84,7 +85,7 @@ const stats = [
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between gap-12">
         <div class="md:w-2/3 text-center md:text-left">
-          <h1 class="text-4xl md:text-6xl font-bold mb-6 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
+          <h1 class="text-4xl md:text-6xl font-bold mb-2 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
             <TypeWriter 
               client:load 
               text="fullstack developer" 
@@ -105,6 +106,11 @@ const stats = [
               </svg>
             </span>
           </h1>
+
+          <!-- The Starlight-Reactive Whisper Quote -->
+          <div>
+            <CosmicQuote client:load />
+          </div>
           
           <!-- Optimized Stats -->
           <div class="flex flex-wrap justify-center md:justify-start gap-6 mb-8">

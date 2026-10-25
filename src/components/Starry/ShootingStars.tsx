@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { DeviceInfo } from "../../hooks/useDeviceInfo";
-import type { MeteorFrequency } from "./types/starry";
 
 interface ShootingStarsProps {
   deviceInfo: DeviceInfo;
   isClient: boolean;
-  meteorFrequency?: MeteorFrequency;
 }
 
 interface ShootingStar {
@@ -22,11 +20,10 @@ interface ShootingStar {
   headSize: number;
   glowSize: number;
   hasStarHead: boolean;
-  isWish?: boolean;
 }
 
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
-const METEOR_SHOWER_CHANCE = 0.02; // 2% default chance for meteor shower
+const METEOR_SHOWER_CHANCE = 0.02; // 2% chance for meteor shower
 const STAR_HEAD_CHANCE = 1;
 
 const buildShootingStar = (
@@ -58,51 +55,18 @@ const buildShootingStar = (
     trailThickness: randomBetween(isMobile ? 0.9 : 1, isMobile ? 1.4 : 1.7),
     headSize: randomBetween(isMobile ? 3.2 : 3.8, isMobile ? 5 : 5.8),
     glowSize: randomBetween(isMobile ? 7 : 8, isMobile ? 11 : 13),
-    hasStarHead: forceStarHead || Math.random() < STAR_HEAD_CHANCE,
-    isWish: false
-  };
-};
-
-const buildWishComet = (id: number, deviceInfo: DeviceInfo): ShootingStar => {
-  const isMobile = deviceInfo.isMobile;
-  const viewportWidth = window.innerWidth || 1440;
-  const viewportHeight = window.innerHeight || 900;
-  const diagonal = Math.hypot(viewportWidth, viewportHeight);
-  const angleDeg = randomBetween(310, 316);
-  const angleRad = (angleDeg * Math.PI) / 180;
-  const travelDistance = diagonal * 1.08;
-
-  return {
-    id,
-    startTop: randomBetween(2, 22),
-    startLeft: randomBetween(82, 106),
-    deltaX: Math.cos(angleRad) * -travelDistance,
-    deltaY: Math.sin(angleRad) * -travelDistance,
-    angleDeg,
-    durationMs: 2400,
-    trailLength: isMobile ? 240 : 360,
-    trailThickness: isMobile ? 2.2 : 2.8,
-    headSize: isMobile ? 5.5 : 7,
-    glowSize: isMobile ? 15 : 20,
-    hasStarHead: true,
-    isWish: true
+    hasStarHead: forceStarHead || Math.random() < STAR_HEAD_CHANCE
   };
 };
 
 export default function ShootingStars({
   deviceInfo,
-  isClient,
-  meteorFrequency = "normal"
+  isClient
 }: ShootingStarsProps) {
   const [stars, setStars] = useState<ShootingStar[]>([]);
   const spawnTimeoutRef = useRef<number>();
   const cleanupTimeoutsRef = useRef<number[]>([]);
   const nextIdRef = useRef(0);
-  const meteorFrequencyRef = useRef(meteorFrequency);
-
-  useEffect(() => {
-    meteorFrequencyRef.current = meteorFrequency;
-  }, [meteorFrequency]);
 
   useEffect(() => {
     if (!isClient || deviceInfo.prefersReducedMotion) {
@@ -124,22 +88,12 @@ export default function ShootingStars({
       cleanupTimeoutsRef.current.push(timeoutId);
     };
 
-    const spawnWishStar = () => {
-      const wishStar = buildWishComet(nextIdRef.current++, deviceInfo);
-      const lifetime = wishStar.durationMs + 200;
-      setStars((current) => [...current, wishStar]);
-      const timeoutId = window.setTimeout(() => {
-        setStars((current) => current.filter((item) => item.id !== wishStar.id));
-      }, lifetime);
-      cleanupTimeoutsRef.current.push(timeoutId);
-    };
-
     const spawnMeteorShower = () => {
       const burstCount = Math.round(
-        randomBetween(deviceInfo.isMobile ? 3 : 4, deviceInfo.isLowEnd ? 5 : 8)
+        randomBetween(deviceInfo.isMobile ? 2 : 3, deviceInfo.isLowEnd ? 4 : 6)
       );
-      const burstGapRange = deviceInfo.isLowEnd ? [100, 190] : [70, 150];
-      const showerCapacity = deviceInfo.isLowEnd ? 5 : 8;
+      const burstGapRange = deviceInfo.isLowEnd ? [120, 210] : [90, 170];
+      const showerCapacity = deviceInfo.isLowEnd ? 4 : 6;
 
       for (let index = 0; index < burstCount; index += 1) {
         const burstDelay =
@@ -154,16 +108,15 @@ export default function ShootingStars({
     };
 
     const scheduleNextSpawn = () => {
-      const isShower = meteorFrequencyRef.current === "shower";
-      const minDelay = isShower ? 450 : deviceInfo.isMobile ? 1200 : 1400;
-      const maxDelay = isShower ? 1200 : deviceInfo.isLowEnd ? 2600 : 3400;
-      const delay = randomBetween(minDelay, maxDelay);
+      const delay = randomBetween(
+        deviceInfo.isMobile ? 1200 : 1400,
+        deviceInfo.isLowEnd ? 2600 : 3400
+      );
 
       spawnTimeoutRef.current = window.setTimeout(() => {
-        spawnStar(isShower ? 4 : 2);
+        spawnStar(2);
 
-        const showerChance = isShower ? 0.35 : METEOR_SHOWER_CHANCE;
-        if (Math.random() < showerChance) {
+        if (Math.random() < METEOR_SHOWER_CHANCE) {
           spawnMeteorShower();
         }
 
@@ -182,19 +135,22 @@ export default function ShootingStars({
       }
     };
 
-    const handleMakeWishEvent = () => {
-      spawnWishStar();
+    const handleTriggerShootingStar = () => {
+      // Spawn naturally styled shooting star across the sky
+      spawnStar(4, true);
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("observatory:make-wish", handleMakeWishEvent);
+    window.addEventListener("observatory:shooting-star", handleTriggerShootingStar);
+    window.addEventListener("observatory:make-wish", handleTriggerShootingStar);
 
     spawnStar(2);
     scheduleNextSpawn();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("observatory:make-wish", handleMakeWishEvent);
+      window.removeEventListener("observatory:shooting-star", handleTriggerShootingStar);
+      window.removeEventListener("observatory:make-wish", handleTriggerShootingStar);
       if (spawnTimeoutRef.current) {
         window.clearTimeout(spawnTimeoutRef.current);
       }
@@ -279,16 +235,10 @@ export default function ShootingStars({
                 height: `${tailThickness}px`,
                 transform: "translateY(-50%)",
                 borderRadius: "999px",
-                background: star.isWish
-                  ? "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(94,159,255,0.92) 20%, rgba(199,146,234,0.7) 60%, rgba(199,146,234,0) 100%)"
-                  : isSuiseiStar
-                    ? "linear-gradient(90deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.34) 18%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0) 100%)"
-                    : "linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.42) 24%, rgba(255,255,255,0.12) 58%, rgba(255,255,255,0) 100%)",
-                filter: star.isWish
-                  ? "drop-shadow(0 0 8px rgba(94,159,255,0.9)) blur(0.25px)"
-                  : isSuiseiStar
-                    ? "blur(0.32px)"
-                    : "blur(0.45px)"
+                background: isSuiseiStar
+                  ? "linear-gradient(90deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.34) 18%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0) 100%)"
+                  : "linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.42) 24%, rgba(255,255,255,0.12) 58%, rgba(255,255,255,0) 100%)",
+                filter: isSuiseiStar ? "blur(0.32px)" : "blur(0.45px)"
               }}
             />
             <span
@@ -300,12 +250,10 @@ export default function ShootingStars({
                 height: `${Math.max(0.5, tailThickness * (isSuiseiStar ? 0.5 : 0.55))}px`,
                 transform: "translateY(-50%)",
                 borderRadius: "999px",
-                background: star.isWish
-                  ? "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(199,146,234,0.6) 40%, rgba(255,255,255,0) 100%)"
-                  : isSuiseiStar
-                    ? "linear-gradient(90deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.13) 40%, rgba(255,255,255,0) 100%)"
-                    : "linear-gradient(90deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.16) 45%, rgba(255,255,255,0) 100%)",
-                filter: star.isWish ? "blur(0.2px)" : isSuiseiStar ? "blur(0.14px)" : "blur(0.18px)"
+                background: isSuiseiStar
+                  ? "linear-gradient(90deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.13) 40%, rgba(255,255,255,0) 100%)"
+                  : "linear-gradient(90deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.16) 45%, rgba(255,255,255,0) 100%)",
+                filter: isSuiseiStar ? "blur(0.14px)" : "blur(0.18px)"
               }}
             />
             <span
@@ -317,10 +265,9 @@ export default function ShootingStars({
                 height: `${softGlowSize}px`,
                 transform: "translateY(-50%)",
                 borderRadius: "999px",
-                background: star.isWish
-                  ? "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(94,159,255,0.8) 32%, rgba(199,146,234,0.4) 65%, transparent 100%)"
-                  : "radial-gradient(circle, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.1) 46%, rgba(255,255,255,0) 74%)",
-                filter: star.isWish ? "blur(0.5px)" : "blur(1px)"
+                background:
+                  "radial-gradient(circle, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.1) 46%, rgba(255,255,255,0) 74%)",
+                filter: "blur(1px)"
               }}
             />
             {star.hasStarHead ? (
@@ -332,9 +279,7 @@ export default function ShootingStars({
                   width: `${starHeadSize}px`,
                   height: `${starHeadSize}px`,
                   transform: "translateY(-50%)",
-                  filter: star.isWish
-                    ? "drop-shadow(0 0 6px #5e9fff) drop-shadow(0 0 12px #c792ea)"
-                    : "drop-shadow(0 0 2px rgba(255,255,255,0.2))"
+                  filter: "drop-shadow(0 0 2px rgba(255,255,255,0.2))"
                 }}
               >
                 <svg

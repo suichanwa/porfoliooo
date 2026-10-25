@@ -50,8 +50,7 @@ export default function StarryBackground({
         const parsed = JSON.parse(saved);
         setConfig((prev) => ({
           ...prev,
-          ...parsed,
-          wishCount: typeof parsed.wishCount === "number" ? parsed.wishCount : prev.wishCount
+          ...parsed
         }));
       }
     } catch {}
@@ -90,18 +89,11 @@ export default function StarryBackground({
 
   if (!isClient) return null;
 
-  const isObservatoryCustomized =
-    config.showConstellations ||
-    config.cursorTether ||
-    config.celestialLens !== "void" ||
-    config.meteorFrequency !== "normal";
-
   return (
     <>
       <StarryControlButton
         hideGUI={hideGUI}
         isPanelOpen={isPanelOpen}
-        isActive={isObservatoryCustomized}
         onClick={() => setIsPanelOpen(!isPanelOpen)}
       />
 
@@ -159,9 +151,7 @@ export default function StarryBackground({
         >
           <StarryCanvas
             showConstellations={config.showConstellations}
-            cursorTether={config.cursorTether}
             celestialLens={config.celestialLens}
-            meteorFrequency={config.meteorFrequency}
             deviceInfo={deviceInfo}
             isClient={isClient}
           />

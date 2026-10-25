@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
-import { STAR_TYPES, STAR_TYPE_ORDER, type CelestialLens, type StarType } from "../components/Starry/types/starry.ts";
+import {
+  STAR_TYPES,
+  STAR_TYPE_ORDER,
+  type CelestialLens,
+  type StarType
+} from "../components/Starry/types/starry.ts";
 import { randomBetween, STARFIELD_CONFIG } from "../utils/starUtils.ts";
 import type { DeviceInfo } from "./useDeviceInfo";
 
@@ -15,10 +20,13 @@ interface Star {
   hasStarHead: boolean;
 }
 
-// Pre-calculate total weight for weighted random selection (constant across all invocations)
-const TOTAL_STAR_TYPE_WEIGHT = STAR_TYPE_ORDER.reduce((sum, type) => sum + STAR_TYPES[type].weight, 0);
+// Pre-calculate total weight for weighted random selection
+const TOTAL_STAR_TYPE_WEIGHT = STAR_TYPE_ORDER.reduce(
+  (sum, type) => sum + STAR_TYPES[type].weight,
+  0
+);
 
-const pickStarType = () => {
+const pickStarType = (): StarType => {
   let roll = Math.random() * TOTAL_STAR_TYPE_WEIGHT;
   for (const type of STAR_TYPE_ORDER) {
     roll -= STAR_TYPES[type].weight;
@@ -68,15 +76,159 @@ const drawRoundedFivePointStar = (
 
 interface StarfieldOptions {
   showConstellations: boolean;
-  cursorTether?: boolean;
   celestialLens?: CelestialLens;
   deviceInfo: DeviceInfo;
   isClient: boolean;
 }
 
+/**
+ * Builds 4-6 distinct geometric constellation figures using Prim's MST.
+ * Guarantees connected multi-segment figures (Ursa Major, Cassiopeia style)
+ * rather than isolated 2-star sticks.
+ */
+function buildConstellations(stars: Star[], width: number, height: number, isMobile: boolean) {
+  if (stars.length < 15) {
+    return { edges: [], constellationStarIndices: new Set<number>() };
+  }
+
+  // Anchor regions across quadrants of viewport
+  const anchorRatios = isMobile
+    ? [
+        [0.28, 0.22],
+        [0.72, 0.48],
+        [0.35, 0.78]
+      ]
+    : [
+        [0.18, 0.24],
+        [0.78, 0.22],
+        [0.48, 0.48],
+        [0.22, 0.74],
+        [0.82, 0.72]
+      ];
+
+  const chosenAnchorIndices: number[] = [];
+  const usedStars = new Set<number>();
+  const edges: Array<[number, number]> = [];
+  const constellationStarIndices = new Set<number>();
+
+  // 1. Pick well-spaced anchor stars
+  for (const [rx, ry] of anchorRatios) {
+    const targetX = rx * width;
+    const targetY = ry * height;
+    let bestIdx = -1;
+    let bestDist = Infinity;
+
+    for (let i = 0; i < stars.length; i++) {
+      if (usedStars.has(i)) continue;
+      const s = stars[i];
+      // Prefer bright/giant stars
+      const typeBonus = s.type === "giant" ? 0.6 : s.type === "bright" ? 0.8 : 1.0;
+      const dist = Math.hypot(s.x - targetX, s.y - targetY) * typeBonus;
+
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx !== -1) {
+      chosenAnchorIndices.push(bestIdx);
+      usedStars.add(bestIdx);
+    }
+  }
+
+  // 2. Build connected cluster for each anchor
+  for (const anchorIdx of chosenAnchorIndices) {
+    const anchor = stars[anchorIdx];
+    const clusterStarCandidates: Array<{ index: number; dist: number }> = [];
+
+    for (let i = 0; i < stars.length; i++) {
+      if (i === anchorIdx || usedStars.has(i)) continue;
+      const dist = Math.hypot(stars[i].x - anchor.x, stars[i].y - anchor.y);
+      if (dist <= 280) {
+        clusterStarCandidates.push({ index: i, dist });
+      }
+    }
+
+    // Sort by distance to anchor and take 4-6 stars
+    clusterStarCandidates.sort((a, b) => a.dist - b.dist);
+    let clusterIndices = [anchorIdx];
+
+    const targetClusterSize = isMobile ? 4 : 5 + Math.floor(Math.random() * 2); // 5-6 stars
+    const selectedNeighbors = clusterStarCandidates.slice(0, targetClusterSize);
+
+    for (const neighbor of selectedNeighbors) {
+      clusterIndices.push(neighbor.index);
+      usedStars.add(neighbor.index);
+    }
+
+    if (clusterIndices.length < 3) continue;
+
+    // 3. Minimum Spanning Tree (Prim's Algorithm)
+    const inTree = new Set<number>([anchorIdx]);
+    const clusterEdges: Array<[number, number]> = [];
+
+    while (inTree.size < clusterIndices.length) {
+      let minEdgeDist = Infinity;
+      let bestU = -1;
+      let bestV = -1;
+
+      for (const u of inTree) {
+        const starU = stars[u];
+        for (const v of clusterIndices) {
+          if (inTree.has(v)) continue;
+          const starV = stars[v];
+          const d = Math.hypot(starU.x - starV.x, starU.y - starV.y);
+          if (d < minEdgeDist) {
+            minEdgeDist = d;
+            bestU = u;
+            bestV = v;
+          }
+        }
+      }
+
+      if (bestU !== -1 && bestV !== -1) {
+        clusterEdges.push([bestU, bestV]);
+        inTree.add(bestV);
+      } else {
+        break;
+      }
+    }
+
+    // 4. Optionally close 1 triangle loop in 5+ star clusters
+    if (clusterIndices.length >= 5) {
+      let loopAdded = false;
+      for (let i = 0; i < clusterIndices.length && !loopAdded; i++) {
+        const u = clusterIndices[i];
+        for (let j = i + 1; j < clusterIndices.length && !loopAdded; j++) {
+          const v = clusterIndices[j];
+          const alreadyConnected = clusterEdges.some(
+            ([a, b]) => (a === u && b === v) || (a === v && b === u)
+          );
+          if (!alreadyConnected) {
+            const d = Math.hypot(stars[u].x - stars[v].x, stars[u].y - stars[v].y);
+            if (d < 140) {
+              clusterEdges.push([u, v]);
+              loopAdded = true;
+            }
+          }
+        }
+      }
+    }
+
+    for (const [u, v] of clusterEdges) {
+      edges.push([u, v]);
+    }
+    for (const idx of clusterIndices) {
+      constellationStarIndices.add(idx);
+    }
+  }
+
+  return { edges, constellationStarIndices };
+}
+
 export default function useStarfieldCanvas({
   showConstellations,
-  cursorTether = false,
   celestialLens = "void",
   deviceInfo,
   isClient
@@ -91,15 +243,15 @@ export default function useStarfieldCanvas({
   const targetFPSRef = useRef<number>(30);
   const frameIntervalRef = useRef<number>(1000 / 30);
   const showConstellationsRef = useRef<boolean>(showConstellations);
-  const cursorTetherRef = useRef<boolean>(cursorTether);
   const celestialLensRef = useRef<CelestialLens>(celestialLens);
-  const constellationCacheRef = useRef<Array<[number, number]>>([]);
-  const lastCanvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
-  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({
-    x: -1000,
-    y: -1000,
-    active: false
-  });
+
+  // Precomputed geometric constellations
+  const constellationEdgesRef = useRef<Array<[number, number]>>([]);
+  const constellationStarIndicesRef = useRef<Set<number>>(new Set());
+
+  // Starlight Boost on Quote Hover
+  const starlightMultiplierRef = useRef<number>(1.0);
+  const targetStarlightMultiplierRef = useRef<number>(1.0);
 
   // Keep refs synchronized with props
   useEffect(() => {
@@ -107,36 +259,21 @@ export default function useStarfieldCanvas({
   }, [showConstellations]);
 
   useEffect(() => {
-    cursorTetherRef.current = cursorTether;
-  }, [cursorTether]);
-
-  useEffect(() => {
     celestialLensRef.current = celestialLens;
   }, [celestialLens]);
 
-  // Track cursor coordinates passively on fine pointer devices
+  // Listen for starlight boost events from the Hero quote
   useEffect(() => {
     if (!isClient) return;
-    const isFinePointer = window.matchMedia("(pointer: fine)").matches;
-    if (!isFinePointer) return;
 
-    const handlePointerMove = (e: PointerEvent) => {
-      mouseRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        active: true
-      };
+    const handleStarlightBoost = (e: Event) => {
+      const customEvent = e as CustomEvent<{ active?: boolean }>;
+      targetStarlightMultiplierRef.current = customEvent.detail?.active ? 1.45 : 1.0;
     };
 
-    const handlePointerLeave = () => {
-      mouseRef.current.active = false;
-    };
-
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+    window.addEventListener("observatory:starlight-boost", handleStarlightBoost);
     return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerleave", handlePointerLeave);
+      window.removeEventListener("observatory:starlight-boost", handleStarlightBoost);
     };
   }, [isClient]);
 
@@ -169,173 +306,98 @@ export default function useStarfieldCanvas({
       }
 
       starsRef.current = stars;
+
+      // Pre-compute geometric constellations for these stars
+      const { edges, constellationStarIndices } = buildConstellations(
+        stars,
+        width,
+        height,
+        deviceInfo.isMobile
+      );
+      constellationEdgesRef.current = edges;
+      constellationStarIndicesRef.current = constellationStarIndices;
     },
     [deviceInfo.isLowEnd, deviceInfo.isMobile]
   );
 
-  const render = useCallback(
-    (timestamp: number) => {
-      if (!canvasRef.current || !isVisible.current) return;
+  const render = useCallback((timestamp: number) => {
+    if (!canvasRef.current || !isVisible.current) return;
 
-      const canvas = canvasRef.current;
-      const ctx = contextRef.current;
-      if (!ctx) return;
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (!ctx) return;
 
-      if (timestamp - lastFrameTime.current < frameIntervalRef.current) {
-        animationRef.current = requestAnimationFrame(render);
-        return;
-      }
-
-      lastFrameTime.current = timestamp;
-
-      const width = canvas.width / dprRef.current;
-      const height = canvas.height / dprRef.current;
-
-      ctx.clearRect(0, 0, width, height);
-
-      const isSupernova = celestialLensRef.current === "supernova";
-      const speedMultiplier = isSupernova ? 1.55 : 1;
-      const opacityMultiplier = isSupernova ? 1.35 : 1;
-
-      // 1. Draw Background Stars
-      starsRef.current.forEach((star) => {
-        const twinkle = Math.sin(timestamp * star.twinkleSpeed * speedMultiplier + star.twinklePhase) * 0.3 + 0.7;
-        star.opacity = Math.min(1, star.baseOpacity * twinkle * opacityMultiplier);
-
-        ctx.globalAlpha = star.opacity;
-        if (star.hasStarHead) {
-          drawRoundedFivePointStar(ctx, star.x, star.y, star.radius);
-        } else {
-          ctx.fillStyle = STARFIELD_CONFIG.COLORS.STAR;
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Diffraction spikes in Supernova lens mode for largest stars
-        if (isSupernova && (star.type === "giant" || star.type === "bright")) {
-          const spikeLen = star.radius * 3.6;
-          ctx.strokeStyle = `rgba(255, 255, 255, ${star.opacity * 0.5})`;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(star.x - spikeLen, star.y);
-          ctx.lineTo(star.x + spikeLen, star.y);
-          ctx.moveTo(star.x, star.y - spikeLen);
-          ctx.lineTo(star.x, star.y + spikeLen);
-          ctx.stroke();
-        }
-      });
-
-      ctx.globalAlpha = 1;
-
-      // 2. Draw Constellations
-      if (showConstellationsRef.current && starsRef.current.length > 10) {
-        if (lastCanvasSizeRef.current.width !== width || lastCanvasSizeRef.current.height !== height) {
-          constellationCacheRef.current = [];
-          lastCanvasSizeRef.current = { width, height };
-
-          const maxDistSq = (width * STARFIELD_CONFIG.CONSTELLATION.MAX_DISTANCE_RATIO) ** 2;
-          for (
-            let i = 0;
-            i < Math.min(starsRef.current.length, STARFIELD_CONFIG.CONSTELLATION.MAX_STARS_TO_SAMPLE);
-            i += STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL
-          ) {
-            const star1 = starsRef.current[i];
-            const star2 = starsRef.current[i + STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL];
-            if (!star2) break;
-
-            const dx = star2.x - star1.x;
-            const dy = star2.y - star1.y;
-            const distSq = dx * dx + dy * dy;
-
-            if (distSq < maxDistSq) {
-              constellationCacheRef.current.push([i, i + STARFIELD_CONFIG.CONSTELLATION.SAMPLE_INTERVAL]);
-            }
-          }
-        }
-
-        // Draw glowing vertex halo nodes on constellation vertices
-        ctx.fillStyle = "rgba(199, 146, 234, 0.22)";
-        for (const [i, j] of constellationCacheRef.current) {
-          const star1 = starsRef.current[i];
-          const star2 = starsRef.current[j];
-          if (star1) {
-            ctx.beginPath();
-            ctx.arc(star1.x, star1.y, star1.radius * 2.8, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          if (star2) {
-            ctx.beginPath();
-            ctx.arc(star2.x, star2.y, star2.radius * 2.8, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        // Draw visible, glowing blue-cyan constellation links
-        ctx.strokeStyle = "rgba(94, 159, 255, 0.44)";
-        ctx.lineWidth = 1.0;
-        ctx.beginPath();
-
-        for (const [i, j] of constellationCacheRef.current) {
-          const star1 = starsRef.current[i];
-          const star2 = starsRef.current[j];
-          if (star1 && star2) {
-            ctx.moveTo(star1.x, star1.y);
-            ctx.lineTo(star2.x, star2.y);
-          }
-        }
-
-        ctx.stroke();
-      }
-
-      // 3. Draw Interactive Astral Tether (Cursor to Star magnetic links)
-      if (cursorTetherRef.current && mouseRef.current.active && !deviceInfo.prefersReducedMotion) {
-        const mouseX = mouseRef.current.x;
-        const mouseY = mouseRef.current.y;
-        const tetherRadius = 135;
-        let tethersDrawn = 0;
-
-        for (let i = 0; i < starsRef.current.length && tethersDrawn < 4; i++) {
-          const star = starsRef.current[i];
-          const dx = star.x - mouseX;
-          const dy = star.y - mouseY;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist < tetherRadius) {
-            tethersDrawn++;
-            const alpha = (1 - dist / tetherRadius) * 0.72;
-            const grad = ctx.createLinearGradient(mouseX, mouseY, star.x, star.y);
-            grad.addColorStop(0, `rgba(199, 146, 234, ${alpha})`);
-            grad.addColorStop(1, `rgba(94, 159, 255, ${alpha * 0.8})`);
-
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(mouseX, mouseY);
-            ctx.lineTo(star.x, star.y);
-            ctx.stroke();
-
-            // Luminous halo around tethered star
-            ctx.fillStyle = `rgba(94, 159, 255, ${alpha * 0.35})`;
-            ctx.beginPath();
-            ctx.arc(star.x, star.y, star.radius * 3.4, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        if (tethersDrawn > 0) {
-          // Cursor focal star node
-          ctx.fillStyle = "rgba(199, 146, 234, 0.85)";
-          ctx.beginPath();
-          ctx.arc(mouseX, mouseY, 2.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
+    if (timestamp - lastFrameTime.current < frameIntervalRef.current) {
       animationRef.current = requestAnimationFrame(render);
-    },
-    [deviceInfo.prefersReducedMotion]
-  );
+      return;
+    }
+
+    lastFrameTime.current = timestamp;
+
+    const width = canvas.width / dprRef.current;
+    const height = canvas.height / dprRef.current;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Smoothly interpolate starlight boost multiplier (Quote hover)
+    starlightMultiplierRef.current +=
+      (targetStarlightMultiplierRef.current - starlightMultiplierRef.current) * 0.12;
+
+    const isRadiant = celestialLensRef.current === "radiant";
+    const lensSpeedMultiplier = isRadiant ? 1.35 : 1.0;
+    const lensOpacityMultiplier = isRadiant ? 1.25 : 1.0;
+    const combinedMultiplier = lensOpacityMultiplier * starlightMultiplierRef.current;
+
+    const showConstellationsActive = showConstellationsRef.current;
+    const constellationIndices = constellationStarIndicesRef.current;
+
+    // 1. Draw Constellation architectural lines first (behind star nodes)
+    if (showConstellationsActive && constellationEdgesRef.current.length > 0) {
+      ctx.strokeStyle = "rgba(94, 159, 255, 0.25)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+
+      for (const [i, j] of constellationEdgesRef.current) {
+        const star1 = starsRef.current[i];
+        const star2 = starsRef.current[j];
+        if (star1 && star2) {
+          ctx.moveTo(star1.x, star1.y);
+          ctx.lineTo(star2.x, star2.y);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    // 2. Draw Stars
+    starsRef.current.forEach((star, index) => {
+      const twinkle =
+        Math.sin(timestamp * star.twinkleSpeed * lensSpeedMultiplier + star.twinklePhase) * 0.3 + 0.7;
+
+      let opacity = star.baseOpacity * twinkle * combinedMultiplier;
+
+      // Subtly boost vertex star alpha if part of active constellation
+      if (showConstellationsActive && constellationIndices.has(index)) {
+        opacity += 0.25;
+      }
+
+      star.opacity = Math.min(1, Math.max(0, opacity));
+
+      ctx.globalAlpha = star.opacity;
+      if (star.hasStarHead) {
+        drawRoundedFivePointStar(ctx, star.x, star.y, star.radius);
+      } else {
+        ctx.fillStyle = STARFIELD_CONFIG.COLORS.STAR;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    ctx.globalAlpha = 1;
+
+    animationRef.current = requestAnimationFrame(render);
+  }, []);
 
   useEffect(() => {
     if (!isClient) return;
@@ -347,7 +409,9 @@ export default function useStarfieldCanvas({
       const dpr = Math.min(window.devicePixelRatio || 1, deviceInfo.isLowEnd ? 1 : 1.5);
       dprRef.current = dpr;
 
-      const targetFPS = deviceInfo.isLowEnd ? STARFIELD_CONFIG.TARGET_FPS.lowEnd : STARFIELD_CONFIG.TARGET_FPS.default;
+      const targetFPS = deviceInfo.isLowEnd
+        ? STARFIELD_CONFIG.TARGET_FPS.lowEnd
+        : STARFIELD_CONFIG.TARGET_FPS.default;
       targetFPSRef.current = targetFPS;
       frameIntervalRef.current = 1000 / targetFPS;
 
