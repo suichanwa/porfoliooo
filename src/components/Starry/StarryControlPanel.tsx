@@ -5,14 +5,9 @@ import {
   X,
   Moon,
   CloudFog,
-  Waypoints,
-  Wand2,
-  ArrowUpRight
+  Waypoints
 } from "lucide-react";
-import {
-  triggerShootingStar,
-  type ObservatoryConfig
-} from "./types/starry";
+import type { ObservatoryConfig } from "./types/starry";
 
 interface StarryControlPanelProps {
   isOpen: boolean;
@@ -125,9 +120,8 @@ export default function StarryControlPanel({
             </div>
           </div>
 
-          {/* Control 2 — Action Rows */}
-          <div className="mt-4 space-y-2">
-            {/* Row 1: Constellations Toggle */}
+          {/* Control 2 — Constellations Toggle */}
+          <div className="mt-4">
             <button
               type="button"
               onClick={() => onUpdateConfig({ showConstellations: !config.showConstellations })}
@@ -159,27 +153,6 @@ export default function StarryControlPanel({
                   }`}
                 />
               </div>
-            </button>
-
-            {/* Row 2: Shooting Star Trigger */}
-            <button
-              type="button"
-              onClick={triggerShootingStar}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.07] transition-all text-left group cursor-pointer active:scale-[0.98]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/[0.04] text-slate-400 group-hover:text-slate-200 transition-colors">
-                  <Wand2 className="w-4 h-4" strokeWidth={1.75} />
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-slate-200">Shooting Star</div>
-                  <div className="text-[11px] text-slate-500">Send a shooting star</div>
-                </div>
-              </div>
-              <ArrowUpRight
-                className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-colors"
-                strokeWidth={1.75}
-              />
             </button>
           </div>
         </motion.div>
