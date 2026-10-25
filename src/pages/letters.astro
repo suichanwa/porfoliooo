@@ -61,10 +61,61 @@ try {
             Notes from people passing through this little corner of the internet. Every message makes this space feel more alive.
           </p>
 
-          <div class="mt-7 flex items-center justify-center">
-            <a href="/write-letter" class="write-letter-btn btn btn-md md:btn-lg text-base-content border-none shadow-none">
-              Write a Letter
+          <div class="mt-8 flex flex-col items-center justify-center relative write-letter-container">
+            <!-- Pulsing cosmic ambient glow aura -->
+            <div class="write-letter-aura" aria-hidden="true"></div>
+
+            <a href="/write-letter" class="write-letter-btn group">
+              <!-- Animated shimmering light ray -->
+              <span class="write-letter-shimmer" aria-hidden="true"></span>
+
+              <!-- Feather Quill Pen Icon -->
+              <span class="write-letter-icon write-letter-icon-feather">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transform group-hover:-rotate-12 transition-transform duration-300"
+                >
+                  <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+                  <line x1="16" y1="8" x2="2" y2="22"></line>
+                  <line x1="17.5" y1="15" x2="9" y2="15"></line>
+                </svg>
+              </span>
+
+              <span class="write-letter-text">Write a Letter</span>
+
+              <!-- Arrow / Sparkle on right -->
+              <span class="write-letter-icon write-letter-icon-arrow">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transform group-hover:translate-x-1 transition-transform duration-300"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </span>
             </a>
+
+            <!-- Supporting microcopy / invitation -->
+            <div class="write-letter-microcopy mt-3.5 flex items-center justify-center gap-2 text-xs text-slate-300/85">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary-accent animate-pulse shadow-[0_0_8px_currentColor]"></span>
+              <span>Leave a digital letter in a bottle &bull; Anonymous or signed</span>
+            </div>
           </div>
         </div>
       </div>
@@ -194,33 +245,146 @@ try {
     text-shadow: 0 1px 12px hsl(var(--b1) / 0.7);
   }
 
+  .write-letter-container {
+    position: relative;
+    z-index: 5;
+  }
+
+  .write-letter-aura {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 70px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(94, 159, 255, 0.5) 0%,
+      rgba(168, 85, 247, 0.35) 45%,
+      transparent 75%
+    );
+    filter: blur(22px);
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: 0;
+    animation: auraPulse 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes auraPulse {
+    0% {
+      opacity: 0.5;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+    100% {
+      opacity: 0.95;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+  }
+
   .write-letter-btn {
     position: relative;
-    padding: 0.78rem 1.45rem;
-    border-radius: 999px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9rem 2.2rem;
+    border-radius: 9999px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-size: 0.95rem;
-    font-weight: 700;
-    background:
-      linear-gradient(180deg, hsl(var(--b1) / 0.06), hsl(var(--b1) / 0.02));
-    outline: 1px solid hsl(var(--s) / 0.45);
+    font-weight: 800;
+    color: #ffffff !important;
+    text-decoration: none;
+    overflow: hidden;
+    background: linear-gradient(
+      135deg,
+      #3b82f6 0%,
+      #6366f1 35%,
+      #8b5cf6 70%,
+      #c084fc 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow:
-      0 10px 28px -22px hsl(var(--s) / 0.95),
-      inset 0 1px 0 hsl(var(--b1) / 0.7);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, outline-color 0.18s ease;
+      0 0 24px -2px rgba(99, 102, 241, 0.55),
+      0 10px 28px -6px rgba(139, 92, 246, 0.45),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.25);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
   }
 
   .write-letter-btn:hover {
-    transform: translateY(-1px);
-    outline-color: hsl(var(--p) / 0.8);
+    transform: translateY(-2.5px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.7);
     box-shadow:
-      0 14px 34px -20px hsl(var(--p) / 0.8),
-      inset 0 1px 0 hsl(var(--b1) / 0.8);
+      0 0 36px 4px rgba(99, 102, 241, 0.75),
+      0 14px 36px -4px rgba(192, 132, 252, 0.65),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.2);
   }
 
   .write-letter-btn:active {
-    transform: translateY(0);
+    transform: translateY(0.5px) scale(0.98);
+    box-shadow:
+      0 0 18px 0 rgba(99, 102, 241, 0.5),
+      0 6px 16px -2px rgba(139, 92, 246, 0.4);
+  }
+
+  .write-letter-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 100%
+    );
+    transform: skewX(-20deg);
+    pointer-events: none;
+    animation: shimmerSweep 4s ease-in-out infinite;
+  }
+
+  @keyframes shimmerSweep {
+    0%, 25% {
+      left: -100%;
+    }
+    55%, 100% {
+      left: 170%;
+    }
+  }
+
+  .write-letter-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+  }
+
+  .write-letter-icon-feather {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  .write-letter-icon-arrow {
+    background: rgba(255, 255, 255, 0.22);
+    padding: 0.25rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .write-letter-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  .write-letter-microcopy {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+    letter-spacing: 0.02em;
   }
 
   .letter-shell {

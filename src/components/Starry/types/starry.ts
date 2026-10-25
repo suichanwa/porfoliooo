@@ -70,3 +70,28 @@ export const STAR_TYPES: Record<StarType, StarTypeProfile> = {
 };
 
 export const STAR_TYPE_ORDER: StarType[] = ["giant", "bright", "standard", "distant"];
+
+export type CelestialLens = "void" | "nebula" | "supernova";
+export type MeteorFrequency = "normal" | "shower";
+
+export interface ObservatoryConfig {
+  showConstellations: boolean;
+  cursorTether: boolean;
+  celestialLens: CelestialLens;
+  meteorFrequency: MeteorFrequency;
+  wishCount: number;
+}
+
+export const DEFAULT_OBSERVATORY_CONFIG: ObservatoryConfig = {
+  showConstellations: false,
+  cursorTether: false,
+  celestialLens: "void",
+  meteorFrequency: "normal",
+  wishCount: 0
+};
+
+export const triggerWishStar = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("observatory:make-wish"));
+  }
+};

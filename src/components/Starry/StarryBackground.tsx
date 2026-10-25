@@ -1,7 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import StarryCanvas from "./StarryCanvas";
 import StarryControlButton from "./StarryControlButton";
 import StarryControlPanel from "./StarryControlPanel";
+import {
+  DEFAULT_OBSERVATORY_CONFIG,
+  type ObservatoryConfig
+} from "./types/starry";
 import useDeviceInfo from "../../hooks/useDeviceInfo";
 import useIsClient from "../../hooks/useIsClient";
 import useNeptuneBackground from "../../hooks/useNeptuneBackground";
@@ -19,7 +23,7 @@ export default function StarryBackground({
   enableNeptuneTransition = false,
   neptuneSectionId = "neptune-widget"
 }: StarryBackgroundProps) {
-  const [showConstellations, setShowConstellations] = useState(false);
+  const [config, setConfig] = useState<ObservatoryConfig>(DEFAULT_OBSERVATORY_CONFIG);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
 
@@ -38,6 +42,45 @@ export default function StarryBackground({
   });
   const dynamicBackground = useNeptuneBackground(neptuneTransitionProgress);
 
+  // Safe SSR hydration from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("porfoliooo_observatory_config");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setConfig((prev) => ({
+          ...prev,
+          ...parsed,
+          wishCount: typeof parsed.wishCount === "number" ? parsed.wishCount : prev.wishCount
+        }));
+      }
+    } catch {}
+  }, []);
+
+  const updateConfig = useCallback(
+    (patch: Partial<ObservatoryConfig> | ((prev: ObservatoryConfig) => ObservatoryConfig)) => {
+      setConfig((prev) => {
+        const next = typeof patch === "function" ? patch(prev) : { ...prev, ...patch };
+        try {
+          localStorage.setItem("porfoliooo_observatory_config", JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    const handleNavChange = () => {
+      if (document.body.classList.contains("menu-open-active")) {
+        setIsPanelOpen(false);
+      }
+    };
+    const observer = new MutationObserver(handleNavChange);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   const handleHideGUI = useCallback(() => {
     const newHideState = !hideGUI;
     setHideGUI(newHideState);
@@ -47,20 +90,27 @@ export default function StarryBackground({
 
   if (!isClient) return null;
 
+  const isObservatoryCustomized =
+    config.showConstellations ||
+    config.cursorTether ||
+    config.celestialLens !== "void" ||
+    config.meteorFrequency !== "normal";
+
   return (
     <>
       <StarryControlButton
         hideGUI={hideGUI}
         isPanelOpen={isPanelOpen}
+        isActive={isObservatoryCustomized}
         onClick={() => setIsPanelOpen(!isPanelOpen)}
       />
 
       <StarryControlPanel
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
-        showConstellations={showConstellations}
+        config={config}
+        onUpdateConfig={updateConfig}
         hideGUI={hideGUI}
-        onToggleConstellations={() => setShowConstellations(!showConstellations)}
         onToggleHideGUI={handleHideGUI}
       />
 
@@ -78,6 +128,23 @@ export default function StarryBackground({
           transition: "background 0.3s ease-out"
         }}
       >
+        {/* Celestial Lens: Nebula Aura Layer (Zero-cost CSS radial washes) */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 transition-opacity duration-1000 ${
+            config.celestialLens === "nebula" ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            background: `
+              radial-gradient(circle at 18% 28%, rgba(94, 159, 255, 0.18) 0%, transparent 48%),
+              radial-gradient(circle at 82% 68%, rgba(199, 146, 234, 0.16) 0%, transparent 52%),
+              radial-gradient(circle at 50% 45%, rgba(99, 102, 241, 0.12) 0%, transparent 60%)
+            `,
+            filter: "blur(32px)",
+            willChange: "opacity"
+          }}
+        />
+
         <div
           style={{
             position: "absolute",
@@ -91,7 +158,10 @@ export default function StarryBackground({
           }}
         >
           <StarryCanvas
-            showConstellations={showConstellations}
+            showConstellations={config.showConstellations}
+            cursorTether={config.cursorTether}
+            celestialLens={config.celestialLens}
+            meteorFrequency={config.meteorFrequency}
             deviceInfo={deviceInfo}
             isClient={isClient}
           />

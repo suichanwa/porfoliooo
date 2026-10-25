@@ -17,3 +17,125 @@
     color: var(--text-dark-bg);
   }
 }
+
+/* ==========================================================================
+   Navigation Background Blur & Cosmic Glow Animation
+   ========================================================================== */
+
+body.menu-open-active {
+  overflow: hidden;
+}
+
+.nav-backdrop-container {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.38s ease;
+}
+
+.nav-backdrop-container.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.nav-backdrop-button {
+  background: rgba(7, 9, 19, 0.35);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition:
+    backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    -webkit-backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-backdrop-container.is-open .nav-backdrop-button {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(7, 9, 19, 0.62);
+}
+
+/* Ambient celestial glow in the background as it blurs */
+.nav-glow-aura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.94);
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 10%, rgba(94, 159, 255, 0.35), transparent 70%),
+    radial-gradient(circle 440px at 92% 25%, rgba(199, 146, 234, 0.3), transparent 60%),
+    radial-gradient(circle 400px at 8% 35%, rgba(94, 159, 255, 0.26), transparent 60%),
+    radial-gradient(ellipse 70% 45% at 50% 85%, rgba(199, 146, 234, 0.2), transparent 70%);
+  filter: blur(48px);
+  -webkit-filter: blur(48px);
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-backdrop-container.is-open .nav-glow-aura {
+  opacity: 1;
+  transform: scale(1);
+  animation: navGlowPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes navGlowPulse {
+  0% {
+    opacity: 0.85;
+    transform: scale(1);
+    filter: blur(48px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+    filter: blur(42px);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+    filter: blur(48px);
+  }
+}
+
+/* Mobile Nav Panel Entrance & Exit Animation */
+.mobile-nav-panel-container {
+  transition:
+    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-nav-panel-container.panel-closed {
+  opacity: 0;
+  transform: translateY(-16px) scale(0.98);
+  pointer-events: none;
+}
+
+.mobile-nav-panel-container.panel-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Hide floating Starry control button when mobile navigation menu is open */
+body.menu-open-active .starry-control-btn,
+body.menu-open-active [data-starry-control] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: scale(0.6) !important;
+  transition:
+    opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.25s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-backdrop-container,
+  .nav-backdrop-button,
+  .nav-glow-aura,
+  .mobile-nav-panel-container {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+  }
+}

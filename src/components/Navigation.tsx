@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   trackMusicToggled,
   trackNavigationClicked,
@@ -13,9 +14,15 @@ export default function Navigation() {
   const [navRevealed, setNavRevealed] = useState(true);
   const [currentPfp, setCurrentPfp] = useState("/images/pfp.jpg");
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const updateLocation = () => {
@@ -74,16 +81,54 @@ export default function Navigation() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        panelRef.current &&
+        !panelRef.current.contains(target)
+      ) {
         setIsMenuOpen(false);
       }
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsMenuOpen(false);
+        setIsDropdownOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1280 && isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.classList.add("menu-open-active");
+    } else {
+      document.body.classList.remove("menu-open-active");
+    }
+    return () => {
+      document.body.classList.remove("menu-open-active");
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     let ticking = false;
@@ -292,18 +337,134 @@ export default function Navigation() {
 
   const showNav = !isPlanetarium || navRevealed || isMenuOpen || isDropdownOpen;
 
+  const mobileOverlay = mounted
+    ? createPortal(
+        <div
+          className={`fixed inset-0 z-[95] xl:hidden nav-backdrop-container ${
+            isMenuOpen ? "is-open" : "pointer-events-none"
+          }`}
+          aria-hidden={!isMenuOpen}
+        >
+          {/* Backdrop button for outside click and blur filter */}
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            onClick={() => setIsMenuOpen(false)}
+            className="absolute inset-0 w-full h-full nav-backdrop-button cursor-pointer"
+            tabIndex={isMenuOpen ? 0 : -1}
+          />
+
+          {/* Ambient celestial glow in the background as it gets blurred */}
+          <div className="nav-glow-aura" aria-hidden="true" />
+
+          {/* Mobile Navigation Panel */}
+          <div
+            ref={panelRef}
+            id="mobile-nav-panel"
+            role="dialog"
+            aria-modal="true"
+            className={`mobile-nav-panel-container absolute left-4 right-4 top-[calc(4.5rem+env(safe-area-inset-top))] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-700/70 border-t-primary-accent/35 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.86),rgba(14,20,32,0.84))] backdrop-blur-2xl p-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9),0_0_45px_rgba(94,159,255,0.22),0_0_80px_rgba(199,146,234,0.14)] z-[100] ${
+              isMenuOpen ? "panel-open" : "panel-closed"
+            }`}
+          >
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-primary-accent uppercase tracking-wider mb-2 px-2">
+                  Navigation
+                </h3>
+                <div className="space-y-1">
+                  {allNavItems.map((item) => (
+                    <a
+                      key={item.path}
+                      href={item.path}
+                      className={`${mobileNavButtonBase} ${
+                        activeHash === item.path 
+                          ? desktopNavButtonActive
+                          : mobileNavButtonIdle
+                      }`}
+                      onClick={() => handleNavClick(item.path, item.name, "mobile")}
+                    >
+                      <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                        {item.icon}
+                      </span>
+                      <span>{item.name}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-700/90 pt-3">
+                <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
+                  Music
+                </h3>
+                <button
+                  type="button"
+                  onClick={toggleBgm}
+                  aria-pressed={isBgmPlaying}
+                  aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
+                  className={`w-full ${mobileNavButtonBase} ${
+                    isBgmPlaying ? desktopNavButtonActive : mobileNavButtonIdle
+                  }`}
+                >
+                  <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                    {isBgmPlaying ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </span>
+                  <span>{isBgmPlaying ? "Pause music" : "Play a song for yourself"}</span>
+                </button>
+              </div>
+
+              <div className="border-t border-slate-700/90 pt-3">
+                <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
+                  Social
+                </h3>
+                <a 
+                  href="https://github.com/suichanwa" 
+                  target="_blank" 
+                  rel="noopener" 
+                  className={`${mobileNavButtonBase} ${mobileNavButtonIdle}`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                  </span>
+                  <span>GitHub</span>
+                  <svg className="ml-auto w-4 h-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   return (
-    <nav
+    <>
+      <nav
       data-theme="dark"
       className={`py-3 shadow-sm sticky top-0 z-[100] transition-all duration-300 ${
         showNav ? 'translate-y-0' : '-translate-y-full'
       } ${
-        scrolled
-          ? 'bg-[rgba(var(--primary-bg-rgb),0.22)] backdrop-blur-lg border-b border-white/20'
-          : 'bg-[rgba(var(--primary-bg-rgb),0.06)] backdrop-blur-md border-b border-white/10'
+        isMenuOpen
+          ? 'bg-[rgba(var(--primary-bg-rgb),0.55)] backdrop-blur-xl border-b border-primary-accent/35 shadow-[0_4px_30px_rgba(94,159,255,0.15)]'
+          : scrolled
+            ? 'bg-[rgba(var(--primary-bg-rgb),0.22)] backdrop-blur-lg border-b border-white/20'
+            : 'bg-[rgba(var(--primary-bg-rgb),0.06)] backdrop-blur-md border-b border-white/10'
       }`}
     >
-      <div className="container mx-auto px-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 flex justify-between items-center relative z-20">
         {/* Logo */}
         <div className="flex items-end gap-3">
           <button
@@ -470,126 +631,37 @@ export default function Navigation() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="xl:hidden relative" ref={menuRef}>
+        <div className="xl:hidden relative z-20" ref={menuRef}>
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-nav-panel"
             aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            className={`btn btn-circle border border-slate-700/85 bg-[rgba(var(--primary-bg-rgb),0.55)] text-slate-100 hover:bg-[rgba(var(--primary-bg-rgb),0.75)] hover:border-slate-500/90 ${isMenuOpen ? "relative z-[120]" : ""}`}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 outline-none focus:outline-none ${
+              isMenuOpen
+                ? "border-0 text-slate-100 bg-white/[0.08] hover:bg-white/[0.16] active:scale-90 shadow-[0_0_24px_rgba(94,159,255,0.3)]"
+                : "border border-slate-700/60 hover:border-slate-500/80 text-slate-300 hover:text-white bg-[rgba(var(--primary-bg-rgb),0.55)] hover:bg-[rgba(var(--primary-bg-rgb),0.8)] active:scale-95"
+            }`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className={`h-5 w-5 transition-transform duration-300 ${isMenuOpen ? "rotate-90 text-white" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
               {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 18L18 6M6 6l12 12" />
               ) : (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
               )}
             </svg>
           </button>
-
-          {isMenuOpen && (
-            <div className="fixed inset-0 z-[110] xl:hidden">
-              <button
-                type="button"
-                aria-label="Close navigation menu"
-                onClick={() => setIsMenuOpen(false)}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              />
-              <div
-                id="mobile-nav-panel"
-                role="dialog"
-                aria-modal="true"
-                className="absolute left-4 right-4 top-[calc(4rem+env(safe-area-inset-top))] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-700/90 bg-[rgba(var(--primary-bg-rgb),0.94)] p-4 shadow-2xl"
-              >
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xs font-bold text-primary-accent uppercase tracking-wider mb-2 px-2">
-                      Navigation
-                    </h3>
-                    <div className="space-y-1">
-                      {allNavItems.map((item) => (
-                        <a
-                          key={item.path}
-                          href={item.path}
-                          className={`${mobileNavButtonBase} ${
-                            activeHash === item.path 
-                              ? desktopNavButtonActive
-                              : mobileNavButtonIdle
-                          }`}
-                          onClick={() => handleNavClick(item.path, item.name, "mobile")}
-                        >
-                          <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
-                            {item.icon}
-                          </span>
-                          <span>{item.name}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-700/90 pt-3">
-                    <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
-                      Music
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={toggleBgm}
-                      aria-pressed={isBgmPlaying}
-                      aria-label={isBgmPlaying ? "Pause background music" : "Play background music"}
-                      className={`w-full ${mobileNavButtonBase} ${
-                        isBgmPlaying ? desktopNavButtonActive : mobileNavButtonIdle
-                      }`}
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
-                        {isBgmPlaying ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        )}
-                      </span>
-                      <span>{isBgmPlaying ? "Pause music" : "Play a song for yourself"}</span>
-                    </button>
-                  </div>
-
-                  <div className="border-t border-slate-700/90 pt-3">
-                    <h3 className="text-xs font-bold text-accent uppercase tracking-wider mb-2 px-2">
-                      Social
-                    </h3>
-                    <a 
-                      href="https://github.com/suichanwa" 
-                      target="_blank" 
-                      rel="noopener" 
-                      className={`${mobileNavButtonBase} ${mobileNavButtonIdle}`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 text-current opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-0.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.30 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                        </svg>
-                      </span>
-                      <span>GitHub</span>
-                      <svg className="ml-auto w-4 h-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </nav>
+    {mobileOverlay}
+    </>
   );
 }

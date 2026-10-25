@@ -1,19 +1,32 @@
 import useStarfieldCanvas from "../../hooks/useStarfieldCanvas";
 import type { DeviceInfo } from "../../hooks/useDeviceInfo";
+import type { CelestialLens, MeteorFrequency } from "./types/starry";
 import ShootingStars from "./ShootingStars";
 
 interface StarryCanvasProps {
   showConstellations: boolean;
+  cursorTether?: boolean;
+  celestialLens?: CelestialLens;
+  meteorFrequency?: MeteorFrequency;
   deviceInfo: DeviceInfo;
   isClient: boolean;
 }
 
 export default function StarryCanvas({
   showConstellations,
+  cursorTether = false,
+  celestialLens = "void",
+  meteorFrequency = "normal",
   deviceInfo,
   isClient
 }: StarryCanvasProps) {
-  const canvasRef = useStarfieldCanvas({ showConstellations, deviceInfo, isClient });
+  const canvasRef = useStarfieldCanvas({
+    showConstellations,
+    cursorTether,
+    celestialLens,
+    deviceInfo,
+    isClient
+  });
 
   return (
     <div
@@ -37,7 +50,11 @@ export default function StarryCanvas({
           display: "block"
         }}
       />
-      <ShootingStars deviceInfo={deviceInfo} isClient={isClient} />
+      <ShootingStars
+        deviceInfo={deviceInfo}
+        isClient={isClient}
+        meteorFrequency={meteorFrequency}
+      />
     </div>
   );
 }
