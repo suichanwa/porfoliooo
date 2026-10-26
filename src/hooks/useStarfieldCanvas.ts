@@ -164,12 +164,27 @@ function getCosAngle(
 }
 
 /**
+ * 8-Star Organic Heart Constellation Template (Normalized Vertex Offsets)
+ */
+const HEART_TEMPLATE: Array<[number, number]> = [
+  [0.00, -0.28], // 0: Top center cleft
+  [-0.48, -0.68], // 1: Upper-left lobe peak
+  [-0.86, -0.15], // 2: Outer-left wing
+  [-0.52, 0.42], // 3: Lower-left flank
+  [0.00, 0.95], // 4: Bottom point (apex)
+  [0.52, 0.42], // 5: Lower-right flank
+  [0.86, -0.15], // 6: Outer-right wing
+  [0.48, -0.68] // 7: Upper-right lobe peak
+];
+
+/**
  * Upgraded 5-Step Geometric Constellation Algorithm:
  * 1. UI Safe-Zone Mask & Open Celestial Corridor Anchors
  * 2. Brightness-Filtered & Poisson-Spaced Cluster Selection
  * 3. Degree-Constrained, Angular-Penalized Spanning Tree
  * 4. Planar Loop Closure with Zero Intersecting Edges
  * 5. Star-Chart Endpoint Insets & Vertex Luminous Boost
+ * Easter Egg: Occasional 8-Star Organic Heart Constellation (~45% spawn chance)
  */
 function buildConstellations(stars: Star[], width: number, height: number, isMobile: boolean) {
   if (stars.length < 15) {
@@ -177,7 +192,7 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
   }
 
   // Desktop Anchor targets sitting in open celestial corridors
-  const anchorRatios: Array<[number, number]> = isMobile
+  let anchorRatios: Array<[number, number]> = isMobile
     ? [
         [0.24, 0.10],
         [0.76, 0.11],
@@ -189,13 +204,94 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
         [0.58, 0.18], // Top-Center/Right Sky
         [0.84, 0.22], // Top-Far-Right Sky
         [0.18, 0.82], // Bottom-Left Sky
-        [0.62, 0.80]  // Bottom-Center/Right Sky
+        [0.62, 0.80] // Bottom-Center/Right Sky
       ];
 
   const chosenAnchorIndices: number[] = [];
   const usedStars = new Set<number>();
   const edges: Array<[number, number]> = [];
   const constellationStarIndices = new Set<number>();
+
+  // Easter Egg: Occasional ~45% chance to spawn an organic 8-star Heart Constellation
+  const spawnHeart = Math.random() < 0.45;
+  if (spawnHeart) {
+    const eligibleSlotIndices = isMobile ? [1, 3] : [1, 4]; // Open sky anchor slots
+    const chosenSlotIdx =
+      eligibleSlotIndices[Math.floor(Math.random() * eligibleSlotIndices.length)];
+    const [hrx, hry] = anchorRatios[chosenSlotIdx];
+    const cx = hrx * width;
+    const cy = hry * height;
+    const R = isMobile ? 50 : 72;
+
+    const hasMargin =
+      cx - R > 30 &&
+      cx + R < width - 30 &&
+      cy - R > 30 &&
+      cy + R < height - 30 &&
+      !isInUISafeZone(cx, cy, width, height, isMobile);
+
+    if (hasMargin) {
+      // Find 8 unused stars closest to (cx, cy)
+      const nearbyCandidates = stars
+        .map((s, idx) => ({ idx, dist: Math.hypot(s.x - cx, s.y - cy) }))
+        .filter((item) => !usedStars.has(item.idx))
+        .sort((a, b) => a.dist - b.dist);
+
+      if (nearbyCandidates.length >= 8) {
+        // Natural celestial tilt angle: +/- 8 deg to 16 deg
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        const angle = sign * ((8 + Math.random() * 8) * Math.PI) / 180;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+
+        const heartStarIndices: number[] = [];
+
+        for (let k = 0; k < 8; k++) {
+          const starIdx = nearbyCandidates[k].idx;
+          heartStarIndices.push(starIdx);
+          usedStars.add(starIdx);
+          constellationStarIndices.add(starIdx);
+
+          const star = stars[starIdx];
+          const [nx, ny] = HEART_TEMPLATE[k];
+          const rx = (nx * cosA - ny * sinA) * R;
+          const ry = (nx * sinA + ny * cosA) * R;
+          const jitterX = (Math.random() - 0.5) * 5;
+          const jitterY = (Math.random() - 0.5) * 5;
+
+          star.x = cx + rx + jitterX;
+          star.y = cy + ry + jitterY;
+          // Apex & top cleft slightly more prominent
+          star.radius = Math.max(star.radius, k === 4 || k === 0 ? 1.9 : 1.6);
+          star.baseOpacity = Math.max(star.baseOpacity, 0.82);
+        }
+
+        // Connect the 8 perimeter edges of the heart loop
+        for (let k = 0; k < 8; k++) {
+          const nextK = (k + 1) % 8;
+          edges.push([heartStarIndices[k], heartStarIndices[nextK]]);
+        }
+
+        // Clear interior: nudge any stray background stars away from the heart interior
+        for (let i = 0; i < stars.length; i++) {
+          if (heartStarIndices.includes(i) || usedStars.has(i)) continue;
+          const s = stars[i];
+          const dx = s.x - cx;
+          const dy = s.y - cy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < R * 0.88) {
+            const angleOut = Math.atan2(dy, dx);
+            const pushDist = R * 1.18;
+            s.x = cx + Math.cos(angleOut) * pushDist;
+            s.y = cy + Math.sin(angleOut) * pushDist;
+          }
+        }
+
+        // Remove the heart's anchor slot so regular constellations use the remaining slots
+        anchorRatios = anchorRatios.filter((_, idx) => idx !== chosenSlotIdx);
+      }
+    }
+  }
 
   // Step 1: Pick well-spaced anchor stars in open sky regions outside UI safe zones
   for (const [rx, ry] of anchorRatios) {
