@@ -135,11 +135,10 @@ export default function PlanetInfoPanel() {
     setPillPos(getPillDefaultPos());
   };
 
-  // Reset to glance/peek mode and re-open full details whenever a different planet is selected
+  // Reset mobile sheet expansion when switching planets, but preserve user's hidden/visible choice
   useEffect(() => {
     setIsExpanded(false);
-    setInfoHidden(false);
-  }, [planet?.id, setInfoHidden]);
+  }, [planet?.id]);
 
   if (!planet) return null;
 

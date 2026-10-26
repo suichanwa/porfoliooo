@@ -73,14 +73,12 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const clearSelection = useCallback(() => {
     setSelectedId(null);
     setIsFocused(false);
-    setInfoHidden(false);
   }, []);
 
   const selectPlanet = useCallback(
     (id: BodyId | null, source: "canvas" | "picker" | "search" = "canvas") => {
       setSelectedId(id);
       setIsFocused(false);
-      setInfoHidden(false);
       if (source === "picker") {
         setPickerOpen(false);
       }
