@@ -33,12 +33,11 @@ export const getOrbitPosition = (
   let semiMajor: number;
 
   if (isMoon) {
-    // Relative scaling: dynamically scales moon orbit distance relative to Earth's
-    // active render radius under the current DistanceScaleMode & spacing slider.
-    const earthRenderOrbit = computeRenderOrbitRadius(1.0, scaleMode, scaleParams);
-    const moonAu = kmToAu(orbit.semiMajorAxisKm);
-    const relativeFactor = Math.pow(moonAu, 0.45) * 2.2;
-    semiMajor = Math.max(1.0, earthRenderOrbit * relativeFactor);
+    // Relative scaling: scales moon orbit distance close to Earth's render radius (0.5),
+    // keeping the Moon tightly and realistically bound to Earth rather than sprawling out into deep space.
+    const baseEarthRadius = EARTH_RENDER_RADIUS;
+    const spacingRatio = Math.min(1.15, Math.max(0.85, (scaleParams.powerK ?? 11) / 11));
+    semiMajor = baseEarthRadius * 1.9 * spacingRatio;
   } else {
     semiMajor = computeRenderOrbitRadius(
       kmToAu(orbit.semiMajorAxisKm),
