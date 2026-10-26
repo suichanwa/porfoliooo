@@ -149,6 +149,7 @@ export default function OrbitingPlanet({
           showLabels={showLabels}
           isSelected={isSelected}
           isInfoVisible={isInfoVisible}
+          onSelect={onSelect}
           hoveredRef={hoveredRef}
           planetRefs={planetRefs}
           scaleMode={scaleMode}

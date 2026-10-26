@@ -135,10 +135,11 @@ export default function PlanetInfoPanel() {
     setPillPos(getPillDefaultPos());
   };
 
-  // Reset to glance/peek mode whenever a different planet is selected
+  // Reset to glance/peek mode and re-open full details whenever a different planet is selected
   useEffect(() => {
     setIsExpanded(false);
-  }, [planet?.id]);
+    setInfoHidden(false);
+  }, [planet?.id, setInfoHidden]);
 
   if (!planet) return null;
 
@@ -157,7 +158,7 @@ export default function PlanetInfoPanel() {
       {/* ============================================================ */}
       <div className="sm:hidden">
         {isInfoVisible && (
-          <div className="pointer-events-none fixed left-3 right-3 bottom-[4.75rem] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center max-w-md mx-auto">
+          <div className="pointer-events-none fixed left-3 right-3 bottom-[4.75rem] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center max-w-[90vw] mx-auto">
             <div
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
@@ -267,9 +268,9 @@ export default function PlanetInfoPanel() {
                 </p>
               )}
 
-              {/* Expanded Content (Scrollable, takes up max ~45vh, leaves upper 55% open for 3D planet) */}
+              {/* Expanded Content (Scrollable, takes up max ~35vh, leaves upper 65% open for 3D planet) */}
               {isExpanded && (
-                <div className="mt-3 flex flex-col gap-3 max-h-[44vh] overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-t border-slate-700/40 pt-2.5 animate-in fade-in duration-200">
+                <div className="mt-3 flex flex-col gap-3 max-h-[35vh] overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-t border-slate-700/40 pt-2.5 animate-in fade-in duration-200">
                   {info?.summary && (
                     <p className="text-xs text-slate-300 leading-relaxed">
                       {info.summary}
@@ -332,7 +333,7 @@ export default function PlanetInfoPanel() {
       {/* ============================================================ */}
       {/* 2. DESKTOP / TABLET UI: Side Info Panel                       */}
       {/* ============================================================ */}
-      <div className="hidden sm:flex pointer-events-none absolute right-4 top-24 z-40 w-full max-w-sm justify-end">
+      <div className="hidden sm:flex pointer-events-none absolute right-4 top-24 z-40 w-full justify-end">
         <div
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -340,7 +341,7 @@ export default function PlanetInfoPanel() {
           role="region"
           aria-label="Planet details panel"
           tabIndex={-1}
-          className={`pointer-events-auto w-full max-w-sm rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-5 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10rem)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          className={`pointer-events-auto w-full max-w-[min(28rem,35vw)] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-5 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10rem)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             isInfoVisible
               ? "translate-x-0 opacity-100"
               : "translate-x-6 opacity-0 pointer-events-none hidden"

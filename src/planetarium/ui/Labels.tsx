@@ -12,6 +12,7 @@ interface LabelsProps {
   showLabels: boolean;
   isSelected?: boolean;
   isInfoVisible?: boolean;
+  onSelect?: (id: BodyId | null) => void;
   hoveredRef?: React.MutableRefObject<boolean>;
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
@@ -26,6 +27,7 @@ export default function Labels({
   showLabels,
   isSelected = false,
   isInfoVisible = false,
+  onSelect,
   hoveredRef,
   planetRefs,
   scaleMode,
@@ -85,10 +87,18 @@ export default function Labels({
 
   return (
     <group ref={groupRef} position={initialPosition}>
-      <Html center style={{ pointerEvents: "none" }}>
-        <div className="whitespace-nowrap select-none rounded-full border border-white/20 bg-slate-950/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.15em] text-slate-200 shadow-md">
+      <Html center>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect?.(data.id);
+          }}
+          className="whitespace-nowrap select-none rounded-full border border-white/20 bg-slate-950/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.15em] text-slate-200 shadow-md hover:border-primary-accent/80 hover:bg-slate-900 hover:text-white transition-colors cursor-pointer active:scale-95"
+          title={`Focus ${data.name}`}
+        >
           {data.name}
-        </div>
+        </button>
       </Html>
     </group>
   );
