@@ -82,28 +82,114 @@ interface StarfieldOptions {
 }
 
 /**
- * Builds 4-6 distinct geometric constellation figures using Prim's MST.
- * Guarantees connected multi-segment figures (Ursa Major, Cassiopeia style)
- * rather than isolated 2-star sticks.
+ * Checks if a point falls within core Hero content or Avatar safe zones
+ * so constellation lines never cut across text, quote, stats, or avatar.
+ */
+function isInUISafeZone(x: number, y: number, width: number, height: number, isMobile: boolean): boolean {
+  const nx = x / width;
+  const ny = y / height;
+
+  if (isMobile || width < 768) {
+    // Mobile Hero content zone
+    return nx >= 0.06 && nx <= 0.94 && ny >= 0.18 && ny <= 0.52;
+  }
+
+  // Desktop Hero Text & Stat Cards Safe Zone:
+  const inHero = nx >= 0.02 && nx <= 0.52 && ny >= 0.30 && ny <= 0.68;
+  // Desktop Avatar Safe Zone:
+  const inAvatar = nx >= 0.72 && nx <= 0.92 && ny >= 0.40 && ny <= 0.64;
+
+  return inHero || inAvatar;
+}
+
+/**
+ * 2D cross product for counter-clockwise orientation test.
+ */
+function ccw(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  p3: { x: number; y: number }
+): number {
+  return (p3.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p3.x - p1.x);
+}
+
+/**
+ * Returns true if segment p1-p2 properly intersects segment p3-p4.
+ * Returns false if they share an endpoint.
+ */
+function segmentsIntersect(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  p3: { x: number; y: number },
+  p4: { x: number; y: number }
+): boolean {
+  if (
+    (p1.x === p3.x && p1.y === p3.y) ||
+    (p1.x === p4.x && p1.y === p4.y) ||
+    (p2.x === p3.x && p2.y === p3.y) ||
+    (p2.x === p4.x && p2.y === p4.y)
+  ) {
+    return false;
+  }
+
+  const cp1 = ccw(p1, p2, p3);
+  const cp2 = ccw(p1, p2, p4);
+  const cp3 = ccw(p3, p4, p1);
+  const cp4 = ccw(p3, p4, p2);
+
+  return (
+    ((cp1 > 0 && cp2 < 0) || (cp1 < 0 && cp2 > 0)) &&
+    ((cp3 > 0 && cp4 < 0) || (cp3 < 0 && cp4 > 0))
+  );
+}
+
+/**
+ * Computes cosine of angle formed at vertex u between vector (w - u) and vector (v - u).
+ * cos(theta) = 1 means 0 deg (foldback), 0 means 90 deg, -1 means 180 deg (straight).
+ */
+function getCosAngle(
+  u: { x: number; y: number },
+  w: { x: number; y: number },
+  v: { x: number; y: number }
+): number {
+  const ax = w.x - u.x;
+  const ay = w.y - u.y;
+  const bx = v.x - u.x;
+  const by = v.y - u.y;
+  const dot = ax * bx + ay * by;
+  const magA = Math.hypot(ax, ay);
+  const magB = Math.hypot(bx, by);
+  if (magA === 0 || magB === 0) return 1;
+  return dot / (magA * magB);
+}
+
+/**
+ * Upgraded 5-Step Geometric Constellation Algorithm:
+ * 1. UI Safe-Zone Mask & Open Celestial Corridor Anchors
+ * 2. Brightness-Filtered & Poisson-Spaced Cluster Selection
+ * 3. Degree-Constrained, Angular-Penalized Spanning Tree
+ * 4. Planar Loop Closure with Zero Intersecting Edges
+ * 5. Star-Chart Endpoint Insets & Vertex Luminous Boost
  */
 function buildConstellations(stars: Star[], width: number, height: number, isMobile: boolean) {
   if (stars.length < 15) {
     return { edges: [], constellationStarIndices: new Set<number>() };
   }
 
-  // Anchor regions across quadrants of viewport
-  const anchorRatios = isMobile
+  // Desktop Anchor targets sitting in open celestial corridors
+  const anchorRatios: Array<[number, number]> = isMobile
     ? [
-        [0.28, 0.22],
-        [0.72, 0.48],
-        [0.35, 0.78]
+        [0.24, 0.10],
+        [0.76, 0.11],
+        [0.25, 0.82],
+        [0.75, 0.82]
       ]
     : [
-        [0.18, 0.24],
-        [0.78, 0.22],
-        [0.48, 0.48],
-        [0.22, 0.74],
-        [0.82, 0.72]
+        [0.18, 0.16], // Top-Left Sky
+        [0.58, 0.18], // Top-Center/Right Sky
+        [0.84, 0.22], // Top-Far-Right Sky
+        [0.18, 0.82], // Bottom-Left Sky
+        [0.62, 0.80]  // Bottom-Center/Right Sky
       ];
 
   const chosenAnchorIndices: number[] = [];
@@ -111,7 +197,7 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
   const edges: Array<[number, number]> = [];
   const constellationStarIndices = new Set<number>();
 
-  // 1. Pick well-spaced anchor stars
+  // Step 1: Pick well-spaced anchor stars in open sky regions outside UI safe zones
   for (const [rx, ry] of anchorRatios) {
     const targetX = rx * width;
     const targetY = ry * height;
@@ -121,8 +207,10 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
     for (let i = 0; i < stars.length; i++) {
       if (usedStars.has(i)) continue;
       const s = stars[i];
-      // Prefer bright/giant stars
-      const typeBonus = s.type === "giant" ? 0.6 : s.type === "bright" ? 0.8 : 1.0;
+      if (isInUISafeZone(s.x, s.y, width, height, isMobile)) continue;
+
+      // Prefer prominent stars
+      const typeBonus = s.type === "giant" ? 0.55 : s.type === "bright" ? 0.75 : 1.0;
       const dist = Math.hypot(s.x - targetX, s.y - targetY) * typeBonus;
 
       if (dist < bestDist) {
@@ -137,50 +225,149 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
     }
   }
 
-  // 2. Build connected cluster for each anchor
+  // Step 2 & 3 & 4: Build each constellation cluster
   for (const anchorIdx of chosenAnchorIndices) {
     const anchor = stars[anchorIdx];
-    const clusterStarCandidates: Array<{ index: number; dist: number }> = [];
+
+    // Find candidate stars within 300px of anchor, filtered by UI safe zone and used status
+    const candidates: Array<{ index: number; dist: number; score: number }> = [];
 
     for (let i = 0; i < stars.length; i++) {
       if (i === anchorIdx || usedStars.has(i)) continue;
-      const dist = Math.hypot(stars[i].x - anchor.x, stars[i].y - anchor.y);
-      if (dist <= 280) {
-        clusterStarCandidates.push({ index: i, dist });
+      const s = stars[i];
+      if (isInUISafeZone(s.x, s.y, width, height, isMobile)) continue;
+
+      const dist = Math.hypot(s.x - anchor.x, s.y - anchor.y);
+      if (dist <= 300) {
+        // Brightness-weighted sort metric
+        const sizeBonus = s.radius >= 2.0 ? 0.6 : s.radius >= 1.5 ? 0.75 : s.radius >= 1.0 ? 1.0 : 1.35;
+        candidates.push({ index: i, dist, score: dist * sizeBonus });
       }
     }
 
-    // Sort by distance to anchor and take 4-6 stars
-    clusterStarCandidates.sort((a, b) => a.dist - b.dist);
-    let clusterIndices = [anchorIdx];
+    // Sort candidates by combined brightness and proximity
+    candidates.sort((a, b) => a.score - b.score);
 
-    const targetClusterSize = isMobile ? 4 : 5 + Math.floor(Math.random() * 2); // 5-6 stars
-    const selectedNeighbors = clusterStarCandidates.slice(0, targetClusterSize);
+    // Poisson-like spacing: MIN_STAR_DIST = 55px, MAX_STAR_DIST = 195px
+    const MIN_STAR_DIST = 55;
+    const MAX_STAR_DIST = 195;
+    const targetClusterSize = isMobile ? 4 : 5 + (Math.random() < 0.5 ? 1 : 0); // 4-6 stars
+    const clusterIndices = [anchorIdx];
 
-    for (const neighbor of selectedNeighbors) {
-      clusterIndices.push(neighbor.index);
-      usedStars.add(neighbor.index);
+    // Greedy Poisson addition
+    for (const cand of candidates) {
+      if (clusterIndices.length >= targetClusterSize) break;
+      const candStar = stars[cand.index];
+
+      // Must be at least 55px away from ALL cluster stars
+      let tooClose = false;
+      let hasNeighborInRange = false;
+
+      for (const idx of clusterIndices) {
+        const d = Math.hypot(candStar.x - stars[idx].x, candStar.y - stars[idx].y);
+        if (d < MIN_STAR_DIST) {
+          tooClose = true;
+          break;
+        }
+        if (d <= MAX_STAR_DIST) {
+          hasNeighborInRange = true;
+        }
+      }
+
+      if (!tooClose && hasNeighborInRange) {
+        clusterIndices.push(cand.index);
+      }
+    }
+
+    // Fallback: if cluster is smaller than 4 stars, retry with relaxed 45px distance
+    if (clusterIndices.length < 4) {
+      for (const cand of candidates) {
+        if (clusterIndices.length >= targetClusterSize) break;
+        if (clusterIndices.includes(cand.index)) continue;
+        const candStar = stars[cand.index];
+
+        let tooClose = false;
+        let hasNeighborInRange = false;
+        for (const idx of clusterIndices) {
+          const d = Math.hypot(candStar.x - stars[idx].x, candStar.y - stars[idx].y);
+          if (d < 45) {
+            tooClose = true;
+            break;
+          }
+          if (d <= 220) {
+            hasNeighborInRange = true;
+          }
+        }
+
+        if (!tooClose && hasNeighborInRange) {
+          clusterIndices.push(cand.index);
+        }
+      }
     }
 
     if (clusterIndices.length < 3) continue;
 
-    // 3. Minimum Spanning Tree (Prim's Algorithm)
+    // Step 3: Degree-Constrained, Angular-Penalized Spanning Tree
+    // Degree Cap: At most ONE node can reach degree === 3. All others degree <= 2.
     const inTree = new Set<number>([anchorIdx]);
     const clusterEdges: Array<[number, number]> = [];
+    const degrees = new Map<number, number>();
+    const adjacency = new Map<number, number[]>();
+
+    for (const idx of clusterIndices) {
+      degrees.set(idx, 0);
+      adjacency.set(idx, []);
+    }
 
     while (inTree.size < clusterIndices.length) {
-      let minEdgeDist = Infinity;
+      let bestScore = Infinity;
       let bestU = -1;
       let bestV = -1;
 
+      // Count nodes currently at degree 3 in this cluster
+      let degree3Count = 0;
+      for (const idx of clusterIndices) {
+        if ((degrees.get(idx) || 0) >= 3) degree3Count++;
+      }
+
       for (const u of inTree) {
+        const degU = degrees.get(u) || 0;
+        if (degU >= 3) continue;
+        if (degU === 2 && degree3Count >= 1) continue;
+
         const starU = stars[u];
+        const adjU = adjacency.get(u) || [];
+
         for (const v of clusterIndices) {
           if (inTree.has(v)) continue;
           const starV = stars[v];
-          const d = Math.hypot(starU.x - starV.x, starU.y - starV.y);
-          if (d < minEdgeDist) {
-            minEdgeDist = d;
+          const dist = Math.hypot(starU.x - starV.x, starU.y - starV.y);
+          if (dist > 240) continue;
+
+          // Angular Flow Penalty (No hairpin turns)
+          let scoreMultiplier = 1.0;
+          let sharpestCos = -1;
+
+          for (const w of adjU) {
+            const cosAngle = getCosAngle(starU, stars[w], starV);
+            if (cosAngle > sharpestCos) sharpestCos = cosAngle;
+          }
+
+          if (sharpestCos > 0.75) {
+            // Sharper than 41 deg: reject sharp hairpin
+            continue;
+          }
+          if (sharpestCos > 0.5) {
+            // Angle < 60 deg: heavy penalty
+            scoreMultiplier = 2.8;
+          } else if (sharpestCos <= 0) {
+            // Angle >= 90 deg: flowing rewarding multiplier
+            scoreMultiplier = 0.85;
+          }
+
+          const edgeScore = dist * scoreMultiplier;
+          if (edgeScore < bestScore) {
+            bestScore = edgeScore;
             bestU = u;
             bestV = v;
           }
@@ -190,37 +377,125 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
       if (bestU !== -1 && bestV !== -1) {
         clusterEdges.push([bestU, bestV]);
         inTree.add(bestV);
+        degrees.set(bestU, (degrees.get(bestU) || 0) + 1);
+        degrees.set(bestV, (degrees.get(bestV) || 0) + 1);
+        adjacency.get(bestU)!.push(bestV);
+        adjacency.get(bestV)!.push(bestU);
       } else {
-        break;
-      }
-    }
+        // Fallback: connect closest pair to avoid isolated components
+        let fallbackDist = Infinity;
+        let fbU = -1;
+        let fbV = -1;
 
-    // 4. Optionally close 1 triangle loop in 5+ star clusters
-    if (clusterIndices.length >= 5) {
-      let loopAdded = false;
-      for (let i = 0; i < clusterIndices.length && !loopAdded; i++) {
-        const u = clusterIndices[i];
-        for (let j = i + 1; j < clusterIndices.length && !loopAdded; j++) {
-          const v = clusterIndices[j];
-          const alreadyConnected = clusterEdges.some(
-            ([a, b]) => (a === u && b === v) || (a === v && b === u)
-          );
-          if (!alreadyConnected) {
+        for (const u of inTree) {
+          if ((degrees.get(u) || 0) >= 3) continue;
+          for (const v of clusterIndices) {
+            if (inTree.has(v)) continue;
             const d = Math.hypot(stars[u].x - stars[v].x, stars[u].y - stars[v].y);
-            if (d < 140) {
-              clusterEdges.push([u, v]);
-              loopAdded = true;
+            if (d < fallbackDist) {
+              fallbackDist = d;
+              fbU = u;
+              fbV = v;
             }
           }
+        }
+
+        if (fbU !== -1 && fbV !== -1) {
+          clusterEdges.push([fbU, fbV]);
+          inTree.add(fbV);
+          degrees.set(fbU, (degrees.get(fbU) || 0) + 1);
+          degrees.set(fbV, (degrees.get(fbV) || 0) + 1);
+          adjacency.get(fbU)!.push(fbV);
+          adjacency.get(fbV)!.push(fbU);
+        } else {
+          break;
         }
       }
     }
 
+    // Step 4: Planar Loop Closure (Zero Crossing Lines & No Flat Sliver Triangles)
+    // Only close on ~60% of clusters with >= 5 stars (e.g. Dipper or Cygnus kite)
+    if (clusterIndices.length >= 5 && Math.random() < 0.6) {
+      let degree3Count = 0;
+      for (const idx of clusterIndices) {
+        if ((degrees.get(idx) || 0) >= 3) degree3Count++;
+      }
+
+      let bestLoopEdge: [number, number] | null = null;
+      let minLoopDist = Infinity;
+
+      for (let i = 0; i < clusterIndices.length; i++) {
+        const u = clusterIndices[i];
+        const degU = degrees.get(u) || 0;
+        if (degU > 2) continue;
+
+        for (let j = i + 1; j < clusterIndices.length; j++) {
+          const v = clusterIndices[j];
+          const degV = degrees.get(v) || 0;
+          if (degV > 2) continue;
+
+          // Check if adding (u, v) would exceed degree 3 cap
+          const wouldAddDeg3 = (degU === 2 ? 1 : 0) + (degV === 2 ? 1 : 0);
+          if (degree3Count + wouldAddDeg3 > 1) continue;
+
+          const alreadyConnected = clusterEdges.some(
+            ([a, b]) => (a === u && b === v) || (a === v && b === u)
+          );
+          if (alreadyConnected) continue;
+
+          const d = Math.hypot(stars[u].x - stars[v].x, stars[u].y - stars[v].y);
+          if (d < 60 || d > 155) continue;
+
+          // Rule A: Zero segment intersections with any existing edge
+          let hasIntersection = false;
+          for (const [e1, e2] of clusterEdges) {
+            if (segmentsIntersect(stars[u], stars[v], stars[e1], stars[e2])) {
+              hasIntersection = true;
+              break;
+            }
+          }
+          if (hasIntersection) continue;
+
+          // Rule B: No flat sliver triangles (angle > 42 deg => cos <= 0.74)
+          let hasSharpAngle = false;
+          for (const w of adjacency.get(u) || []) {
+            if (getCosAngle(stars[u], stars[w], stars[v]) > 0.74) {
+              hasSharpAngle = true;
+              break;
+            }
+          }
+          if (!hasSharpAngle) {
+            for (const z of adjacency.get(v) || []) {
+              if (getCosAngle(stars[v], stars[z], stars[u]) > 0.74) {
+                hasSharpAngle = true;
+                break;
+              }
+            }
+          }
+          if (hasSharpAngle) continue;
+
+          if (d < minLoopDist) {
+            minLoopDist = d;
+            bestLoopEdge = [u, v];
+          }
+        }
+      }
+
+      if (bestLoopEdge) {
+        clusterEdges.push(bestLoopEdge);
+      }
+    }
+
+    // Step 5: Elevate vertex stars & store final edges
     for (const [u, v] of clusterEdges) {
       edges.push([u, v]);
     }
     for (const idx of clusterIndices) {
+      usedStars.add(idx);
       constellationStarIndices.add(idx);
+      // Ensure vertex star is crisp and never a tiny sub-pixel dot
+      stars[idx].radius = Math.max(stars[idx].radius, 1.6);
+      stars[idx].baseOpacity = Math.max(stars[idx].baseOpacity, 0.75);
     }
   }
 
@@ -307,7 +582,7 @@ export default function useStarfieldCanvas({
 
       starsRef.current = stars;
 
-      // Pre-compute geometric constellations for these stars
+      // Pre-compute geometric constellations with UI safe-zones and planar graph rules
       const { edges, constellationStarIndices } = buildConstellations(
         stars,
         width,
@@ -351,34 +626,45 @@ export default function useStarfieldCanvas({
     const showConstellationsActive = showConstellationsRef.current;
     const constellationIndices = constellationStarIndicesRef.current;
 
-    // 1. Draw Constellation architectural lines first (behind star nodes)
+    // 1. Draw Constellation architectural lines with star-chart endpoint insets
     if (showConstellationsActive && constellationEdgesRef.current.length > 0) {
-      ctx.strokeStyle = "rgba(94, 159, 255, 0.25)";
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = "rgba(126, 182, 255, 0.28)";
+      ctx.lineWidth = 0.85;
       ctx.beginPath();
 
       for (const [i, j] of constellationEdgesRef.current) {
-        const star1 = starsRef.current[i];
-        const star2 = starsRef.current[j];
-        if (star1 && star2) {
-          ctx.moveTo(star1.x, star1.y);
-          ctx.lineTo(star2.x, star2.y);
+        const s1 = starsRef.current[i];
+        const s2 = starsRef.current[j];
+        if (s1 && s2) {
+          const dx = s2.x - s1.x;
+          const dy = s2.y - s1.y;
+          const len = Math.hypot(dx, dy);
+
+          // Inset line endpoints leaving clean dark breathing gap around star vertices
+          if (len > 14) {
+            const ux = dx / len;
+            const uy = dy / len;
+            const pad1 = Math.max(4, s1.radius * 2.2);
+            const pad2 = Math.max(4, s2.radius * 2.2);
+            ctx.moveTo(s1.x + ux * pad1, s1.y + uy * pad1);
+            ctx.lineTo(s2.x - ux * pad2, s2.y - uy * pad2);
+          }
         }
       }
 
       ctx.stroke();
     }
 
-    // 2. Draw Stars
+    // 2. Draw Stars with elevated opacity floor on constellation vertices
     starsRef.current.forEach((star, index) => {
       const twinkle =
         Math.sin(timestamp * star.twinkleSpeed * lensSpeedMultiplier + star.twinklePhase) * 0.3 + 0.7;
 
       let opacity = star.baseOpacity * twinkle * combinedMultiplier;
 
-      // Subtly boost vertex star alpha if part of active constellation
+      // Elevated opacity floor for active constellation vertices
       if (showConstellationsActive && constellationIndices.has(index)) {
-        opacity += 0.25;
+        opacity = Math.min(1, Math.max(opacity + 0.25, 0.75));
       }
 
       star.opacity = Math.min(1, Math.max(0, opacity));
