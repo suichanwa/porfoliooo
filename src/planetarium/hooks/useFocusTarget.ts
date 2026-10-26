@@ -120,8 +120,8 @@ export const useFocusTarget = ({
           controls.target.copy(target);
         }
       } else {
-        // Locked Phase: strictly pinned to planet center
-        controls.target.copy(target);
+        // Locked Phase: camera and orbit target track the planet's orbital displacement (lines 77-79),
+        // preserving any user right-click canvas panning offset.
       }
 
       const minDistance = Math.max(radius * 1.2, isMoon ? 0.2 : 0.4);

@@ -74,6 +74,16 @@ function PlanetariumView() {
     [selectPlanet]
   );
 
+  const handlePointerMissed = useCallback(
+    (event: MouseEvent) => {
+      // Only deselect on primary left click, not right-click canvas panning
+      if (event.button === 0) {
+        clearSelection();
+      }
+    },
+    [clearSelection]
+  );
+
   const handleFaster = useCallback(() => {
     const higher = SIGNED_SPEED_LADDER.find(
       (value) => value > settings.orbitSpeed + 1e-6
@@ -151,7 +161,7 @@ function PlanetariumView() {
 
   return (
     <div className="relative min-h-screen">
-      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={clearSelection}>
+      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={handlePointerMissed}>
         <PlanetariumScene
           showOrbits={settings.showOrbits}
           showLabels={settings.showLabels}

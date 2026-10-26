@@ -40,6 +40,7 @@ export default function PlanetariumCanvas({
   return (
     <div
       className="planetarium-canvas"
+      onContextMenu={(e) => e.preventDefault()}
       style={{
         position: "fixed",
         inset: 0,

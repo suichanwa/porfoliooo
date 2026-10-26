@@ -1,6 +1,6 @@
 import { OrbitControls } from "@react-three/drei";
 import { useCallback, useEffect, useRef, type MutableRefObject, type Ref } from "react";
-import { MathUtils, Spherical, Vector3 } from "three";
+import { MathUtils, MOUSE, Spherical, TOUCH, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 interface CameraRigProps {
@@ -164,11 +164,30 @@ export default function CameraRig({
     };
   }, [minDistance, maxDistance, onZoomOut]);
 
+  // Prevent browser context menu on the canvas so holding right-click seamlessly pans
+  useEffect(() => {
+    const controls = localControlsRef.current;
+    if (!controls) return;
+    const domElement = controls.domElement;
+    if (!domElement) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    domElement.addEventListener("contextmenu", handleContextMenu);
+    return () => {
+      domElement.removeEventListener("contextmenu", handleContextMenu);
+    };
+  }, []);
+
   return (
     <OrbitControls
       ref={setRefs}
       makeDefault
-      enablePan={false}
+      enablePan={true}
+      screenSpacePanning={true}
+      panSpeed={isInspecting ? 0.85 : 1.0}
       enableZoom
       enableDamping
       dampingFactor={0.05}
@@ -178,6 +197,15 @@ export default function CameraRig({
       maxDistance={isInspecting ? Math.max(maxDistance, 140) : maxDistance}
       minPolarAngle={0.25}
       maxPolarAngle={Math.PI - 0.35}
+      mouseButtons={{
+        LEFT: MOUSE.ROTATE,
+        MIDDLE: MOUSE.DOLLY,
+        RIGHT: MOUSE.PAN
+      }}
+      touches={{
+        ONE: TOUCH.ROTATE,
+        TWO: TOUCH.DOLLY_PAN
+      }}
     />
   );
 }
