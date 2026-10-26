@@ -35,7 +35,7 @@ export default function CosmicQuote() {
   return (
     <div
       ref={quoteRef}
-      className="group relative mt-5 mb-8 inline-flex items-center gap-3 py-1 select-none cursor-default"
+      className="group relative my-6 inline-flex items-center gap-3 py-1 select-none cursor-default"
     >
       {/* Subtle vertical gradient accent pill */}
       <span className="h-4 w-[2px] rounded-full bg-gradient-to-b from-[#5e9fff] via-[#c792ea] to-transparent opacity-85 transition-all duration-500 group-hover:h-5 group-hover:opacity-100 group-hover:shadow-[0_0_8px_#5e9fff]" />

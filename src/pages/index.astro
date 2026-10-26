@@ -85,15 +85,15 @@ const stats = [
     <div class="container max-w-6xl mx-auto px-4 relative z-10">
       <div class="flex flex-col md:flex-row items-center justify-between gap-12">
         <div class="md:w-2/3 text-center md:text-left">
-          <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-text-dark-bg min-h-[5rem] md:min-h-[6.75rem]">
+          <h1 class="text-4xl md:text-6xl font-bold mb-2 text-text-dark-bg min-h-[8rem] md:min-h-[12rem]">
             <TypeWriter 
               client:load 
               text="fullstack developer" 
               speed={80} 
               delay={500}
-              className="block font-bold tracking-tight bg-gradient-to-r from-[#7eb6ff] via-[#a5b4fc] to-[#c792ea] bg-clip-text text-transparent"
+              className="block bg-gradient-to-r from-primary-accent to-secondary-accent bg-clip-text text-transparent"
             />
-            <span class="flex items-center justify-center md:justify-start gap-2 text-xl md:text-2xl mt-2 md:mt-2.5 font-normal text-slate-300/90">
+            <span class="flex items-center justify-center md:justify-start gap-2 text-xl md:text-2xl mt-4 text-secondary-accent">
               <TypeWriter 
                 client:load 
                 text="vibing n making things happen" 
@@ -101,9 +101,9 @@ const stats = [
                 delay={2500}
                 className="inline-block"
               />
-              <span class="inline-block text-[#c792ea] drop-shadow-[0_0_8px_rgba(199,146,234,0.5)] select-none text-lg md:text-xl font-serif">
-                ✧
-              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 inline-block">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+              </svg>
             </span>
           </h1>
 
@@ -134,7 +134,7 @@ const stats = [
           </div>
         </div>
         
-        <div class="md:w-1/3 flex justify-center lg:-mt-4 xl:-mt-6">
+        <div class="md:w-1/3 flex justify-center">
           <Avatar />
         </div>
       </div>

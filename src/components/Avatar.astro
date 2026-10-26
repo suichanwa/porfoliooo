@@ -3,14 +3,7 @@ import { Image } from "astro:assets";
 import pfpImage from "../assets/images/pfp.jpg";
 ---
 
-<div class="relative inline-flex items-center justify-center animate-avatar-enter">
-  <!-- Soft, large ambient light bleed -->
-  <div class="pointer-events-none absolute -inset-10 rounded-full bg-[#5e9fff]/[0.06] blur-3xl -z-10" aria-hidden="true" />
-  
-  <!-- Single concentric outer orbital ring -->
-  <div class="pointer-events-none absolute -inset-3.5 rounded-full border border-[#5e9fff]/[0.14]" aria-hidden="true" />
-
-  <!-- Avatar image -->
+<div class="inline-block animate-avatar-enter">
   <Image
     src={pfpImage}
     alt="avatar"
@@ -20,6 +13,6 @@ import pfpImage from "../assets/images/pfp.jpg";
     fetchpriority="high"
     decoding="async"
     format="webp"
-    class="rounded-full w-[clamp(8.75rem,16vw,10rem)] aspect-square object-cover border-2 border-blue-400/80 shadow-[0_0_20px_rgba(59,130,246,0.45)] transition-transform duration-300 hover:scale-105 active:scale-95 cursor-pointer relative z-0"
+    class="rounded-full w-[clamp(8.75rem,16vw,10rem)] aspect-square object-cover border-2 border-blue-400/80 shadow-[0_0_20px_rgba(59,130,246,0.45)] transition-transform duration-300 hover:scale-105 active:scale-95 cursor-pointer"
   />
 </div>
