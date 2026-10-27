@@ -18,15 +18,13 @@ const SUN_RADIUS = 2.6;
 interface SunProps {
   meshRef?: Ref<Mesh>;
   onClick?: () => void;
-  isIsolated?: boolean;
 }
 
-export default function Sun({ meshRef, onClick, isIsolated = false }: SunProps) {
+export default function Sun({ meshRef, onClick }: SunProps) {
   const texture = usePlanetTexture(PLANET_TEXTURES.sun, "#f6c453");
   const groupRef = useRef<Group>(null);
   const coreMeshRef = useRef<Mesh>(null);
   const coronaMeshRef = useRef<Mesh>(null);
-  const sunVisRef = useRef(1);
   const { camera } = useThree();
 
   const coreGeometry = useMemo(() => new SphereGeometry(SUN_RADIUS, 64, 48), []);
@@ -109,18 +107,6 @@ export default function Sun({ meshRef, onClick, isIsolated = false }: SunProps) 
   );
 
   useFrame((state, delta) => {
-    const targetVis = isIsolated ? 0 : 1;
-    sunVisRef.current = MathUtils.damp(sunVisRef.current, targetVis, 8.0, delta);
-
-    if (groupRef.current) {
-      if (sunVisRef.current < 0.01) {
-        groupRef.current.visible = false;
-      } else {
-        groupRef.current.visible = true;
-        groupRef.current.scale.setScalar(sunVisRef.current);
-      }
-    }
-
     if (coreMeshRef.current) {
       coreMeshRef.current.rotation.y += delta * 0.015;
     }

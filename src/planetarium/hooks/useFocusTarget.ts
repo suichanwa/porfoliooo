@@ -84,17 +84,19 @@ export const useFocusTarget = ({
         isTransitioningRef.current = true;
         transitionTimeRef.current = 0;
 
-        // Compute outward Sun-lit approach vector:
-        // Position camera rotated ~140° from r_hat (looking outward toward planet at ~40° phase angle, elevated on +Y)
+        // Place camera on the illuminated day-side of the planet:
+        // Vector pointing from planet toward the Sun (the sunlit face) is normalize(-target)
         const rLen = Math.hypot(target.x, target.z);
         if (selectedId === "sun" || rLen < 0.1) {
           approachDirectionRef.current.set(0, 0.28, 1).normalize();
         } else {
-          const phi = Math.atan2(target.z, target.x);
-          const theta = phi + (140 * Math.PI) / 180;
+          // Angle in XZ plane pointing from the planet toward the Sun
+          const phiSun = Math.atan2(-target.z, -target.x);
+          // Rotate horizontally around Y-axis by ~39° (0.68 rad) with a slight upward tilt (+0.25 on Y)
+          const theta = phiSun + 0.68;
           const vx = Math.cos(theta);
           const vz = Math.sin(theta);
-          const vy = 0.28;
+          const vy = 0.25;
           approachDirectionRef.current.set(vx, vy, vz).normalize();
         }
       }

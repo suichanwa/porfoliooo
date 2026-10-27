@@ -31,7 +31,6 @@ interface OrbitPathProps {
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   isSelected?: boolean;
   activeSystemId?: BodyId | null;
-  isSystemIsolated?: boolean;
   moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
@@ -46,7 +45,6 @@ export default function OrbitPath({
   planetRefs,
   isSelected = false,
   activeSystemId,
-  isSystemIsolated = false,
   moonSystemVisRef
 }: OrbitPathProps) {
   const parentWorldPosRef = useRef(new Vector3());
@@ -130,16 +128,14 @@ export default function OrbitPath({
         material.opacity = currentOpacityRef.current;
       }
     } else if (!isMoon) {
-      // Heliocentric (solar) orbit line: damp opacity all the way to 0 when system is isolated
-      const targetOpacity = isSystemIsolated ? 0.0 : effectiveOpacity;
-      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 8.0, delta);
+      // Heliocentric (solar) orbit line: always stay visible!
+      // Subtle polish: if this planet's system is focused, soften to 0.35 so moon rings stand out, else normal opacity
+      const isFocusedSystem = Boolean(activeSystemId && activeSystemId === planet?.id);
+      const targetOpacity = isFocusedSystem ? (isSelected ? 0.65 : 0.35) : effectiveOpacity;
+      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 6.0, delta);
 
-      if (currentOpacityRef.current < 0.01) {
-        lineObject.visible = false;
-      } else {
-        lineObject.visible = true;
-        material.opacity = currentOpacityRef.current;
-      }
+      lineObject.visible = true;
+      material.opacity = currentOpacityRef.current;
     }
   });
 

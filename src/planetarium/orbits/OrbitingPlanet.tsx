@@ -22,8 +22,6 @@ interface OrbitingPlanetProps {
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
   activeSystemId?: BodyId | null;
-  isSystemIsolated?: boolean;
-  planetVisRef?: React.MutableRefObject<Record<string, number>>;
   moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
@@ -40,8 +38,6 @@ export default function OrbitingPlanet({
   scaleMode,
   scaleParams,
   activeSystemId,
-  isSystemIsolated = false,
-  planetVisRef,
   moonSystemVisRef
 }: OrbitingPlanetProps) {
   const groupRef = useRef<Group>(null);
@@ -99,14 +95,8 @@ export default function OrbitingPlanet({
       }
     } else {
       groupRef.current.position.copy(orbitPositionRef.current);
-      // Primary planet isolation scaling & visibility
-      const pVis = planetVisRef?.current?.[data.id] ?? 1.0;
-      if (pVis < 0.02) {
-        groupRef.current.visible = false;
-      } else {
-        groupRef.current.visible = true;
-        groupRef.current.scale.setScalar(pVis);
-      }
+      groupRef.current.visible = true;
+      groupRef.current.scale.setScalar(1);
     }
   });
 
@@ -182,7 +172,6 @@ export default function OrbitingPlanet({
           scaleMode={scaleMode}
           scaleParams={scaleParams}
           activeSystemId={activeSystemId}
-          isSystemIsolated={isSystemIsolated}
           moonSystemVisRef={moonSystemVisRef}
         />
       )}

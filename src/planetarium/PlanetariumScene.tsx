@@ -92,8 +92,6 @@ export default function PlanetariumScene({
     uranus: 0,
     neptune: 0
   });
-  const planetVisRef = useRef<Record<string, number>>({});
-  const tempCamDistVec = useRef(new Vector3());
   const orbitSegments = isLowEnd ? 180 : 320;
   const gridDivisions = isLowEnd ? 160 : 300;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
@@ -151,34 +149,11 @@ export default function PlanetariumScene({
     }
   });
 
-  const isSystemIsolated = Boolean(activeSystemId && activeSystemId !== "sun");
-
-  // Smooth per-system visibility damping (MathUtils.damp)
-  useFrame(({ camera }, delta) => {
-    // 1. Primary Planets Isolation Damping
-    for (const p of ORBITING_PLANETS) {
-      if (p.kind === "moon") continue;
-      const targetVis = !isSystemIsolated || p.id === activeSystemId ? 1.0 : 0.0;
-      const currentVis = planetVisRef.current[p.id] ?? 1.0;
-      planetVisRef.current[p.id] = MathUtils.damp(currentVis, targetVis, 8.0, delta);
-    }
-
-    // 2. Moon System Damping
+  // Smooth moon system visibility damping (strictly triggered on planet selection)
+  useFrame((_, delta) => {
     const parentIds = ["earth", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
     for (const parentId of parentIds) {
-      let targetVis = 0;
-      if (activeSystemId === parentId) {
-        targetVis = 1;
-      } else if (!isSystemIsolated) {
-        const parentObj = planetRefs.current[parentId];
-        if (parentObj) {
-          parentObj.getWorldPosition(tempCamDistVec.current);
-          const distToCam = camera.position.distanceTo(tempCamDistVec.current);
-          if (distToCam < 9.5) {
-            targetVis = 1;
-          }
-        }
-      }
+      const targetVis = activeSystemId === parentId ? 1.0 : 0.0;
       const currentVis = moonSystemVisRef.current[parentId] ?? 0;
       moonSystemVisRef.current[parentId] = MathUtils.damp(currentVis, targetVis, 7.5, delta);
     }
@@ -260,7 +235,6 @@ export default function PlanetariumScene({
       <Sun
         meshRef={sunRef}
         onClick={handleSunSelect}
-        isIsolated={isSystemIsolated}
       />
       {showOrbits &&
         ORBITING_PLANETS.map((planet) =>
@@ -275,7 +249,6 @@ export default function PlanetariumScene({
               planetRefs={planetRefs}
               isSelected={selectedId === planet.id}
               activeSystemId={activeSystemId}
-              isSystemIsolated={isSystemIsolated}
               moonSystemVisRef={moonSystemVisRef}
             />
           ) : null
@@ -295,8 +268,6 @@ export default function PlanetariumScene({
           scaleMode={distanceScaleMode}
           scaleParams={distanceScaleParams}
           activeSystemId={activeSystemId}
-          isSystemIsolated={isSystemIsolated}
-          planetVisRef={planetVisRef}
           moonSystemVisRef={moonSystemVisRef}
         />
       ))}
