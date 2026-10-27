@@ -54,6 +54,9 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
 
   const activeSystemId = useMemo<BodyId | null>(() => {
     if (!selectedPlanet) return null;
+    if (selectedPlanet.id === "charon" || selectedPlanet.id === "pluto") {
+      return "pluto";
+    }
     if (selectedPlanet.parentId && selectedPlanet.parentId !== "sun") {
       return selectedPlanet.parentId;
     }

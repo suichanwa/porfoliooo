@@ -195,7 +195,7 @@ export default function PlanetInfoPanel() {
                       {planet.name}
                     </span>
                     <span className="rounded-full bg-primary-accent/20 border border-primary-accent/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary-accent">
-                      {isMoon ? "Moon" : "Planet"}
+                      {planet.kind === "dwarf" ? "Dwarf Planet" : isMoon ? "Moon" : "Planet"}
                     </span>
                   </div>
                 </div>
@@ -234,6 +234,22 @@ export default function PlanetInfoPanel() {
                   </button>
                 </div>
               </div>
+
+              {/* Binary Dwarf Companion Link Pill (Pluto <-> Charon) */}
+              {(planet.id === "pluto" || planet.id === "charon") && (
+                <div className="mt-1 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => selectPlanet(planet.id === "pluto" ? "charon" : "pluto")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-200 transition-colors hover:border-purple-400 hover:bg-purple-500/20 hover:text-white active:scale-95 cursor-pointer"
+                    title={`Focus binary companion ${planet.id === "pluto" ? "Charon" : "Pluto"}`}
+                  >
+                    <Globe className="h-3 w-3 text-purple-400" />
+                    <span>Binary Companion: {planet.id === "pluto" ? "Charon" : "Pluto"}</span>
+                    <ArrowRight className="h-3 w-3 text-purple-400" />
+                  </button>
+                </div>
+              )}
 
               {/* Moon Parent Link Pill */}
               {isMoon && parentPlanet && (
@@ -371,8 +387,20 @@ export default function PlanetInfoPanel() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
-                  {isMoon ? "Moon details" : "Planet details"}
+                  {planet.kind === "dwarf" ? "Dwarf planet details" : isMoon ? "Moon details" : "Planet details"}
                 </span>
+                {(planet.id === "pluto" || planet.id === "charon") && (
+                  <button
+                    type="button"
+                    onClick={() => selectPlanet(planet.id === "pluto" ? "charon" : "pluto")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[9px] font-medium text-purple-200 transition-colors hover:border-purple-400 hover:bg-purple-500/20 hover:text-white active:scale-95 cursor-pointer"
+                    title={`Focus binary companion ${planet.id === "pluto" ? "Charon" : "Pluto"}`}
+                  >
+                    <Globe className="h-2.5 w-2.5 text-purple-400" />
+                    <span>Binary Companion: {planet.id === "pluto" ? "Charon" : "Pluto"}</span>
+                    <ArrowRight className="h-2.5 w-2.5 text-purple-400" />
+                  </button>
+                )}
                 {isMoon && parentPlanet && (
                   <button
                     type="button"

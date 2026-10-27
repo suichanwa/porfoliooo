@@ -441,6 +441,40 @@ export const PLANETS: BodyData[] = [
     }
   },
   {
+    id: "charon",
+    name: "Charon",
+    kind: "dwarf",
+    parentId: "sun",
+    massKg: 1.586e21,
+    mu: toMu(1.586e21),
+    rotation: {
+      axialTiltDeg: 119.6,
+      rotationPeriodHours: 153.29,
+      tidallyLocked: true
+    },
+    render: {
+      radiusKm: 606.0,
+      colorFallback: "#a3a3a3",
+      textureUrl: PLANET_TEXTURES.charon,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
+      glowPreset: DWARF_GLOW,
+      bendingDimensions: {
+        topHeight: 0.15,
+        bottomDepth: 0.45,
+        contactRadius: 0.15,
+        funnelReach: 1.0
+      }
+    },
+    orbit: {
+      semiMajorAxisKm: auToKm(39.482),
+      eccentricity: 0.2488,
+      inclinationDeg: 17.16,
+      orbitalPeriodDays: 90560,
+      meanLongitudeAtEpochDeg: 238.92903833,
+      longitudeOfPerihelionDeg: 224.06891629
+    }
+  },
+  {
     id: "voyager1",
     name: "Voyager 1",
     kind: "probe",

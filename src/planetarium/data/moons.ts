@@ -320,35 +320,5 @@ export const MOONS: BodyData[] = [
       meanLongitudeAtEpochDeg: 253.0,
       longitudeOfPerihelionDeg: 160.0
     }
-  },
-  {
-    id: "charon",
-    name: "Charon",
-    kind: "moon",
-    parentId: "pluto",
-    moonIndex: 0,
-    totalSiblingMoons: 1,
-    massKg: 1.586e21,
-    mu: toMu(1.586e21),
-    rotation: {
-      axialTiltDeg: 119.6,
-      rotationPeriodHours: 153.29,
-      tidallyLocked: true
-    },
-    render: {
-      radiusKm: 606.0,
-      colorFallback: "#a3a3a3",
-      textureUrl: PLANET_TEXTURES.charon,
-      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
-      glowPreset: { color: "#cbd5e1", intensity: 0.08 }
-    },
-    orbit: {
-      semiMajorAxisKm: 19591,
-      eccentricity: 0.0002,
-      inclinationDeg: 0.08,
-      orbitalPeriodDays: 6.387,
-      meanLongitudeAtEpochDeg: 135.0,
-      longitudeOfPerihelionDeg: 220.0
-    }
   }
 ];
