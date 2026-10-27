@@ -10,6 +10,7 @@ import OrbitPath from "./orbits/OrbitPath";
 import { PLANETS } from "./data/planets";
 import type { BodyId } from "./data/types";
 import {
+  ALL_BODIES,
   createBodyRefStore,
   ORBITING_PLANETS,
   PLANET_BY_ID
@@ -90,7 +91,8 @@ export default function PlanetariumScene({
     jupiter: 0,
     saturn: 0,
     uranus: 0,
-    neptune: 0
+    neptune: 0,
+    pluto: 0
   });
   const orbitSegments = isLowEnd ? 180 : 320;
   const gridDivisions = isLowEnd ? 160 : 300;
@@ -104,7 +106,7 @@ export default function PlanetariumScene({
   }, []);
   const gravityBodies = useMemo(
     () =>
-      PLANETS.map((planet) => ({
+      ALL_BODIES.map((planet) => ({
         id: planet.id,
         massKg: planet.massKg,
         radiusKm: planet.render.radiusKm,
@@ -151,7 +153,15 @@ export default function PlanetariumScene({
 
   // Smooth moon system visibility damping (strictly triggered on planet selection)
   useFrame((_, delta) => {
-    const parentIds = ["earth", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
+    const parentIds = [
+      "earth",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto"
+    ] as const;
     for (const parentId of parentIds) {
       const targetVis = activeSystemId === parentId ? 1.0 : 0.0;
       const currentVis = moonSystemVisRef.current[parentId] ?? 0;

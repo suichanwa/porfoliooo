@@ -7,8 +7,7 @@ import {
   type ReactNode
 } from "react";
 import type { BodyData, BodyId } from "../data/types";
-import { PLANETS } from "../data/planets";
-import { PLANET_BY_ID } from "../data/planetRegistry";
+import { ALL_BODIES, PLANET_BY_ID } from "../data/planetRegistry";
 import { PLANET_INFO, type PlanetInfo } from "../data/planetInfo";
 import {
   trackPlanetariumBodySelected,
@@ -73,8 +72,8 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
 
   const filteredPlanets = useMemo(() => {
     const query = pickerQuery.trim().toLowerCase();
-    if (!query) return PLANETS;
-    return PLANETS.filter((planet) =>
+    if (!query) return ALL_BODIES;
+    return ALL_BODIES.filter((planet) =>
       planet.name.toLowerCase().includes(query)
     );
   }, [pickerQuery]);

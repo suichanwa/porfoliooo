@@ -17,6 +17,8 @@ export const PLANET_ORBIT_COLORS: Record<string, string> = {
   neptune: "#4361ee", // intense vivid royal blue
   ceres: "#90e0ef",   // ice cyan
   pluto: "#c77dff",   // subtle purple / mauve
+  charon: "#a78bfa",  // soft lavender/violet
+  enceladus: "#e0f2fe", // icy sky tint
   voyager: "#ffd166"  // golden probe
 };
 

@@ -19,10 +19,10 @@ export type BodyId =
   | "titania"
   | "oberon"
   | "neptune"
-  | "proteus"
   | "triton"
   | "ceres"
   | "pluto"
+  | "charon"
   | "voyager1";
 
 export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object" | "probe";

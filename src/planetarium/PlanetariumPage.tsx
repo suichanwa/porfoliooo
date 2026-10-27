@@ -4,6 +4,7 @@ import PlanetariumScene from "./PlanetariumScene";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
 import { PLANETS } from "./data/planets";
+import { ALL_BODIES } from "./data/planetRegistry";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
@@ -130,7 +131,7 @@ function PlanetariumView() {
 
   useEffect(() => {
     if (!isClient) return;
-    preloadPlanetTextures(PLANETS.map((planet) => planet.render.textureUrl));
+    preloadPlanetTextures(ALL_BODIES.map((planet) => planet.render.textureUrl));
   }, [isClient]);
 
   useEffect(() => {

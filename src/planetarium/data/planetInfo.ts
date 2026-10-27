@@ -119,11 +119,11 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
     ]
   },
   enceladus: {
-    summary: "A brilliant, highly reflective moon of Saturn venting subsurface ocean geysers into space.",
+    summary: "Saturn's dazzling ocean moon, coated in pure water ice and venting cryovolcanic geysers into space.",
     facts: [
-      "Cryovolcanic geysers near its south pole continuously feed Saturn's E ring.",
-      "Global liquid ocean rests between its rocky core and icy crust.",
-      "Hydrothermal vents at the ocean floor produce molecular hydrogen."
+      "One of the most reflective bodies in the solar system, reflecting nearly 100% of sunlight.",
+      "Cassini flybys photographed famous 'tiger stripe' fractures venting plumes into Saturn's E ring.",
+      "A warm global subsurface ocean with hydrothermal activity lies beneath its icy shell."
     ]
   },
   titan: {
@@ -166,14 +166,6 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Has large moon Triton."
     ]
   },
-  proteus: {
-    summary: "The largest inner moon of Neptune, an irregularly shaped dark world covered in ancient craters.",
-    facts: [
-      "The largest non-spherical body in orbit around Neptune.",
-      "Very dark surface reflecting only about six percent of sunlight.",
-      "Dominated by the giant crater Pharos, spanning over 230 km across."
-    ]
-  },
   triton: {
     summary: "The largest moon of Neptune and a captured Kuiper belt dwarf planet orbiting in retrograde.",
     facts: [
@@ -196,6 +188,14 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Binary system with its moon Charon.",
       "Highly elliptical and inclined orbit.",
       "Surface has nitrogen and methane ice."
+    ]
+  },
+  charon: {
+    summary: "Pluto's massive companion moon, forming a mutually tidally locked binary system.",
+    facts: [
+      "Over half the diameter of Pluto, making the pair a double dwarf planet system.",
+      "Features Mordor Macula, a reddish-brown tholin cap at its north pole.",
+      "Home to Serenity Chasma, a tectonic canyon four times deeper than the Grand Canyon."
     ]
   },
   voyager1: {

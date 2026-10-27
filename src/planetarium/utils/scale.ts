@@ -11,6 +11,10 @@ export const scalePlanetRadius = (
     const parentR = parentRadiusKm
       ? Math.cbrt(parentRadiusKm / EARTH_RADIUS_KM) * BASE_RADIUS
       : BASE_RADIUS;
+    if (parentRadiusKm && parentRadiusKm < 2000 && radiusKm > 400) {
+      // Binary dwarf companion (e.g. Pluto-Charon): maintain true binary visual proportion
+      return parentR * (radiusKm / parentRadiusKm);
+    }
     const rawMoonR = Math.max(0.035, (radiusKm / EARTH_RADIUS_KM) * BASE_RADIUS * 0.75);
     const clampedR = Math.min(0.11, Math.max(0.035, rawMoonR));
     return Math.min(clampedR, parentR * 0.28);

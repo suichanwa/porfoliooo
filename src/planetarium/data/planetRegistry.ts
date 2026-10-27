@@ -1,14 +1,17 @@
 import { PLANETS } from "./planets";
+import { MOONS } from "./moons";
 import type { BodyData, BodyId } from "./types";
 
-export const PLANET_IDS = PLANETS.map((planet) => planet.id) as BodyId[];
+export const ALL_BODIES: BodyData[] = [...PLANETS, ...MOONS];
 
-export const ORBITING_PLANETS = PLANETS.filter(
+export const PLANET_IDS = ALL_BODIES.map((planet) => planet.id) as BodyId[];
+
+export const ORBITING_PLANETS = ALL_BODIES.filter(
   (planet): planet is BodyData & { parentId: BodyId } => Boolean(planet.parentId)
 );
 
 export const PLANET_BY_ID = Object.fromEntries(
-  PLANETS.map((planet) => [planet.id, planet])
+  ALL_BODIES.map((planet) => [planet.id, planet])
 ) as Record<BodyId, BodyData>;
 
 export const createBodyRefStore = <T>(initialValue: T) =>
