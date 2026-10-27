@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferGeometry, Line, LineBasicMaterial, Object3D, Vector3 } from "three";
+import { BufferGeometry, Line, LineBasicMaterial, MathUtils, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import { getOrbitPosition } from "./orbitMath";
@@ -31,6 +31,7 @@ interface OrbitPathProps {
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   isSelected?: boolean;
   activeSystemId?: BodyId | null;
+  isSystemIsolated?: boolean;
   moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
@@ -45,9 +46,11 @@ export default function OrbitPath({
   planetRefs,
   isSelected = false,
   activeSystemId,
+  isSystemIsolated = false,
   moonSystemVisRef
 }: OrbitPathProps) {
   const parentWorldPosRef = useRef(new Vector3());
+  const currentOpacityRef = useRef(0.5);
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
 
   // Determine distinctive color for each celestial body
@@ -107,27 +110,35 @@ export default function OrbitPath({
     return line;
   }, [geometry, material]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (isMoon && planet?.parentId && planetRefs?.current?.[planet.parentId]) {
       const parentObj = planetRefs.current[planet.parentId];
       if (parentObj) {
         parentObj.getWorldPosition(parentWorldPosRef.current);
         lineObject.position.copy(parentWorldPosRef.current);
       }
-      const vis = moonSystemVisRef?.current?.[planet.parentId] ?? 0;
-      if (vis < 0.02) {
+      // Local moon orbits: keep visible ONLY for the currently active parent planet
+      const isCurrentSystem = planet.parentId === activeSystemId;
+      const vis = isCurrentSystem ? (moonSystemVisRef?.current?.[planet.parentId] ?? 0) : 0;
+      const targetOpacity = isCurrentSystem ? (isSelected ? 0.55 : 0.24) * vis : 0;
+      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 8.0, delta);
+
+      if (currentOpacityRef.current < 0.01) {
         lineObject.visible = false;
       } else {
         lineObject.visible = true;
-        const baseAlpha = isSelected ? 0.55 : 0.24;
-        material.opacity = baseAlpha * vis;
+        material.opacity = currentOpacityRef.current;
       }
-    } else if (!isMoon && planet?.id) {
-      const isSystemFocused = Boolean(activeSystemId && activeSystemId === planet.id);
-      if (isSystemFocused && !isSelected) {
-        material.opacity = 0.15;
+    } else if (!isMoon) {
+      // Heliocentric (solar) orbit line: damp opacity all the way to 0 when system is isolated
+      const targetOpacity = isSystemIsolated ? 0.0 : effectiveOpacity;
+      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 8.0, delta);
+
+      if (currentOpacityRef.current < 0.01) {
+        lineObject.visible = false;
       } else {
-        material.opacity = effectiveOpacity;
+        lineObject.visible = true;
+        material.opacity = currentOpacityRef.current;
       }
     }
   });

@@ -18,6 +18,7 @@ interface LabelsProps {
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
   activeSystemId?: BodyId | null;
+  isSystemIsolated?: boolean;
   moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
@@ -35,6 +36,7 @@ export default function Labels({
   scaleMode,
   scaleParams,
   activeSystemId,
+  isSystemIsolated = false,
   moonSystemVisRef
 }: LabelsProps) {
   const groupRef = useRef<Group>(null);
@@ -85,14 +87,23 @@ export default function Labels({
     const isHovered = hoveredRef?.current ?? false;
     const hideDueToSelection = Boolean(isSelected && isInfoVisible);
 
-    if (isMoon) {
-      const vis = data.parentId ? (moonSystemVisRef?.current?.[data.parentId] ?? 0) : 0;
-      const isSystemActive = Boolean(data.parentId && activeSystemId === data.parentId);
-      groupRef.current.visible =
-        showLabels && !hideDueToSelection && isSystemActive && vis > 0.6;
+    if (isSystemIsolated) {
+      if (isMoon) {
+        const isCurrentSystem = data.parentId === activeSystemId;
+        const vis = data.parentId ? (moonSystemVisRef?.current?.[data.parentId] ?? 0) : 0;
+        groupRef.current.visible =
+          showLabels && !hideDueToSelection && isCurrentSystem && vis > 0.6;
+      } else {
+        groupRef.current.visible =
+          showLabels && !hideDueToSelection && data.id === activeSystemId;
+      }
     } else {
-      groupRef.current.visible =
-        showLabels && !hideDueToSelection && (isHovered || distance < LABEL_DISTANCE);
+      if (isMoon) {
+        groupRef.current.visible = false;
+      } else {
+        groupRef.current.visible =
+          showLabels && !hideDueToSelection && (isHovered || distance < LABEL_DISTANCE);
+      }
     }
   });
 

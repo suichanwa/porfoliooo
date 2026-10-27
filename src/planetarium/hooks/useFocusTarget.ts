@@ -43,6 +43,7 @@ export const useFocusTarget = ({
   }, [resetSignal]);
 
   const defaultDirection = useMemo(() => new Vector3(0, 0, 1), []);
+  const approachDirectionRef = useRef(new Vector3(0, 0.28, 1));
   const target = useMemo(() => new Vector3(), []);
   const desiredPosition = useMemo(() => new Vector3(), []);
   const direction = useMemo(() => new Vector3(), []);
@@ -82,6 +83,20 @@ export const useFocusTarget = ({
         prevTarget.copy(target);
         isTransitioningRef.current = true;
         transitionTimeRef.current = 0;
+
+        // Compute outward Sun-lit approach vector:
+        // Position camera rotated ~140° from r_hat (looking outward toward planet at ~40° phase angle, elevated on +Y)
+        const rLen = Math.hypot(target.x, target.z);
+        if (selectedId === "sun" || rLen < 0.1) {
+          approachDirectionRef.current.set(0, 0.28, 1).normalize();
+        } else {
+          const phi = Math.atan2(target.z, target.x);
+          const theta = phi + (140 * Math.PI) / 180;
+          const vx = Math.cos(theta);
+          const vz = Math.sin(theta);
+          const vy = 0.28;
+          approachDirectionRef.current.set(vx, vy, vz).normalize();
+        }
       }
       prevTarget.copy(target);
 
@@ -93,21 +108,54 @@ export const useFocusTarget = ({
         isMoon,
         parentBody?.render.radiusKm
       );
-      const desiredDistance = isMoon
-        ? Math.max(radius * 8, 0.75)
-        : Math.max(radius * 10, 4.5);
+
+      let desiredDistance: number;
+      if (isMoon) {
+        desiredDistance = Math.max(radius * 6.5, 0.35);
+      } else if (selectedId === "sun") {
+        desiredDistance = Math.max(radius * 3.5, 12);
+      } else {
+        const siblingMoons = Object.values(planetData).filter(
+          (b) => b.parentId === selectedId
+        );
+        const hasMoons = siblingMoons.length > 0;
+        const hasRings = Boolean(selectedBody.rings);
+
+        if (hasMoons || hasRings) {
+          let rRingOuter = 0;
+          if (selectedBody.rings) {
+            const rings = Array.isArray(selectedBody.rings)
+              ? selectedBody.rings
+              : [selectedBody.rings];
+            const maxOuterKm = Math.max(...rings.map((r) => r.outerRadiusKm));
+            rRingOuter = radius * (maxOuterKm / selectedBody.render.radiusKm);
+          }
+          const totalMoons = siblingMoons.length;
+          let deltaShell = 0;
+          if (totalMoons === 2) {
+            deltaShell = 0.55;
+          } else if (totalMoons === 4) {
+            deltaShell = 1.05;
+          } else if (totalMoons > 1) {
+            deltaShell = 0.55 + (totalMoons - 2) * 0.25;
+          }
+          let rMin = Math.max(radius * 1.65, rRingOuter * 1.2);
+          if (selectedId === "earth" || (!rRingOuter && totalMoons === 1)) {
+            rMin = 0.95;
+          }
+          const maxMoonOrbitRadius = Math.max(rMin + deltaShell, rRingOuter);
+          desiredDistance = Math.max(radius * 4.5, maxMoonOrbitRadius * 2.1);
+        } else {
+          // Mercury, Venus, Ceres, Pluto, etc. (no moons/rings)
+          desiredDistance = Math.max(radius * 5.0, 0.65);
+        }
+      }
 
       if (isTransitioningRef.current) {
         transitionTimeRef.current += delta;
 
-        direction.copy(camera.position).sub(controls.target);
-        if (direction.lengthSq() === 0) {
-          direction.copy(defaultDirection);
-        } else {
-          direction.normalize();
-        }
-
-        desiredPosition.copy(target).add(direction.multiplyScalar(desiredDistance));
+        direction.copy(approachDirectionRef.current);
+        desiredPosition.copy(target).addScaledVector(direction, desiredDistance);
         onDistanceTarget?.(desiredDistance);
 
         const positionEase = 1 - Math.exp(-delta * 4.5);
@@ -130,7 +178,9 @@ export const useFocusTarget = ({
         // preserving any user right-click canvas panning offset.
       }
 
-      const minDistance = Math.max(radius * 1.2, isMoon ? 0.08 : 0.4);
+      const minDistance = isMoon
+        ? 0.08
+        : Math.min(0.15, Math.max(radius * 1.2, 0.08));
       const maxDistance = Math.max(minDistance * 10, 70);
 
       if (minDistanceRef.current !== minDistance) {
@@ -142,7 +192,7 @@ export const useFocusTarget = ({
         maxDistanceRef.current = maxDistance;
       }
 
-      const nextNear = Math.max(0.01, minDistance * 0.04);
+      const nextNear = 0.01;
       const nextFar = 800;
       if (nearRef.current !== nextNear || farRef.current !== nextFar) {
         camera.near = nextNear;

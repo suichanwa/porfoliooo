@@ -193,7 +193,7 @@ export default function CameraRig({
       dampingFactor={0.05}
       rotateSpeed={isInspecting ? 0.65 : 0.6}
       zoomSpeed={isInspecting ? 1.1 : 0.8}
-      minDistance={isInspecting ? 0.4 : minDistance}
+      minDistance={isInspecting ? 0.15 : minDistance}
       maxDistance={isInspecting ? Math.max(maxDistance, 140) : maxDistance}
       minPolarAngle={0.25}
       maxPolarAngle={Math.PI - 0.35}
