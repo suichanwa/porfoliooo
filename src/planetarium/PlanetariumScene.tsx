@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Mesh, Object3D, Vector3 } from "three";
+import { MathUtils, Mesh, Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import UniverseBackground from "./UniverseBackground";
 import CameraRig from "./CameraRig";
@@ -32,6 +32,7 @@ interface PlanetariumSceneProps {
   showGrid: boolean;
   showLensing: boolean;
   selectedId: BodyId | null;
+  activeSystemId?: BodyId | null;
   isInfoVisible?: boolean;
   resetSignal: number;
   onSelect: (id: BodyId | null) => void;
@@ -58,6 +59,7 @@ export default function PlanetariumScene({
   showGrid,
   showLensing,
   selectedId,
+  activeSystemId,
   isInfoVisible = false,
   resetSignal,
   onSelect,
@@ -82,6 +84,15 @@ export default function PlanetariumScene({
     createBodyRefStore<Object3D | null>(null)
   );
   const sunRef = useRef<Mesh | null>(null);
+  const moonSystemVisRef = useRef<Record<string, number>>({
+    earth: 0,
+    mars: 0,
+    jupiter: 0,
+    saturn: 0,
+    uranus: 0,
+    neptune: 0
+  });
+  const tempCamDistVec = useRef(new Vector3());
   const orbitSegments = isLowEnd ? 180 : 320;
   const gridDivisions = isLowEnd ? 160 : 300;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
@@ -136,6 +147,28 @@ export default function PlanetariumScene({
     if (simDateAccumRef.current >= 1) {
       simDateAccumRef.current = 0;
       onSimDateChange(J2000_EPOCH_MS + timeRef.current * 86400000);
+    }
+  });
+
+  // Smooth per-system visibility damping (MathUtils.damp)
+  useFrame(({ camera }, delta) => {
+    const parentIds = ["earth", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
+    for (const parentId of parentIds) {
+      let targetVis = 0;
+      if (activeSystemId === parentId) {
+        targetVis = 1;
+      } else {
+        const parentObj = planetRefs.current[parentId];
+        if (parentObj) {
+          parentObj.getWorldPosition(tempCamDistVec.current);
+          const distToCam = camera.position.distanceTo(tempCamDistVec.current);
+          if (distToCam < 9.5) {
+            targetVis = 1;
+          }
+        }
+      }
+      const currentVis = moonSystemVisRef.current[parentId] ?? 0;
+      moonSystemVisRef.current[parentId] = MathUtils.damp(currentVis, targetVis, 7.5, delta);
     }
   });
 
@@ -228,6 +261,8 @@ export default function PlanetariumScene({
               scaleParams={distanceScaleParams}
               planetRefs={planetRefs}
               isSelected={selectedId === planet.id}
+              activeSystemId={activeSystemId}
+              moonSystemVisRef={moonSystemVisRef}
             />
           ) : null
         )}
@@ -245,6 +280,8 @@ export default function PlanetariumScene({
           planetRefs={planetRefs}
           scaleMode={distanceScaleMode}
           scaleParams={distanceScaleParams}
+          activeSystemId={activeSystemId}
+          moonSystemVisRef={moonSystemVisRef}
         />
       ))}
       <CameraRig

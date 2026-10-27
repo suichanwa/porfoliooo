@@ -33,6 +33,7 @@ function PlanetariumView() {
   const { settings, updateSetting } = useSettings();
   const {
     selectedId,
+    activeSystemId,
     isInfoVisible,
     resetSignal,
     selectPlanet,
@@ -168,6 +169,7 @@ function PlanetariumView() {
           showGrid={settings.showGrid}
           showLensing={false}
           selectedId={selectedId}
+          activeSystemId={activeSystemId}
           isInfoVisible={isInfoVisible}
           resetSignal={resetSignal}
           onSelect={handleSceneSelect}

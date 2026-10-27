@@ -21,6 +21,8 @@ interface OrbitingPlanetProps {
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
+  activeSystemId?: BodyId | null;
+  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
 export default function OrbitingPlanet({
@@ -34,7 +36,9 @@ export default function OrbitingPlanet({
   onObjectRef,
   planetRefs,
   scaleMode,
-  scaleParams
+  scaleParams,
+  activeSystemId,
+  moonSystemVisRef
 }: OrbitingPlanetProps) {
   const groupRef = useRef<Group>(null);
   const hoveredRef = useRef(false);
@@ -51,10 +55,11 @@ export default function OrbitingPlanet({
             scaleMode,
             scaleParams,
             new Vector3(),
-            isMoon
+            isMoon,
+            data
           )
         : new Vector3(),
-    [data.orbit, isMoon, scaleMode, scaleParams, timeRef]
+    [data, data.orbit, isMoon, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {
@@ -65,7 +70,8 @@ export default function OrbitingPlanet({
       scaleMode,
       scaleParams,
       orbitPositionRef.current,
-      isMoon
+      isMoon,
+      data
     );
 
     if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
@@ -77,6 +83,15 @@ export default function OrbitingPlanet({
           .add(orbitPositionRef.current);
       } else {
         groupRef.current.position.copy(orbitPositionRef.current);
+      }
+
+      // Dynamic Focus LOD scaling & visibility for moons
+      const vis = moonSystemVisRef?.current?.[data.parentId] ?? 0;
+      if (vis < 0.01) {
+        groupRef.current.visible = false;
+      } else {
+        groupRef.current.visible = true;
+        groupRef.current.scale.setScalar(vis);
       }
     } else {
       groupRef.current.position.copy(orbitPositionRef.current);
@@ -154,6 +169,8 @@ export default function OrbitingPlanet({
           planetRefs={planetRefs}
           scaleMode={scaleMode}
           scaleParams={scaleParams}
+          activeSystemId={activeSystemId}
+          moonSystemVisRef={moonSystemVisRef}
         />
       )}
     </>

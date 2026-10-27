@@ -15,7 +15,8 @@ import {
   SRGBColorSpace,
   Vector3
 } from "three";
-import type { BodyData, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
+import type { BodyData, BodyId, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
+import { PLANET_BY_ID } from "../data/planetRegistry";
 import { useTextureAsset } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
 import RingSystem from "../../components/Planetarium/rings/RingSystem";
@@ -58,9 +59,11 @@ export default function BodyMesh({
   const moonOffsetRef = useMemo(() => new Vector3(), []);
   const projRef = useMemo(() => new Vector3(), []);
 
+  const isMoon = data.kind === "moon";
+  const parentRadiusKm = isMoon && data.parentId ? PLANET_BY_ID[data.parentId]?.render.radiusKm : undefined;
   const radius = useMemo(
-    () => scalePlanetRadius(data.render.radiusKm, data.kind === "moon"),
-    [data.render.radiusKm, data.kind]
+    () => scalePlanetRadius(data.render.radiusKm, isMoon, parentRadiusKm),
+    [data.render.radiusKm, isMoon, parentRadiusKm]
   );
   const tilt = MathUtils.degToRad(data.rotation.axialTiltDeg);
 

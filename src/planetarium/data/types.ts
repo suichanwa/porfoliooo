@@ -5,10 +5,22 @@ export type BodyId =
   | "earth"
   | "moon"
   | "mars"
+  | "phobos"
+  | "deimos"
   | "jupiter"
+  | "io"
+  | "europa"
+  | "ganymede"
+  | "callisto"
   | "saturn"
+  | "enceladus"
+  | "titan"
   | "uranus"
+  | "titania"
+  | "oberon"
   | "neptune"
+  | "proteus"
+  | "triton"
   | "ceres"
   | "pluto"
   | "voyager1";
@@ -87,6 +99,8 @@ export interface BodyData {
   name: string;
   kind: BodyKind;
   parentId?: BodyId;
+  moonIndex?: number;
+  totalSiblingMoons?: number;
   massKg: number;
   mu?: number;
   orbit?: OrbitElements;

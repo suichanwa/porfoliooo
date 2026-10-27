@@ -30,6 +30,8 @@ interface OrbitPathProps {
   scaleParams: DistanceScaleParams;
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   isSelected?: boolean;
+  activeSystemId?: BodyId | null;
+  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
 export default function OrbitPath({
@@ -41,7 +43,9 @@ export default function OrbitPath({
   scaleMode,
   scaleParams,
   planetRefs,
-  isSelected = false
+  isSelected = false,
+  activeSystemId,
+  moonSystemVisRef
 }: OrbitPathProps) {
   const parentWorldPosRef = useRef(new Vector3());
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
@@ -68,12 +72,23 @@ export default function OrbitPath({
 
   const geometry = useMemo(() => {
     const points: Vector3[] = [];
+    const period = Math.abs(orbit.orbitalPeriodDays);
     for (let i = 0; i <= segments; i += 1) {
-      const time = (i / segments) * orbit.orbitalPeriodDays;
-      points.push(getOrbitPosition(orbit, time, scaleMode, scaleParams, new Vector3(), isMoon));
+      const time = (i / segments) * period;
+      points.push(
+        getOrbitPosition(
+          orbit,
+          time,
+          scaleMode,
+          scaleParams,
+          new Vector3(),
+          isMoon,
+          planet
+        )
+      );
     }
     return new BufferGeometry().setFromPoints(points);
-  }, [orbit, segments, scaleMode, scaleParams, isMoon]);
+  }, [orbit, segments, scaleMode, scaleParams, isMoon, planet]);
 
   const material = useMemo(
     () =>
@@ -98,6 +113,21 @@ export default function OrbitPath({
       if (parentObj) {
         parentObj.getWorldPosition(parentWorldPosRef.current);
         lineObject.position.copy(parentWorldPosRef.current);
+      }
+      const vis = moonSystemVisRef?.current?.[planet.parentId] ?? 0;
+      if (vis < 0.02) {
+        lineObject.visible = false;
+      } else {
+        lineObject.visible = true;
+        const baseAlpha = isSelected ? 0.55 : 0.24;
+        material.opacity = baseAlpha * vis;
+      }
+    } else if (!isMoon && planet?.id) {
+      const isSystemFocused = Boolean(activeSystemId && activeSystemId === planet.id);
+      if (isSystemFocused && !isSelected) {
+        material.opacity = 0.15;
+      } else {
+        material.opacity = effectiveOpacity;
       }
     }
   });

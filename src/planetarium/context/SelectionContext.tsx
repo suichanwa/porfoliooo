@@ -19,6 +19,7 @@ interface SelectionContextValue {
   selectedId: BodyId | null;
   selectedPlanet: BodyData | null;
   selectedInfo: PlanetInfo | null;
+  activeSystemId: BodyId | null;
   isFocused: boolean;
   infoHidden: boolean;
   isInfoVisible: boolean;
@@ -51,6 +52,14 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     () => (selectedId ? PLANET_BY_ID[selectedId] ?? null : null),
     [selectedId]
   );
+
+  const activeSystemId = useMemo<BodyId | null>(() => {
+    if (!selectedPlanet) return null;
+    if (selectedPlanet.parentId && selectedPlanet.parentId !== "sun") {
+      return selectedPlanet.parentId;
+    }
+    return selectedPlanet.id;
+  }, [selectedPlanet]);
 
   const selectedInfo = useMemo(
     () => (selectedId ? PLANET_INFO[selectedId] ?? null : null),
@@ -116,6 +125,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       selectedId,
       selectedPlanet,
       selectedInfo,
+      activeSystemId,
       isFocused,
       infoHidden,
       isInfoVisible,
@@ -137,6 +147,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       selectedId,
       selectedPlanet,
       selectedInfo,
+      activeSystemId,
       isFocused,
       infoHidden,
       isInfoVisible,

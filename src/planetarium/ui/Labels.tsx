@@ -17,6 +17,8 @@ interface LabelsProps {
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
+  activeSystemId?: BodyId | null;
+  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
 }
 
 const LABEL_DISTANCE = 22;
@@ -31,7 +33,9 @@ export default function Labels({
   hoveredRef,
   planetRefs,
   scaleMode,
-  scaleParams
+  scaleParams,
+  activeSystemId,
+  moonSystemVisRef
 }: LabelsProps) {
   const groupRef = useRef<Group>(null);
   const orbitPositionRef = useRef(new Vector3());
@@ -48,10 +52,11 @@ export default function Labels({
             scaleMode,
             scaleParams,
             new Vector3(),
-            isMoon
+            isMoon,
+            data
           )
         : new Vector3(),
-    [data.orbit, isMoon, scaleMode, scaleParams, timeRef]
+    [data, data.orbit, isMoon, scaleMode, scaleParams, timeRef]
   );
 
   useFrame(() => {
@@ -62,7 +67,8 @@ export default function Labels({
       scaleMode,
       scaleParams,
       orbitPositionRef.current,
-      isMoon
+      isMoon,
+      data
     );
 
     if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
@@ -79,8 +85,15 @@ export default function Labels({
     const isHovered = hoveredRef?.current ?? false;
     const hideDueToSelection = Boolean(isSelected && isInfoVisible);
 
-    groupRef.current.visible =
-      showLabels && !hideDueToSelection && (isHovered || distance < LABEL_DISTANCE);
+    if (isMoon) {
+      const vis = data.parentId ? (moonSystemVisRef?.current?.[data.parentId] ?? 0) : 0;
+      const isSystemActive = Boolean(data.parentId && activeSystemId === data.parentId);
+      groupRef.current.visible =
+        showLabels && !hideDueToSelection && isSystemActive && vis > 0.6;
+    } else {
+      groupRef.current.visible =
+        showLabels && !hideDueToSelection && (isHovered || distance < LABEL_DISTANCE);
+    }
   });
 
   if (!data.orbit) return null;
@@ -94,7 +107,11 @@ export default function Labels({
             e.stopPropagation();
             onSelect?.(data.id);
           }}
-          className="whitespace-nowrap select-none rounded-full border border-white/20 bg-slate-950/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.15em] text-slate-200 shadow-md hover:border-primary-accent/80 hover:bg-slate-900 hover:text-white transition-colors cursor-pointer active:scale-95"
+          className={
+            isMoon
+              ? "whitespace-nowrap select-none text-[10px] font-medium tracking-wider text-slate-300/85 hover:text-white bg-[#070913]/75 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 rounded-full transition-colors cursor-pointer active:scale-95 shadow-md"
+              : "whitespace-nowrap select-none rounded-full border border-white/20 bg-slate-950/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.15em] text-slate-200 shadow-md hover:border-primary-accent/80 hover:bg-slate-900 hover:text-white transition-colors cursor-pointer active:scale-95"
+          }
           title={`Focus ${data.name}`}
         >
           {data.name}

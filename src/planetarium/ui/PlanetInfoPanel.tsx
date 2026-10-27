@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, GripVertical, Maximize2, Minimize2, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, Globe, GripVertical, Maximize2, Minimize2, X } from "lucide-react";
 import { kmToAu } from "../utils/units";
+import { PLANET_BY_ID } from "../data/planetRegistry";
 import { usePlanetSelection } from "../context/SelectionContext";
 
 const formatNumber = (value: number) =>
@@ -25,7 +26,8 @@ export default function PlanetInfoPanel() {
     isInfoVisible,
     infoHidden,
     setInfoHidden,
-    closeInfo
+    closeInfo,
+    selectPlanet
   } = usePlanetSelection();
 
   // Mobile sheet expand/collapse state (default compact peek on phones)
@@ -149,6 +151,7 @@ export default function PlanetInfoPanel() {
     : "-";
 
   const isMoon = Boolean(planet.parentId && planet.parentId !== "sun");
+  const parentPlanet = isMoon && planet.parentId ? PLANET_BY_ID[planet.parentId] ?? null : null;
 
   return (
     <>
@@ -231,6 +234,22 @@ export default function PlanetInfoPanel() {
                   </button>
                 </div>
               </div>
+
+              {/* Moon Parent Link Pill */}
+              {isMoon && parentPlanet && (
+                <div className="mt-1 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => selectPlanet(parentPlanet.id)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-200 transition-colors hover:border-sky-400 hover:bg-sky-500/20 hover:text-white active:scale-95 cursor-pointer"
+                    title={`Focus parent planet ${parentPlanet.name}`}
+                  >
+                    <Globe className="h-3 w-3 text-sky-400" />
+                    <span>Orbiting {parentPlanet.name}</span>
+                    <ArrowRight className="h-3 w-3 text-sky-400" />
+                  </button>
+                </div>
+              )}
 
               {/* Compact Quick Stats (Visible in both peek and expanded) */}
               <div className="grid grid-cols-3 gap-1.5 mt-2">
@@ -350,8 +369,22 @@ export default function PlanetInfoPanel() {
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
-                Planet details
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
+                  {isMoon ? "Moon details" : "Planet details"}
+                </span>
+                {isMoon && parentPlanet && (
+                  <button
+                    type="button"
+                    onClick={() => selectPlanet(parentPlanet.id)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[9px] font-medium text-sky-200 transition-colors hover:border-sky-400 hover:bg-sky-500/20 hover:text-white active:scale-95 cursor-pointer"
+                    title={`Focus parent planet ${parentPlanet.name}`}
+                  >
+                    <Globe className="h-2.5 w-2.5 text-sky-400" />
+                    <span>Orbiting {parentPlanet.name}</span>
+                    <ArrowRight className="h-2.5 w-2.5 text-sky-400" />
+                  </button>
+                )}
               </div>
               <div className="mt-1 text-xl font-bold text-white tracking-wide">
                 {planet.name}

@@ -85,10 +85,16 @@ export const useFocusTarget = ({
       }
       prevTarget.copy(target);
 
-      const isMoon = planetData[selectedId].kind === "moon";
-      const radius = scalePlanetRadius(planetData[selectedId].render.radiusKm, isMoon);
+      const selectedBody = planetData[selectedId];
+      const isMoon = selectedBody.kind === "moon";
+      const parentBody = selectedBody.parentId ? planetData[selectedBody.parentId] : null;
+      const radius = scalePlanetRadius(
+        selectedBody.render.radiusKm,
+        isMoon,
+        parentBody?.render.radiusKm
+      );
       const desiredDistance = isMoon
-        ? Math.max(radius * 12, 1.8)
+        ? Math.max(radius * 8, 0.75)
         : Math.max(radius * 10, 4.5);
 
       if (isTransitioningRef.current) {
@@ -124,7 +130,7 @@ export const useFocusTarget = ({
         // preserving any user right-click canvas panning offset.
       }
 
-      const minDistance = Math.max(radius * 1.2, isMoon ? 0.2 : 0.4);
+      const minDistance = Math.max(radius * 1.2, isMoon ? 0.08 : 0.4);
       const maxDistance = Math.max(minDistance * 10, 70);
 
       if (minDistanceRef.current !== minDistance) {
@@ -136,7 +142,7 @@ export const useFocusTarget = ({
         maxDistanceRef.current = maxDistance;
       }
 
-      const nextNear = Math.max(0.05, minDistance * 0.04);
+      const nextNear = Math.max(0.01, minDistance * 0.04);
       const nextFar = 800;
       if (nearRef.current !== nextNear || farRef.current !== nextFar) {
         camera.near = nextNear;
