@@ -331,7 +331,7 @@ export const MOONS: BodyData[] = [
     massKg: 1.586e21,
     mu: toMu(1.586e21),
     rotation: {
-      axialTiltDeg: 0,
+      axialTiltDeg: 119.6,
       rotationPeriodHours: 153.29,
       tidallyLocked: true
     },
@@ -339,7 +339,7 @@ export const MOONS: BodyData[] = [
       radiusKm: 606.0,
       colorFallback: "#a3a3a3",
       textureUrl: PLANET_TEXTURES.charon,
-      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.12 },
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
       glowPreset: { color: "#cbd5e1", intensity: 0.08 }
     },
     orbit: {

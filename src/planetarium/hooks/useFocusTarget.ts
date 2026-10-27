@@ -142,8 +142,11 @@ export const useFocusTarget = ({
             deltaShell = 0.55 + (totalMoons - 2) * 0.25;
           }
           let rMin = Math.max(radius * 1.65, rRingOuter * 1.2);
-          if (selectedId === "earth" || (!rRingOuter && totalMoons === 1)) {
+          if (selectedId === "earth") {
             rMin = 0.95;
+          } else if (selectedId === "pluto") {
+            // Pluto-Charon binary dwarf companion: maintain snug binary framing
+            rMin = radius * 2.2;
           }
           const maxMoonOrbitRadius = Math.max(rMin + deltaShell, rRingOuter);
           desiredDistance = Math.max(radius * 4.5, maxMoonOrbitRadius * 2.1);

@@ -59,8 +59,11 @@ export const getOrbitPosition = (
     // 1. Calculate Inner Shell Boundary (r_min) Respecting Planetary Rings
     let rMin = Math.max(Rp * 1.65, rRingOuter * 1.2);
     // Preserve Earth's single Moon at its existing snug ~0.95 unit distance
-    if (body?.id === "moon" || (!rRingOuter && totalMoons === 1)) {
+    if (body?.id === "moon") {
       rMin = 0.95;
+    } else if (body?.id === "charon" || parentPlanet?.id === "pluto") {
+      // Pluto-Charon binary dwarf companion: maintain snug binary orbit
+      rMin = Rp * 2.2;
     }
 
     // 2. Calculate Outer Shell Cap (Delta_shell)
