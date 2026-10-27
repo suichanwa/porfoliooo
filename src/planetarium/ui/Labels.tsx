@@ -61,27 +61,32 @@ export default function Labels({
 
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
-    getOrbitPosition(
-      data.orbit,
-      timeRef.current,
-      scaleMode,
-      scaleParams,
-      orbitPositionRef.current,
-      isMoon,
-      data
-    );
 
-    if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
-      const parentObj = planetRefs.current[data.parentId];
-      if (parentObj) {
-        parentObj.getWorldPosition(parentWorldPosRef.current);
-        orbitPositionRef.current.add(parentWorldPosRef.current);
+    if (planetRefs?.current?.[data.id]) {
+      planetRefs.current[data.id].getWorldPosition(groupRef.current.position);
+    } else {
+      getOrbitPosition(
+        data.orbit,
+        timeRef.current,
+        scaleMode,
+        scaleParams,
+        orbitPositionRef.current,
+        isMoon,
+        data
+      );
+
+      if (isMoon && data.parentId && planetRefs?.current?.[data.parentId]) {
+        const parentObj = planetRefs.current[data.parentId];
+        if (parentObj) {
+          parentObj.getWorldPosition(parentWorldPosRef.current);
+          orbitPositionRef.current.add(parentWorldPosRef.current);
+        }
       }
+
+      groupRef.current.position.copy(orbitPositionRef.current);
     }
 
-    groupRef.current.position.copy(orbitPositionRef.current);
-
-    const distance = camera.position.distanceTo(orbitPositionRef.current);
+    const distance = camera.position.distanceTo(groupRef.current.position);
     const isHovered = hoveredRef?.current ?? false;
     const hideDueToSelection = Boolean(isSelected && isInfoVisible);
 

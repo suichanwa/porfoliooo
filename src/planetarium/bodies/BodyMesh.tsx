@@ -20,6 +20,7 @@ import { PLANET_BY_ID } from "../data/planetRegistry";
 import { useTextureAsset } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
 import RingSystem from "../../components/Planetarium/rings/RingSystem";
+import { getPlutoCharonOrbitalPhase } from "../orbits/orbitMath";
 
 interface BodyMeshProps {
   data: BodyData;
@@ -29,6 +30,7 @@ interface BodyMeshProps {
   rimGlow?: boolean | RimGlowPreset;
   groupRef?: Ref<Group>;
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  simTimeRef?: React.MutableRefObject<number>;
   onPointerOver?: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (event: ThreeEvent<PointerEvent>) => void;
   onClick?: (event: ThreeEvent<MouseEvent>) => void;
@@ -47,6 +49,7 @@ export default function BodyMesh({
   rimGlow,
   groupRef,
   planetRefs,
+  simTimeRef,
   onPointerOver,
   onPointerOut,
   onClick
@@ -246,9 +249,17 @@ export default function BodyMesh({
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
-    const rotationRate =
-      (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
-    meshRef.current.rotation.y += delta * rotationRate * timeScale;
+
+    if ((data.id === "pluto" || data.id === "charon") && simTimeRef) {
+      // Mutual tidal locking: both Pluto and Charon keep the exact same hemisphere
+      // facing each other across the barycenter without spinning independently.
+      const phase = getPlutoCharonOrbitalPhase(simTimeRef.current);
+      meshRef.current.rotation.y = data.id === "pluto" ? -phase : -phase - Math.PI;
+    } else {
+      const rotationRate =
+        (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
+      meshRef.current.rotation.y += delta * rotationRate * timeScale;
+    }
 
     // Slowly drift clouds independently over Earth
     if (cloudsMeshRef.current) {

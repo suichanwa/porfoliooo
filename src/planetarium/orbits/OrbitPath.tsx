@@ -49,6 +49,11 @@ export default function OrbitPath({
   activeSystemId,
   moonSystemVisRef
 }: OrbitPathProps) {
+  // Pluto-Charon binary system concentric rings are rendered by PlutoBarycenterVisuals
+  if (planet?.id === "charon") {
+    return null;
+  }
+
   const parentWorldPosRef = useRef(new Vector3());
   const currentOpacityRef = useRef(0.5);
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");

@@ -7,6 +7,7 @@ import CameraRig from "./CameraRig";
 import Sun from "./bodies/Sun";
 import OrbitingPlanet from "./orbits/OrbitingPlanet";
 import OrbitPath from "./orbits/OrbitPath";
+import PlutoBarycenterVisuals from "./orbits/PlutoBarycenterVisuals";
 import { PLANETS } from "./data/planets";
 import type { BodyId } from "./data/types";
 import {
@@ -194,7 +195,10 @@ export default function PlanetariumScene({
     controlsRef,
     planetRefs,
     planetData: PLANET_BY_ID,
-    onFocusChange
+    onFocusChange,
+    timeRef,
+    scaleMode: distanceScaleMode,
+    scaleParams: distanceScaleParams
   });
 
   return (
@@ -244,23 +248,35 @@ export default function PlanetariumScene({
         meshRef={sunRef}
         onClick={handleSunSelect}
       />
-      {showOrbits &&
-        ORBITING_PLANETS.map((planet) =>
-          planet.orbit ? (
-            <OrbitPath
-              key={`${planet.id}-orbit`}
-              planet={planet}
-              orbit={planet.orbit}
-              segments={orbitSegments}
-              scaleMode={distanceScaleMode}
-              scaleParams={distanceScaleParams}
-              planetRefs={planetRefs}
-              isSelected={selectedId === planet.id}
-              activeSystemId={activeSystemId}
-              moonSystemVisRef={moonSystemVisRef}
-            />
-          ) : null
-        )}
+      {showOrbits && (
+        <>
+          {ORBITING_PLANETS.map((planet) =>
+            planet.orbit ? (
+              <OrbitPath
+                key={`${planet.id}-orbit`}
+                planet={planet}
+                orbit={planet.orbit}
+                segments={orbitSegments}
+                scaleMode={distanceScaleMode}
+                scaleParams={distanceScaleParams}
+                planetRefs={planetRefs}
+                isSelected={selectedId === planet.id}
+                activeSystemId={activeSystemId}
+                moonSystemVisRef={moonSystemVisRef}
+              />
+            ) : null
+          )}
+          <PlutoBarycenterVisuals
+            timeRef={timeRef}
+            scaleMode={distanceScaleMode}
+            scaleParams={distanceScaleParams}
+            activeSystemId={activeSystemId}
+            moonSystemVisRef={moonSystemVisRef}
+            isSelected={selectedId === "pluto" || selectedId === "charon"}
+            segments={orbitSegments}
+          />
+        </>
+      )}
       {ORBITING_PLANETS.map((planet) => (
         <OrbitingPlanet
           key={planet.id}

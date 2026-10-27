@@ -4,6 +4,8 @@ import { Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { BodyData, BodyId } from "../data/types";
 import { scalePlanetRadius } from "../utils/scale";
+import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
+import { getPlutoBarycenterPosition, R_CHARON_BARYCENTER } from "../orbits/orbitMath";
 
 const DEFAULT_TARGET = new Vector3(0, 0, 0);
 const DEFAULT_POSITION = new Vector3(0, 0, 28);
@@ -16,6 +18,9 @@ interface FocusTargetOptions {
   planetData: Record<BodyId, BodyData>;
   onDistanceTarget?: (value: number | null) => void;
   onFocusChange?: (focused: boolean) => void;
+  timeRef?: React.MutableRefObject<number>;
+  scaleMode?: DistanceScaleMode;
+  scaleParams?: DistanceScaleParams;
 }
 
 export const useFocusTarget = ({
@@ -25,7 +30,10 @@ export const useFocusTarget = ({
   planetRefs,
   planetData,
   onDistanceTarget,
-  onFocusChange
+  onFocusChange,
+  timeRef,
+  scaleMode,
+  scaleParams
 }: FocusTargetOptions) => {
   const resetTokenRef = useRef(resetSignal);
   const isResettingRef = useRef(false);
@@ -69,9 +77,13 @@ export const useFocusTarget = ({
     const camera = controls.object;
 
     if (selectedId) {
-      const focusObject = planetRefs.current[selectedId];
-      if (!focusObject) return;
-      focusObject.getWorldPosition(target);
+      if (selectedId === "pluto" && timeRef && scaleMode && scaleParams) {
+        getPlutoBarycenterPosition(timeRef.current, scaleMode, scaleParams, target);
+      } else {
+        const focusObject = planetRefs.current[selectedId];
+        if (!focusObject) return;
+        focusObject.getWorldPosition(target);
+      }
 
       // Move camera and orbit target 1:1 with planet orbital velocity
       if (trackedIdRef.current === selectedId) {
@@ -112,7 +124,13 @@ export const useFocusTarget = ({
       );
 
       let desiredDistance: number;
-      if (isMoon) {
+      if (selectedId === "pluto") {
+        // Frame Pluto, the barycenter, and Charon's full binary orbit comfortably
+        desiredDistance = Math.max(R_CHARON_BARYCENTER * 2.5, 2.75);
+      } else if (selectedId === "charon") {
+        // Focused close-up inspection of Charon
+        desiredDistance = Math.max(radius * 6.5, 0.95);
+      } else if (isMoon) {
         desiredDistance = Math.max(radius * 6.5, 0.35);
       } else if (selectedId === "sun") {
         desiredDistance = Math.max(radius * 3.5, 12);

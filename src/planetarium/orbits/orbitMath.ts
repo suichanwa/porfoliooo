@@ -24,6 +24,97 @@ const solveKepler = (meanAnomaly: number, eccentricity: number) => {
 
 const EARTH_RENDER_RADIUS = 0.5;
 
+// Pluto-Charon Binary Barycenter Constants & Visuals
+export const PLUTO_CHARON_TOTAL_SEPARATION = 1.48;
+export const PLUTO_BARYCENTRIC_RATIO = 0.261;
+export const R_PLUTO_RENDER = scalePlanetRadius(1188.3);
+export const R_CHARON_RENDER = scalePlanetRadius(606.0, true, 1188.3);
+export const R_PLUTO_BARYCENTER = Math.max(
+  R_PLUTO_RENDER * 1.35,
+  PLUTO_BARYCENTRIC_RATIO * PLUTO_CHARON_TOTAL_SEPARATION
+); // ~0.386 units (strictly outside Pluto's 3D sphere)
+export const R_CHARON_BARYCENTER = PLUTO_CHARON_TOTAL_SEPARATION - R_PLUTO_BARYCENTER; // ~1.094 units
+export const PLUTO_CHARON_ORBIT_PERIOD_DAYS = 6.3872;
+export const PLUTO_AXIAL_TILT_DEG = 119.6;
+
+export const getPlutoCharonOrbitalPhase = (timeDays: number): number => {
+  const epochRad = MathUtils.degToRad(135.0);
+  return epochRad + (timeDays / PLUTO_CHARON_ORBIT_PERIOD_DAYS) * Math.PI * 2;
+};
+
+export const getPlutoBarycenterPosition = (
+  timeDays: number,
+  scaleMode: DistanceScaleMode,
+  scaleParams: DistanceScaleParams,
+  out: Vector3 = new Vector3()
+): Vector3 => {
+  const plutoData = PLANET_BY_ID.pluto;
+  if (!plutoData?.orbit) return out.set(0, 0, 0);
+  return getOrbitPosition(
+    plutoData.orbit,
+    timeDays,
+    scaleMode,
+    scaleParams,
+    out,
+    false,
+    plutoData
+  );
+};
+
+export interface PlutoCharonBinaryState {
+  barycenterPos: Vector3;
+  plutoPos: Vector3;
+  charonPos: Vector3;
+  rPluto: number;
+  rCharon: number;
+  totalSeparation: number;
+  uDirection: Vector3;
+  orbitalPhaseRad: number;
+}
+
+export const getPlutoCharonBinaryState = (
+  timeDays: number,
+  scaleMode: DistanceScaleMode,
+  scaleParams: DistanceScaleParams,
+  vis: number = 1.0
+): PlutoCharonBinaryState => {
+  const barycenterPos = getPlutoBarycenterPosition(
+    timeDays,
+    scaleMode,
+    scaleParams,
+    new Vector3()
+  );
+  const phase = getPlutoCharonOrbitalPhase(timeDays);
+
+  // Orbital direction vector in local XZ plane (before axial tilt)
+  const ux = Math.cos(phase);
+  const uz = Math.sin(phase);
+  const uLocal = new Vector3(ux, 0, uz);
+
+  // Apply Pluto's 119.6° equatorial tilt around Z axis
+  const tiltRad = MathUtils.degToRad(PLUTO_AXIAL_TILT_DEG);
+  const uDirection = uLocal.clone().applyAxisAngle(EQUATORIAL_TILT_AXIS, tiltRad);
+
+  // Pluto is on opposite side (-u), scaled by visibility vis (glides to barycenter in overview)
+  const plutoOffset = uDirection.clone().multiplyScalar(-R_PLUTO_BARYCENTER * vis);
+  const plutoPos = barycenterPos.clone().add(plutoOffset);
+
+  // Charon is on (+u) side
+  const charonOffset = uDirection.clone().multiplyScalar(R_CHARON_BARYCENTER);
+  const charonPos = barycenterPos.clone().add(charonOffset);
+
+  return {
+    barycenterPos,
+    plutoPos,
+    charonPos,
+    rPluto: R_PLUTO_BARYCENTER,
+    rCharon: R_CHARON_BARYCENTER,
+    totalSeparation: PLUTO_CHARON_TOTAL_SEPARATION,
+    uDirection,
+    orbitalPhaseRad: phase
+  };
+};
+
 export const getOrbitPosition = (
   orbit: OrbitElements,
   timeDays: number,

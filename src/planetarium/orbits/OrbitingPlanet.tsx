@@ -6,7 +6,7 @@ import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceSc
 import Planet from "../bodies/Planet";
 import Pluton from "../planets_render/pluton";
 import ModelMesh from "../bodies/ModelMesh";
-import { getOrbitPosition } from "./orbitMath";
+import { getOrbitPosition, getPlutoCharonBinaryState } from "./orbitMath";
 import Labels from "../ui/Labels";
 
 interface OrbitingPlanetProps {
@@ -46,24 +46,61 @@ export default function OrbitingPlanet({
   const parentWorldPosRef = useRef(new Vector3());
   const isMoon = Boolean(data.parentId && data.parentId !== "sun");
 
-  const initialPosition = useMemo(
-    () =>
-      data.orbit
-        ? getOrbitPosition(
-            data.orbit,
-            timeRef.current,
-            scaleMode,
-            scaleParams,
-            new Vector3(),
-            isMoon,
-            data
-          )
-        : new Vector3(),
-    [data, data.orbit, isMoon, scaleMode, scaleParams, timeRef]
-  );
+  const initialPosition = useMemo(() => {
+    if (data.id === "pluto") {
+      return getPlutoCharonBinaryState(timeRef.current, scaleMode, scaleParams, 0).plutoPos;
+    }
+    if (data.id === "charon") {
+      return getPlutoCharonBinaryState(timeRef.current, scaleMode, scaleParams, 1).charonPos;
+    }
+    return data.orbit
+      ? getOrbitPosition(
+          data.orbit,
+          timeRef.current,
+          scaleMode,
+          scaleParams,
+          new Vector3(),
+          isMoon,
+          data
+        )
+      : new Vector3();
+  }, [data, data.id, data.orbit, isMoon, scaleMode, scaleParams, timeRef]);
 
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
+
+    if (data.id === "pluto") {
+      const vis = moonSystemVisRef?.current?.pluto ?? 0;
+      const state = getPlutoCharonBinaryState(
+        timeRef.current,
+        scaleMode,
+        scaleParams,
+        vis
+      );
+      groupRef.current.position.copy(state.plutoPos);
+      groupRef.current.visible = true;
+      groupRef.current.scale.setScalar(1);
+      return;
+    }
+
+    if (data.id === "charon") {
+      const vis = moonSystemVisRef?.current?.pluto ?? 0;
+      const state = getPlutoCharonBinaryState(
+        timeRef.current,
+        scaleMode,
+        scaleParams,
+        1.0
+      );
+      groupRef.current.position.copy(state.charonPos);
+      if (vis < 0.01) {
+        groupRef.current.visible = false;
+      } else {
+        groupRef.current.visible = true;
+        groupRef.current.scale.setScalar(vis);
+      }
+      return;
+    }
+
     getOrbitPosition(
       data.orbit,
       timeRef.current,
@@ -148,6 +185,7 @@ export default function OrbitingPlanet({
           atmosphere={atmosphere}
           groupRef={groupRef}
           planetRefs={planetRefs}
+          simTimeRef={timeRef}
           onPointerOver={() => {
             hoveredRef.current = true;
           }}
