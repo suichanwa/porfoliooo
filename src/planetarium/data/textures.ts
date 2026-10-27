@@ -33,8 +33,6 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   earth: toUrl(earthTexture),
   moon: toUrl(moonTexture),
   mars: toUrl(marsTexture),
-  phobos: null,
-  deimos: null,
   jupiter: toUrl(jupiterTexture),
   io: null,
   europa: null,

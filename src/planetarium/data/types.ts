@@ -5,8 +5,6 @@ export type BodyId =
   | "earth"
   | "moon"
   | "mars"
-  | "phobos"
-  | "deimos"
   | "jupiter"
   | "io"
   | "europa"

@@ -44,66 +44,6 @@ export const MOONS: BodyData[] = [
     }
   },
   {
-    id: "phobos",
-    name: "Phobos",
-    kind: "moon",
-    parentId: "mars",
-    moonIndex: 0,
-    totalSiblingMoons: 2,
-    massKg: 1.0659e16,
-    mu: toMu(1.0659e16),
-    rotation: {
-      axialTiltDeg: 0,
-      rotationPeriodHours: 7.65,
-      tidallyLocked: true
-    },
-    render: {
-      radiusKm: 11.267,
-      colorFallback: "#a8a29e",
-      textureUrl: null,
-      materialPreset: { roughness: 0.95, metalness: 0 },
-      glowPreset: { color: "#a8a29e", intensity: 0.04 }
-    },
-    orbit: {
-      semiMajorAxisKm: 9376,
-      eccentricity: 0.0151,
-      inclinationDeg: 1.093,
-      orbitalPeriodDays: 0.3189,
-      meanLongitudeAtEpochDeg: 67.8,
-      longitudeOfPerihelionDeg: 150.0
-    }
-  },
-  {
-    id: "deimos",
-    name: "Deimos",
-    kind: "moon",
-    parentId: "mars",
-    moonIndex: 1,
-    totalSiblingMoons: 2,
-    massKg: 1.4762e15,
-    mu: toMu(1.4762e15),
-    rotation: {
-      axialTiltDeg: 0,
-      rotationPeriodHours: 30.3,
-      tidallyLocked: true
-    },
-    render: {
-      radiusKm: 6.2,
-      colorFallback: "#78716c",
-      textureUrl: null,
-      materialPreset: { roughness: 0.95, metalness: 0 },
-      glowPreset: { color: "#78716c", intensity: 0.04 }
-    },
-    orbit: {
-      semiMajorAxisKm: 23463,
-      eccentricity: 0.00033,
-      inclinationDeg: 0.93,
-      orbitalPeriodDays: 1.263,
-      meanLongitudeAtEpochDeg: 230.0,
-      longitudeOfPerihelionDeg: 280.0
-    }
-  },
-  {
     id: "io",
     name: "Io",
     kind: "moon",

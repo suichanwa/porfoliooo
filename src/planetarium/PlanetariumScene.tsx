@@ -87,7 +87,6 @@ export default function PlanetariumScene({
   const sunRef = useRef<Mesh | null>(null);
   const moonSystemVisRef = useRef<Record<string, number>>({
     earth: 0,
-    mars: 0,
     jupiter: 0,
     saturn: 0,
     uranus: 0,
@@ -155,7 +154,6 @@ export default function PlanetariumScene({
   useFrame((_, delta) => {
     const parentIds = [
       "earth",
-      "mars",
       "jupiter",
       "saturn",
       "uranus",

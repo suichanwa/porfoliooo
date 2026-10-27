@@ -54,22 +54,6 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Evidence of ancient rivers and lakes."
     ]
   },
-  phobos: {
-    summary: "The larger and inner of Mars's two moons, skimming closer to its planet than any other moon.",
-    facts: [
-      "Orbits Mars three times a day at just 6,000 km altitude.",
-      "Heavily cratered, dominated by the massive Stickney impact basin.",
-      "Gradually spiraling inward toward Mars due to tidal deceleration."
-    ]
-  },
-  deimos: {
-    summary: "The smaller, outer moon of Mars, covered in a smooth blanket of powdery regolith.",
-    facts: [
-      "Takes over 30 hours to complete one orbit around Mars.",
-      "Features a remarkably smooth appearance from regolith fill.",
-      "Its escape velocity is a mere 5.6 meters per second."
-    ]
-  },
   jupiter: {
     summary: "The largest planet, wrapped in storms and bands.",
     facts: [
