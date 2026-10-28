@@ -189,32 +189,8 @@ export default function BodyMesh({
     });
   }, [isEarth]);
 
-  const boost = materialPreset.illuminationBoost ?? 0;
-
-  const isAirless =
-    data.kind === "dwarf" ||
-    data.id === "mercury" ||
-    data.id === "moon" ||
-    data.id === "callisto" ||
-    data.id === "ganymede" ||
-    data.id === "europa" ||
-    data.id === "enceladus";
-
-  const signatureRimColor = useMemo(() => {
-    if (rimPreset?.color) return new Color(rimPreset.color);
-    if (glowPreset.color) return new Color(glowPreset.color);
-    return new Color("#60a5fa");
-  }, [rimPreset, glowPreset.color]);
-
-  const signatureNightRimColor = useMemo(() => {
-    if (rimPreset?.color) return new Color(rimPreset.color);
-    if (isAirless) return new Color("#60a5fa");
-    if (glowPreset.color) return new Color(glowPreset.color);
-    return new Color("#60a5fa");
-  }, [rimPreset, isAirless, glowPreset.color]);
-
   const material = useMemo(() => {
-    const mat = new MeshStandardMaterial({
+    return new MeshStandardMaterial({
       map: baseMap ?? null,
       normalMap: normalMap ?? null,
       bumpMap: bumpMap ?? null,
@@ -223,80 +199,7 @@ export default function BodyMesh({
       emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
       emissiveIntensity: isEarth ? 0 : 0.005
     });
-
-    mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uIlluminationBoost = { value: boost };
-      shader.uniforms.uRimColor = { value: signatureRimColor };
-      shader.uniforms.uNightRimColor = { value: signatureNightRimColor };
-
-      shader.vertexShader = `
-        varying vec3 vCustomWorldPos;
-        varying vec3 vCustomWorldNormal;
-        ${shader.vertexShader}
-      `.replace(
-        "#include <worldpos_vertex>",
-        `#include <worldpos_vertex>
-        vCustomWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
-        vCustomWorldNormal = normalize(mat3(modelMatrix) * objectNormal);
-        `
-      );
-
-      shader.fragmentShader = `
-        varying vec3 vCustomWorldPos;
-        varying vec3 vCustomWorldNormal;
-        uniform float uIlluminationBoost;
-        uniform vec3 uRimColor;
-        uniform vec3 uNightRimColor;
-        ${shader.fragmentShader}
-      `
-        .replace(
-          "float dotNL = saturate( dot( geometryNormal, directLight.direction ) );",
-          `
-          // Realistic astronomical terminator falloff with balanced penumbra
-          float rawDotNL = dot( geometryNormal, directLight.direction );
-          float wrap = 0.06;
-          float softTerminator = smoothstep(-0.08, 0.28, rawDotNL);
-          float dotNL = pow(softTerminator, 1.05) * saturate((rawDotNL + wrap) / (1.0 + wrap));
-          `
-        )
-        .replace(
-          "#include <lights_fragment_end>",
-          `#include <lights_fragment_end>
-          // 1. Day-side direct sunlight (naturally balanced, not overblown):
-          reflectedLight.directDiffuse *= (1.0 + uIlluminationBoost * 1.2);
-          reflectedLight.directSpecular *= (1.0 + uIlluminationBoost * 0.8);
-
-          // 2. Solar incidence (Sun is at 0, 0, 0) and camera edge Fresnel
-          vec3 dirToSun = normalize(-vCustomWorldPos);
-          vec3 worldNorm = normalize(vCustomWorldNormal);
-          float NdotL = dot(worldNorm, dirToSun);
-          float rim = pow(1.0 - max(dot(geometryNormal, geometryViewDir), 0.0), 3.0);
-
-          // Day-side atmospheric scattering rim on sunlit hemisphere
-          float dayMask = smoothstep(-0.05, 0.35, NdotL);
-          vec3 dayRimGlow = uRimColor * (rim * dayMask * 0.45);
-
-          // Night-side starlight silhouette rim (guaranteed 20%-28% minimum rim glow on shadowed hemisphere)
-          float nightMask = smoothstep(0.25, -0.45, NdotL);
-          float nightRimFactor = rim * 0.25 * nightMask;
-          vec3 nightRimGlow = uNightRimColor * nightRimFactor;
-
-          // Soft twilight terminator band right at NdotL ≈ 0
-          float terminatorBand = smoothstep(-0.12, 0.02, NdotL) * (1.0 - smoothstep(0.02, 0.15, NdotL));
-          vec3 twilightTint = mix(uRimColor, vec3(1.0, 0.58, 0.28), 0.55) * (terminatorBand * 0.20);
-
-          // Subtle night-side ambient starlight illumination (leaving 8-10% surface texture legibility on dark side)
-          float nightAmbient = 0.022 + uIlluminationBoost * 0.02;
-          reflectedLight.indirectDiffuse += diffuseColor.rgb * nightAmbient;
-
-          // Composite rim backlights and twilight glow into indirect illumination
-          reflectedLight.indirectDiffuse += (dayRimGlow + nightRimGlow + twilightTint) * diffuseColor.rgb * 1.4 + (dayRimGlow + nightRimGlow) * 0.35;
-          `
-        );
-    };
-
-    return mat;
-  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap, boost, signatureRimColor, signatureNightRimColor]);
+  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap]);
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;
