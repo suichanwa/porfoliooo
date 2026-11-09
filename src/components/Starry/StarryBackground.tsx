@@ -26,6 +26,11 @@ export default function StarryBackground({
   const [config, setConfig] = useState<ObservatoryConfig>(DEFAULT_OBSERVATORY_CONFIG);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [hideGUI, setHideGUI] = useState(false);
+  const [isHomePage, setIsHomePage] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    return path === "/" || path === "/home" || path === "/index.html";
+  });
 
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
@@ -84,6 +89,26 @@ export default function StarryBackground({
     return () => observer.disconnect();
   }, []);
 
+  // Track page location: the Observatory HUD is only shown on the main/home page
+  useEffect(() => {
+    const checkIsHomePage = () => {
+      const path = window.location.pathname.replace(/\/$/, "") || "/";
+      const isHome = path === "/" || path === "/home" || path === "/index.html";
+      setIsHomePage(isHome);
+      if (!isHome) {
+        setIsPanelOpen(false);
+      }
+    };
+
+    checkIsHomePage();
+    document.addEventListener("astro:page-load", checkIsHomePage);
+    window.addEventListener("popstate", checkIsHomePage);
+    return () => {
+      document.removeEventListener("astro:page-load", checkIsHomePage);
+      window.removeEventListener("popstate", checkIsHomePage);
+    };
+  }, []);
+
   const handleHideGUI = useCallback(() => {
     const newHideState = !hideGUI;
     setHideGUI(newHideState);
@@ -95,20 +120,24 @@ export default function StarryBackground({
 
   return (
     <>
-      <StarryControlButton
-        hideGUI={hideGUI}
-        isPanelOpen={isPanelOpen}
-        onClick={() => setIsPanelOpen(!isPanelOpen)}
-      />
+      {isHomePage && (
+        <>
+          <StarryControlButton
+            hideGUI={hideGUI}
+            isPanelOpen={isPanelOpen}
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+          />
 
-      <StarryControlPanel
-        isOpen={isPanelOpen}
-        onClose={() => setIsPanelOpen(false)}
-        config={config}
-        onUpdateConfig={updateConfig}
-        hideGUI={hideGUI}
-        onToggleHideGUI={handleHideGUI}
-      />
+          <StarryControlPanel
+            isOpen={isPanelOpen}
+            onClose={() => setIsPanelOpen(false)}
+            config={config}
+            onUpdateConfig={updateConfig}
+            hideGUI={hideGUI}
+            onToggleHideGUI={handleHideGUI}
+          />
+        </>
+      )}
 
       <div
         style={{
