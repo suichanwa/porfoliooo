@@ -75,7 +75,7 @@ const drawRoundedFivePointStar = (
 };
 
 interface StarfieldOptions {
-  showConstellations: boolean;
+  showConstellations?: boolean;
   celestialLens?: CelestialLens;
   deviceInfo: DeviceInfo;
   isClient: boolean;
@@ -599,7 +599,7 @@ function buildConstellations(stars: Star[], width: number, height: number, isMob
 }
 
 export default function useStarfieldCanvas({
-  showConstellations,
+  showConstellations = false,
   celestialLens = "void",
   deviceInfo,
   isClient

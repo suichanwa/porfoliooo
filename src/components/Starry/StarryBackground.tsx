@@ -50,7 +50,11 @@ export default function StarryBackground({
         const parsed = JSON.parse(saved);
         setConfig((prev) => ({
           ...prev,
-          ...parsed
+          ...parsed,
+          showConstellations:
+            typeof parsed.showConstellations === "boolean"
+              ? parsed.showConstellations
+              : DEFAULT_OBSERVATORY_CONFIG.showConstellations
         }));
       }
     } catch {}

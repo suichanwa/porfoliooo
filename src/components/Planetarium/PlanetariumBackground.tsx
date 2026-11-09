@@ -25,7 +25,7 @@ export default function PlanetariumBackground() {
       }}
     >
       <StarryCanvas
-        showConstellations={true}
+        showConstellations={false}
         deviceInfo={deviceInfo}
         isClient={isClient}
       />
