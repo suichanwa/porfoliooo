@@ -210,7 +210,7 @@ export const MOONS: BodyData[] = [
     render: {
       radiusKm: 2574.7,
       colorFallback: "#f59e0b",
-      textureUrl: null,
+      textureUrl: PLANET_TEXTURES.titan,
       materialPreset: { roughness: 0.65, metalness: 0, illuminationBoost: 0.12 },
       glowPreset: {
         color: "#f59e0b",

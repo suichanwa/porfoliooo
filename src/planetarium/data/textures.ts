@@ -17,6 +17,7 @@ import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 import earthTexture from "../../assets/planetarium/2k_earth_daymap.webp";
 import moonTexture from "../../assets/planetarium/2k_moon.webp";
 import enceladusTexture from "../../assets/planetarium/2k_enceladus.webp";
+import titanTexture from "../../assets/planetarium/2k_titan.webp";
 import charonTexture from "../../assets/planetarium/2k_charon.webp";
 
 type TextureAsset = string | { src: string };
@@ -40,7 +41,7 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   callisto: null,
   saturn: toUrl(saturnTexture),
   enceladus: toUrl(enceladusTexture),
-  titan: null,
+  titan: toUrl(titanTexture),
   uranus: toUrl(uranusTexture),
   titania: null,
   oberon: null,
