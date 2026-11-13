@@ -12,7 +12,7 @@
     "add-books": "node src/scripts/addBooksToFirebase.js"
   },
   "dependencies": {
-    "@astrojs/react": "^6.0.5",
+    "@astrojs/react": "^7.1.8",
     "@headlessui/react": "^2.2.10",
     "@motionone/dom": "^10.18.0",
     "@pixi/react": "^8.0.5",
@@ -23,7 +23,7 @@
     "@tsparticles/engine": "^4.4.0",
     "@tsparticles/react": "^4.4.0",
     "@tsparticles/slim": "^4.4.0",
-    "astro": "^7.2.10",
+    "astro": "^7.4.11",
     "astro-remote": "^0.3.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
