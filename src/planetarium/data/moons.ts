@@ -216,9 +216,9 @@ export const MOONS: BodyData[] = [
         color: "#f59e0b",
         intensity: 0.15,
         rim: {
-          color: "#fbbf24",
-          opacity: 0.35,
-          scale: 1.06
+          color: "#f5a623",
+          opacity: 0.48,
+          scale: 1.12
         }
       }
     },

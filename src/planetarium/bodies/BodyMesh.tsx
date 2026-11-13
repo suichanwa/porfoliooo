@@ -7,7 +7,6 @@ import {
   Group,
   MathUtils,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   NoColorSpace,
   ShaderMaterial,
@@ -101,6 +100,7 @@ export default function BodyMesh({
   }, [data.rings]);
 
   const isEarth = data.id === "earth";
+  const isTitan = data.id === "titan";
   const cloudsMeshRef = useRef<Mesh>(null);
 
   const cloudsMaterial = useMemo(() => {
@@ -189,6 +189,89 @@ export default function BodyMesh({
     });
   }, [isEarth]);
 
+  const titanHazeMaterial = useMemo(() => {
+    if (!isTitan) return null;
+    return new ShaderMaterial({
+      uniforms: {
+        uHazeColor: { value: new Color("#e8a848") },
+        uTerminatorColor: { value: new Color("#cf5d24") },
+        uPolarColor: { value: new Color("#8a7e82") }
+      },
+      vertexShader: `
+        varying vec3 vObjPos;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        void main() {
+          vObjPos = position;
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uHazeColor;
+        uniform vec3 uTerminatorColor;
+        uniform vec3 uPolarColor;
+        varying vec3 vObjPos;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+
+        float hash3(vec3 p) {
+          p = fract(p * 0.3183099 + 0.1);
+          p *= 17.0;
+          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+        }
+
+        float noise3(vec3 x) {
+          vec3 i = floor(x);
+          vec3 f = fract(x);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(mix(hash3(i + vec3(0,0,0)), hash3(i + vec3(1,0,0)), f.x),
+                mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+            mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
+                mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y),
+            f.z
+          );
+        }
+
+        void main() {
+          vec3 N = normalize(vNormal);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 sunDir = normalize(-vWorldPos);
+
+          float ndotv = max(dot(N, V), 0.0);
+          float fresnel = pow(1.0 - ndotv, 2.35);
+
+          float sunDot = dot(N, sunDir);
+          float dayFactor = smoothstep(-0.24, 0.38, sunDot);
+          float terminatorGlow = exp(-pow((sunDot + 0.03) * 5.2, 2.0));
+
+          // Subtle Cassini-style wind-sheared zonal haze bands and polar hood
+          vec3 p = normalize(vObjPos);
+          float n = noise3(p * vec3(3.2, 8.5, 3.2));
+          float band = 0.84 + 0.16 * sin(p.y * 14.0 + n * 2.8);
+          float polarHood = smoothstep(0.58, 0.94, abs(p.y));
+
+          // Forward Mie scattering brightens backlit crescent limbs
+          float forwardScatter = pow(max(dot(-V, sunDir), 0.0), 3.5) * fresnel * smoothstep(-0.65, 0.20, sunDot);
+
+          vec3 hazeCol = mix(uHazeColor, uPolarColor, polarHood * 0.48);
+          hazeCol = mix(hazeCol, uTerminatorColor, terminatorGlow * 0.52);
+          hazeCol *= band;
+
+          // Keep disk center subtle so hydrocarbon lakes & highlands remain crisp
+          float diskHaze = 0.04 + 0.62 * fresnel;
+          float alpha = diskHaze * (dayFactor * 0.94 + 0.03) + forwardScatter * 0.35;
+
+          gl_FragColor = vec4(hazeCol, clamp(alpha, 0.0, 0.78));
+        }
+      `,
+      transparent: true,
+      depthWrite: false
+    });
+  }, [isTitan]);
+
   const material = useMemo(() => {
     return new MeshStandardMaterial({
       map: baseMap ?? null,
@@ -203,15 +286,72 @@ export default function BodyMesh({
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;
-    return new MeshBasicMaterial({
-      color: rimPreset.color ?? glowPreset.color,
+    const rimScale = rimPreset.scale ?? 1.04;
+    const limbMu = Math.sqrt(Math.max(0.001, 1 - 1 / (rimScale * rimScale)));
+    return new ShaderMaterial({
+      uniforms: {
+        uColor: { value: new Color(rimPreset.color ?? glowPreset.color) },
+        uOuterColor: {
+          value: new Color(isTitan ? "#7ea8e0" : (rimPreset.color ?? glowPreset.color))
+        },
+        uTerminatorColor: { value: new Color(isTitan ? "#d96324" : (rimPreset.color ?? glowPreset.color)) },
+        uOuterMix: { value: isTitan ? 1.0 : 0.0 },
+        uOpacity: { value: rimPreset.opacity ?? 0.08 },
+        uLimbMu: { value: limbMu }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        void main() {
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uOuterColor;
+        uniform vec3 uTerminatorColor;
+        uniform float uOuterMix;
+        uniform float uOpacity;
+        uniform float uLimbMu;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+
+        void main() {
+          vec3 N = normalize(vNormal);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 sunDir = normalize(-vWorldPos);
+
+          // On BackSide shell, -dot(N, V) is 0 at outer mesh edge and approaches uLimbMu at planet horizon
+          float mu = max(0.0, dot(N, -V));
+          float t = clamp(mu / uLimbMu, 0.0, 1.0);
+
+          // Exponential-like radial scale-height decay with smooth zero fade at outer boundary
+          float edgeFade = smoothstep(0.0, 0.24, t);
+          float mainHaze = pow(t, 2.5) * edgeFade;
+          // Faint high-altitude detached bluish upper-haze layer for Titan
+          float upperHaze = exp(-pow((t - 0.36) / 0.18, 2.0)) * smoothstep(0.0, 0.22, t) * 0.14 * uOuterMix;
+          float radial = mainHaze + upperHaze;
+
+          float sunDot = dot(N, sunDir);
+          float dayLight = smoothstep(-0.34, 0.48, sunDot);
+          float terminatorGlow = exp(-pow((sunDot + 0.04) * 4.5, 2.0));
+          float forwardScatter = pow(max(dot(-V, sunDir), 0.0), 4.0) * smoothstep(-0.68, 0.20, sunDot) * 0.42;
+
+          vec3 scatterColor = mix(uOuterColor, uColor, smoothstep(0.28, 0.80, t * mix(1.0, 0.92, uOuterMix)));
+          scatterColor = mix(scatterColor, uTerminatorColor, terminatorGlow * 0.42 * uOuterMix);
+
+          float alpha = radial * (dayLight * 0.95 + forwardScatter + 0.04) * uOpacity;
+          gl_FragColor = vec4(scatterColor, clamp(alpha, 0.0, 1.0));
+        }
+      `,
       transparent: true,
-      opacity: rimPreset.opacity ?? 0.08,
       blending: AdditiveBlending,
       side: BackSide,
       depthWrite: false
     });
-  }, [glowPreset.color, rimPreset]);
+  }, [glowPreset.color, isTitan, rimPreset]);
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
@@ -293,6 +433,14 @@ export default function BodyMesh({
           ref={cloudsMeshRef}
           geometry={geometry}
           material={cloudsMaterial}
+          scale={1.008}
+          raycast={() => null}
+        />
+      )}
+      {isTitan && titanHazeMaterial && (
+        <mesh
+          geometry={geometry}
+          material={titanHazeMaterial}
           scale={1.008}
           raycast={() => null}
         />
