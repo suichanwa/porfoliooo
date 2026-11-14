@@ -15,6 +15,7 @@ import starfieldTexture from "../../assets/planetarium/2k_stars.webp";
 import milkyWayTexture from "../../assets/planetarium/BG_stars_milky_way.jpg";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 import earthTexture from "../../assets/planetarium/2k_earth_daymap.webp";
+import earthNightTexture from "../../assets/planetarium/2k_earth_nightmap.webp";
 import moonTexture from "../../assets/planetarium/2k_moon.webp";
 import enceladusTexture from "../../assets/planetarium/2k_enceladus.webp";
 import titanTexture from "../../assets/planetarium/2k_titan.webp";
@@ -71,6 +72,7 @@ export const PLANET_NORMAL_TEXTURES: Partial<Record<BodyId, string | null>> = {
   charon: toUrl(charonNormalTexture)
 };
 
+export const EARTH_NIGHT_TEXTURE = toUrl(earthNightTexture);
 export const VENUS_ATMOSPHERE_TEXTURE = toUrl(venusAtmosphereTexture);
 export const SATURN_RING_ALPHA_TEXTURE = toUrl(saturnRingAlpha);
 export const STARFIELD_TEXTURE = toUrl(starfieldTexture);

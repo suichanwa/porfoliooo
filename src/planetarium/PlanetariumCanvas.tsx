@@ -7,7 +7,7 @@ function RendererTuning() {
 
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.05;
+    gl.toneMappingExposure = 1.08;
   }, [gl]);
 
   return null;

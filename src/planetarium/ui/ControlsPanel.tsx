@@ -12,6 +12,7 @@ import {
   Orbit,
   Sliders,
   Sparkles,
+  Sun,
   Tag,
   X
 } from "lucide-react";
@@ -421,6 +422,39 @@ export default function ControlsPanel({
                   {spd}x
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Section 2.5: Lighting & Shading System */}
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-700/40 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.15em] text-primary-accent">
+              <span className="flex items-center gap-1.5">
+                <Sun className="h-3 w-3 text-amber-300" />
+                Lighting & Shading
+              </span>
+              <span className="text-slate-400 font-normal capitalize">
+                {settings.lightingMode}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-700/50 bg-[rgba(var(--primary-bg-rgb),0.4)] p-1">
+              {(["cinematic", "natural", "inspect"] as const).map((mode) => {
+                const isActive = settings.lightingMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => updateSetting("lightingMode", mode)}
+                    className={`rounded-lg py-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                        : "text-slate-400 hover:text-slate-200 border border-transparent hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

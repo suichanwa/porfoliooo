@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { DistanceScaleMode } from "../utils/distanceScale";
+import type { LightingMode } from "../lighting/solarLighting";
 
 export interface PlanetariumSettings {
   showOrbits: boolean;
@@ -11,6 +12,7 @@ export interface PlanetariumSettings {
   distanceScaleMode: DistanceScaleMode;
   distanceScaleSpacing: number;
   viewMode: "overview" | "explore" | "custom";
+  lightingMode: LightingMode;
 }
 
 const DEFAULT_SETTINGS: PlanetariumSettings = {
@@ -22,7 +24,8 @@ const DEFAULT_SETTINGS: PlanetariumSettings = {
   orbitSpeed: 1.0,
   distanceScaleMode: "log",
   distanceScaleSpacing: 40,
-  viewMode: "overview"
+  viewMode: "overview",
+  lightingMode: "cinematic"
 };
 
 interface SettingsContextValue {

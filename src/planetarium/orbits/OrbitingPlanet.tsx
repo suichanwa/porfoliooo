@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { Group, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
+import type { LightingMode } from "../lighting/solarLighting";
 import Planet from "../bodies/Planet";
 import Pluton from "../planets_render/pluton";
 import ModelMesh from "../bodies/ModelMesh";
@@ -13,6 +14,7 @@ interface OrbitingPlanetProps {
   data: BodyData;
   timeRef: React.MutableRefObject<number>;
   atmosphere?: boolean;
+  lightingMode?: LightingMode;
   showLabels?: boolean;
   isSelected?: boolean;
   isInfoVisible?: boolean;
@@ -29,6 +31,7 @@ export default function OrbitingPlanet({
   data,
   timeRef,
   atmosphere = false,
+  lightingMode = "cinematic",
   showLabels = false,
   isSelected = false,
   isInfoVisible = false,
@@ -177,6 +180,7 @@ export default function OrbitingPlanet({
           data={data}
           position={initialPosition}
           atmosphere={atmosphere}
+          lightingMode={lightingMode}
           groupRef={groupRef}
           planetRefs={planetRefs}
           simTimeRef={timeRef}

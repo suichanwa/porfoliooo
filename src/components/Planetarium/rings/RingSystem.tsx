@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import type { RingPreset } from "../../../planetarium/data/types";
+import type { LightingMode } from "../../../planetarium/lighting/solarLighting";
 import RingBand from "./RingBand";
 
 interface RingSystemProps {
   planetRadiusKm: number;
   renderRadius: number;
   rings: RingPreset[];
+  lightingMode?: LightingMode;
 }
 
 interface ScaledRing {
@@ -25,7 +27,8 @@ const toKey = (ring: RingPreset, index: number) =>
 export default function RingSystem({
   planetRadiusKm,
   renderRadius,
-  rings
+  rings,
+  lightingMode = "cinematic"
 }: RingSystemProps) {
   const scaled = useMemo<ScaledRing[]>(() => {
     if (!Number.isFinite(planetRadiusKm) || planetRadiusKm <= 0) return [];
@@ -64,12 +67,14 @@ export default function RingSystem({
           key={ring.key}
           innerRadius={ring.innerRadius}
           outerRadius={ring.outerRadius}
+          planetRadius={renderRadius}
           textureUrl={ring.textureUrl}
           color={ring.color}
           opacity={ring.opacity}
           patternSeed={ring.patternSeed}
           bandDensity={ring.bandDensity}
           renderOrder={index}
+          lightingMode={lightingMode}
         />
       ))}
     </>

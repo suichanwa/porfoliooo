@@ -186,6 +186,7 @@ function PlanetariumView() {
           timeResetSignal={timeResetSignal}
           onSimDateChange={setSimDateMs}
           useMilkyWayBackground={settings.useMilkyWayBackground}
+          lightingMode={settings.lightingMode}
         />
       </PlanetariumCanvas>
 

@@ -1,32 +1,36 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   CanvasTexture,
   Color,
   DataTexture,
   DoubleSide,
   LinearFilter,
-  MeshStandardMaterial,
   NoColorSpace,
   RGBAFormat,
-  RingGeometry
+  RingGeometry,
+  ShaderMaterial,
+  SRGBColorSpace
 } from "three";
 import type { Texture } from "three";
 import { useTextureAsset } from "../../../planetarium/hooks/usePlanetTexture";
+import type { LightingMode } from "../../../planetarium/lighting/solarLighting";
 
 interface RingBandProps {
   innerRadius: number;
   outerRadius: number;
+  planetRadius: number;
   textureUrl?: string | null;
   color?: string;
   opacity?: number;
   patternSeed?: number;
   bandDensity?: number;
   renderOrder?: number;
+  lightingMode?: LightingMode;
 }
 
 const DEFAULT_RING_COLOR = "#d4c5a6";
 const DEFAULT_OPACITY = 0.65;
-const SEGMENTS = 160;
+const SEGMENTS = 192;
 const proceduralCache = new Map<string, Texture>();
 
 const clamp = (value: number, min: number, max: number) =>
@@ -47,13 +51,16 @@ const mulberry32 = (seed: number) => {
   };
 };
 
-const createFallbackAlphaTexture = () => {
+let fallbackWhiteTex: DataTexture | null = null;
+const getFallbackAlphaTexture = () => {
+  if (fallbackWhiteTex) return fallbackWhiteTex;
   const data = new Uint8Array([255, 255, 255, 255]);
   const texture = new DataTexture(data, 1, 1, RGBAFormat);
   texture.needsUpdate = true;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
   texture.colorSpace = NoColorSpace;
+  fallbackWhiteTex = texture;
   return texture;
 };
 
@@ -64,20 +71,20 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
   if (cached) return cached;
 
   if (typeof document === "undefined") {
-    const fallback = createFallbackAlphaTexture();
+    const fallback = getFallbackAlphaTexture();
     proceduralCache.set(cacheKey, fallback);
     return fallback;
   }
 
   const width = 512;
-  const height = 128;
+  const height = 64;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
 
   if (!ctx) {
-    const fallback = createFallbackAlphaTexture();
+    const fallback = getFallbackAlphaTexture();
     proceduralCache.set(cacheKey, fallback);
     return fallback;
   }
@@ -110,7 +117,7 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
     isRing = !isRing;
   }
 
-  // bands run along x (U axis) — geometry maps U to radial position
+  // Bands run along U axis — geometry maps U to radial position
   let bandIndex = 0;
   for (let x = 0; x < width; x += 1) {
     const t = x / (width - 1);
@@ -138,29 +145,36 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
   return texture;
 };
 
+const RING_SHADOW_AMBIENT: Record<LightingMode, number> = {
+  cinematic: 0.075,
+  natural: 0.025,
+  inspect: 0.22
+};
+
 export default function RingBand({
   innerRadius,
   outerRadius,
+  planetRadius,
   textureUrl,
   color = DEFAULT_RING_COLOR,
   opacity = DEFAULT_OPACITY,
   patternSeed = 7,
   bandDensity = 0.6,
-  renderOrder
+  renderOrder,
+  lightingMode = "cinematic"
 }: RingBandProps) {
-  const loadedAlpha = useTextureAsset(textureUrl ?? null, {
-    colorSpace: NoColorSpace
+  const loadedTexture = useTextureAsset(textureUrl ?? null, {
+    colorSpace: SRGBColorSpace
   });
   const proceduralAlpha = useMemo(() => {
     if (textureUrl) return null;
     return createProceduralAlphaTexture(patternSeed, bandDensity);
   }, [bandDensity, patternSeed, textureUrl]);
-  const alphaMap = textureUrl ? loadedAlpha : proceduralAlpha;
+  const ringMap = (textureUrl ? loadedTexture : proceduralAlpha) ?? getFallbackAlphaTexture();
 
   const geometry = useMemo(() => {
     const geom = new RingGeometry(innerRadius, outerRadius, SEGMENTS, 1);
-    // RingGeometry UVs are planar; remap so U = radial fraction, matching
-    // ring-strip textures (inner edge at U=0, outer edge at U=1).
+    // Remap planar UVs so U = radial fraction (inner edge = 0, outer edge = 1).
     const pos = geom.attributes.position;
     const uv = geom.attributes.uv;
     const span = outerRadius - innerRadius;
@@ -174,21 +188,107 @@ export default function RingBand({
 
   const material = useMemo(
     () =>
-      new MeshStandardMaterial({
-        color,
+      new ShaderMaterial({
+        uniforms: {
+          uMap: { value: getFallbackAlphaTexture() },
+          uHasRgba: { value: 0 },
+          uColor: { value: new Color(DEFAULT_RING_COLOR) },
+          uOpacity: { value: DEFAULT_OPACITY },
+          uPlanetRadius: { value: 1.0 },
+          uShadowAmbient: { value: 0.075 }
+        },
+        vertexShader: /* glsl */ `
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+          varying vec3 vPlanetCenter;
+
+          void main() {
+            vUv = uv;
+            vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+            vPlanetCenter = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform sampler2D uMap;
+          uniform float uHasRgba;
+          uniform vec3 uColor;
+          uniform float uOpacity;
+          uniform float uPlanetRadius;
+          uniform float uShadowAmbient;
+
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+          varying vec3 vPlanetCenter;
+
+          void main() {
+            vec4 tex = texture2D(uMap, vUv);
+            float alphaSample = uHasRgba > 0.5 ? tex.a : tex.g;
+            float finalAlpha = alphaSample * uOpacity;
+            if (finalAlpha < 0.025) discard;
+
+            vec3 sunDir = normalize(-vWorldPos);
+            vec3 viewDir = normalize(cameraPosition - vWorldPos);
+
+            // Exact curved planetary shadow cast by parent planet across night half of rings
+            vec3 toPlanet = vPlanetCenter - vWorldPos;
+            float proj = dot(toPlanet, sunDir);
+            float sunVis = 1.0;
+            if (proj > 0.0) {
+              float perp = length(toPlanet - sunDir * proj);
+              float ratio = perp / max(uPlanetRadius, 0.0001);
+              sunVis = smoothstep(0.955, 1.045, ratio);
+            }
+
+            // Ice grain anisotropic phase scattering (backscatter & forward glow)
+            float cosPhase = dot(sunDir, viewDir);
+            float icePhase = 0.86 + 0.30 * pow(abs(cosPhase), 2.2);
+
+            vec3 bandTint = mix(uColor, uColor * (0.62 + 0.58 * tex.rgb), uHasRgba);
+            vec3 nightTint = mix(vec3(0.05, 0.08, 0.14), bandTint * 0.25, 0.5);
+            vec3 litColor = bandTint * icePhase * 1.18;
+
+            // Subtle amber refraction along penumbra transition edge
+            float penumbraRim = sunVis * (1.0 - sunVis) * 4.0;
+            vec3 finalColor = mix(nightTint * max(uShadowAmbient * 6.0, 0.2), litColor, sunVis);
+            finalColor += vec3(0.85, 0.38, 0.12) * penumbraRim * 0.18;
+
+            gl_FragColor = vec4(finalColor * mix(uShadowAmbient * 3.0 + 0.25, 1.0, sunVis), finalAlpha);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }
+        `,
         transparent: true,
-        opacity,
-        alphaMap: alphaMap ?? null,
-        alphaTest: 0.05,
         side: DoubleSide,
-        roughness: 0.9,
-        metalness: 0,
-        emissive: new Color(color),
-        emissiveIntensity: 0.08,
         depthWrite: false
       }),
-    [alphaMap, color, opacity]
+    []
   );
+
+  useEffect(() => {
+    material.uniforms.uMap.value = ringMap;
+    material.uniforms.uHasRgba.value = textureUrl && loadedTexture ? 1 : 0;
+    material.uniforms.uColor.value.set(color);
+    material.uniforms.uOpacity.value = opacity;
+    material.uniforms.uPlanetRadius.value = planetRadius;
+    material.uniforms.uShadowAmbient.value = RING_SHADOW_AMBIENT[lightingMode];
+  }, [
+    color,
+    lightingMode,
+    loadedTexture,
+    material,
+    opacity,
+    planetRadius,
+    ringMap,
+    textureUrl
+  ]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
 
   return (
     <mesh

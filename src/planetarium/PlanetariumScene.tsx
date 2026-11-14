@@ -26,6 +26,7 @@ import {
   type GravitySettings,
   getMassScaleForVisuals
 } from "./gravity/gravityField";
+import { getSceneLightRigPreset, type LightingMode } from "./lighting/solarLighting";
 import { scalePlanetRadius } from "./utils/scale";
 
 interface PlanetariumSceneProps {
@@ -50,6 +51,7 @@ interface PlanetariumSceneProps {
   timeResetSignal?: number;
   onSimDateChange?: (epochMs: number) => void;
   useMilkyWayBackground?: boolean;
+  lightingMode?: LightingMode;
 }
 
 const J2000_EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
@@ -76,8 +78,10 @@ export default function PlanetariumScene({
   orbitSpeed = 10,
   timeResetSignal = 0,
   onSimDateChange,
-  useMilkyWayBackground = false
+  useMilkyWayBackground = false,
+  lightingMode = "cinematic"
 }: PlanetariumSceneProps) {
+  const lightPreset = getSceneLightRigPreset(lightingMode);
   const startEpochDays = useMemo(() => nowEpochDays(), []);
   const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
   const simDateAccumRef = useRef(0);
@@ -235,14 +239,21 @@ export default function PlanetariumScene({
           debug={debugGravity}
         />
       )}
-      <ambientLight intensity={0.24} color="#1e293b" />
-      <hemisphereLight intensity={0.08} color="#263859" groundColor="#030712" />
+      <ambientLight
+        intensity={lightPreset.ambientIntensity}
+        color={lightPreset.ambientColor}
+      />
+      <hemisphereLight
+        intensity={lightPreset.hemiIntensity}
+        color={lightPreset.hemiSkyColor}
+        groundColor={lightPreset.hemiGroundColor}
+      />
       <pointLight
         position={[0, 0, 0]}
-        intensity={3.0}
+        intensity={lightPreset.sunIntensity}
         distance={0}
         decay={0}
-        color="#fffaf0"
+        color={lightPreset.sunColor}
       />
       <Sun
         meshRef={sunRef}
@@ -283,6 +294,7 @@ export default function PlanetariumScene({
           data={planet}
           timeRef={timeRef}
           atmosphere={true}
+          lightingMode={lightingMode}
           showLabels={showLabels}
           isSelected={selectedId === planet.id}
           isInfoVisible={isInfoVisible}
