@@ -367,7 +367,7 @@ export default function PlanetInfoPanel() {
       {/* ============================================================ */}
       {/* 2. DESKTOP / TABLET UI: Side Info Panel                       */}
       {/* ============================================================ */}
-      <div className="hidden sm:flex pointer-events-none absolute right-4 top-24 z-40 w-full justify-end">
+      <div className="hidden sm:flex pointer-events-none fixed right-4 top-20 z-40 justify-end">
         <div
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -375,7 +375,7 @@ export default function PlanetInfoPanel() {
           role="region"
           aria-label="Planet details panel"
           tabIndex={-1}
-          className={`pointer-events-auto w-full max-w-[min(28rem,35vw)] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-5 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10rem)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          className={`pointer-events-auto w-[min(24.5rem,33vw)] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-4 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10.5rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] ${
             isInfoVisible
               ? "translate-x-0 opacity-100"
               : "translate-x-6 opacity-0 pointer-events-none hidden"
@@ -383,9 +383,9 @@ export default function PlanetInfoPanel() {
           style={{ pointerEvents: isInfoVisible ? "auto" : "none" }}
           aria-hidden={!isInfoVisible}
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
                   {planet.kind === "dwarf" ? "Dwarf planet details" : isMoon ? "Moon details" : "Planet details"}
                 </span>
@@ -414,16 +414,16 @@ export default function PlanetInfoPanel() {
                   </button>
                 )}
               </div>
-              <div className="mt-1 text-xl font-bold text-white tracking-wide">
+              <div className="mt-1 text-lg font-bold text-white tracking-wide">
                 {planet.name}
               </div>
               {info?.summary && (
-                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                <p className="mt-1.5 text-xs text-slate-300 leading-snug">
                   {info.summary}
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+            <div className="flex items-center gap-1.5 sm:flex-col sm:items-end flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setInfoHidden(true)}
@@ -441,57 +441,57 @@ export default function PlanetInfoPanel() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 text-[11px]">
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-3 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
+          <div className="mt-3 grid grid-cols-2 gap-2.5 text-[11px]">
+            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
               <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 {isMoon ? "Orbit Radius" : "Distance"}
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-0.5 text-sm font-semibold text-white">
                 {distanceText}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-3 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
+            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
               <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Radius
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-0.5 text-sm font-semibold text-white">
                 {formatNumber(planet.render.radiusKm)} km
               </div>
             </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-3 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
+            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
               <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Period
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-0.5 text-sm font-semibold text-white">
                 {planet.orbit ? `${Math.round(planet.orbit.orbitalPeriodDays)} days` : "-"}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-3 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
+            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
               <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Tilt
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-0.5 text-sm font-semibold text-white">
                 {planet.rotation.axialTiltDeg.toFixed(1)}&deg;
               </div>
             </div>
-            <div className="col-span-2 rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-3 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
+            <div className="col-span-2 rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
               <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Mass
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-0.5 text-sm font-semibold text-white">
                 {formatMass(planet.massKg)}
               </div>
             </div>
           </div>
 
           {info && info.facts.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-3">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary-accent">
                 Highlights
               </div>
-              <ul className="mt-2 space-y-2 text-xs text-slate-300">
+              <ul className="mt-1.5 space-y-1.5 text-xs text-slate-300">
                 {info.facts.map((fact) => (
-                  <li key={fact} className="border-l-2 border-primary-accent/50 pl-3 leading-relaxed">
+                  <li key={fact} className="border-l-2 border-primary-accent/50 pl-2.5 leading-snug">
                     {fact}
                   </li>
                 ))}

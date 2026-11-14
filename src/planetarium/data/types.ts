@@ -48,12 +48,17 @@ export interface MaterialPreset {
   roughness: number;
   metalness: number;
   illuminationBoost?: number;
+  normalScale?: number;
 }
 
 export interface RimGlowPreset {
   color?: string;
+  outerColor?: string;
+  terminatorColor?: string;
+  colorMix?: number;
   opacity?: number;
   scale?: number;
+  power?: number;
 }
 
 export interface GlowPreset {

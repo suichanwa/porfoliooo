@@ -20,6 +20,14 @@ import enceladusTexture from "../../assets/planetarium/2k_enceladus.webp";
 import titanTexture from "../../assets/planetarium/2k_titan.webp";
 import charonTexture from "../../assets/planetarium/2k_charon.webp";
 
+import mercuryNormalTexture from "../../assets/planetarium/1k_mercury_normal.webp";
+import moonNormalTexture from "../../assets/planetarium/1k_moon_normal.webp";
+import marsNormalTexture from "../../assets/planetarium/1k_mars_normal.webp";
+import ceresNormalTexture from "../../assets/planetarium/1k_ceres_normal.webp";
+import plutoNormalTexture from "../../assets/planetarium/1k_pluto_normal.webp";
+import charonNormalTexture from "../../assets/planetarium/1k_charon_normal.webp";
+import enceladusNormalTexture from "../../assets/planetarium/1k_enceladus_normal.webp";
+
 type TextureAsset = string | { src: string };
 
 const toUrl = (asset: TextureAsset | null | undefined) => {
@@ -51,6 +59,16 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   pluto: toUrl(plutoTexture),
   charon: toUrl(charonTexture),
   voyager1: null
+};
+
+export const PLANET_NORMAL_TEXTURES: Partial<Record<BodyId, string | null>> = {
+  mercury: toUrl(mercuryNormalTexture),
+  moon: toUrl(moonNormalTexture),
+  mars: toUrl(marsNormalTexture),
+  enceladus: toUrl(enceladusNormalTexture),
+  ceres: toUrl(ceresNormalTexture),
+  pluto: toUrl(plutoNormalTexture),
+  charon: toUrl(charonNormalTexture)
 };
 
 export const VENUS_ATMOSPHERE_TEXTURE = toUrl(venusAtmosphereTexture);

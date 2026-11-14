@@ -32,7 +32,7 @@ interface ControlsPanelProps {
   onToggle?: () => void;
 }
 
-const DEFAULT_POSITION = { x: 16, y: 96 };
+const DEFAULT_POSITION = { x: 16, y: 80 };
 
 interface CustomToggleProps {
   label: string;
@@ -265,11 +265,11 @@ export default function ControlsPanel({
       } ${className}`}
       style={{
         transform: isMobile ? "translateX(-50%)" : `translate3d(${position.x}px, ${position.y}px, 0)`,
-        left: isMobile ? "50%" : undefined,
-        top: isMobile ? "calc(1rem + env(safe-area-inset-top))" : undefined,
+        left: isMobile ? "50%" : "0px",
+        top: isMobile ? "calc(1rem + env(safe-area-inset-top))" : "0px",
         bottom: isMobile ? "auto" : undefined,
         right: isMobile ? "auto" : undefined,
-        width: isMobile ? "min(calc(100vw - 24px), 22rem)" : "min(92vw, 21rem)"
+        width: isMobile ? "min(calc(100vw - 24px), 22rem)" : "min(92vw, 20rem)"
       }}
     >
       <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl">
@@ -308,7 +308,7 @@ export default function ControlsPanel({
 
         {/* Panel Body */}
         <div
-          className={`flex flex-col gap-3 p-3.5 transition-all duration-300 overflow-y-auto max-h-[calc(100vh-10rem)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          className={`flex flex-col gap-3 p-3.5 transition-all duration-300 overflow-y-auto max-h-[calc(100vh-13rem)] [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] ${
             controlsOpen ? "block opacity-100" : "hidden opacity-0"
           }`}
         >

@@ -51,25 +51,31 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
   );
 
   return (
-    <div className="pointer-events-auto w-full max-w-[18rem] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.45),rgba(20,28,40,0.30))] px-3.5 py-3 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(99,102,241,0.35)] backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-secondary-accent">
-          Spacetime Gravity
+    <div
+      className={`pointer-events-auto rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.45),rgba(20,28,40,0.30))] px-3 py-2 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(99,102,241,0.35)] backdrop-blur-xl ${
+        open ? "w-[17rem] sm:w-[18rem]" : "w-auto"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2.5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary-accent whitespace-nowrap">
+          {open ? (
+            "Spacetime Gravity"
+          ) : (
+            <>
+              <span className="hidden xl:inline">Spacetime </span>Gravity
+            </>
+          )}
         </span>
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:border-secondary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white"
+          className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:border-secondary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white"
           aria-expanded={open}
         >
           {open ? "Hide" : "Show"}
         </button>
       </div>
-      <div
-        className={`flex flex-col gap-3 overflow-hidden transition-all duration-300 ${
-          open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
+      <div className={open ? "flex flex-col gap-3" : "hidden"}>
         <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300">
           {Object.entries(PRESETS).map(([label, preset]) => (
             <button

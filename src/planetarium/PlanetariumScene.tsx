@@ -282,7 +282,7 @@ export default function PlanetariumScene({
           key={planet.id}
           data={planet}
           timeRef={timeRef}
-          atmosphere={false}
+          atmosphere={true}
           showLabels={showLabels}
           isSelected={selectedId === planet.id}
           isInfoVisible={isInfoVisible}

@@ -162,7 +162,7 @@ function PlanetariumView() {
   ]);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative h-[calc(100dvh-65px)] overflow-hidden">
       <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={handlePointerMissed}>
         <PlanetariumScene
           showOrbits={settings.showOrbits}
@@ -211,15 +211,15 @@ function PlanetariumView() {
         onGravityChange={setGravitySettings}
       />
 
-      <div className="pointer-events-none absolute bottom-4 sm:bottom-6 right-3 sm:right-4 z-20 hidden sm:flex w-auto justify-end">
+      <div className="pointer-events-none fixed bottom-4 right-3 sm:right-4 z-20 hidden sm:flex w-auto justify-end">
         <GravityPanel
           settings={gravitySettings}
           onChange={setGravitySettings}
         />
       </div>
 
-      <div className="pointer-events-none absolute bottom-6 left-4 z-20 hidden sm:flex flex-col gap-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
-        <div>
+      <div className="pointer-events-none fixed bottom-4 left-4 z-20 hidden lg:flex flex-col gap-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40 max-w-[14rem]">
+        <div className="truncate">
           {settings.distanceScaleMode} scale - 1 AU ~{" "}
           {computeRenderOrbitRadius(
             1,
@@ -228,13 +228,13 @@ function PlanetariumView() {
           ).toFixed(2)}{" "}
           units
         </div>
-        <div>
+        <div className="hidden xl:block truncate">
           Quality: DPR {Array.isArray(canvasDpr) ? canvasDpr[1].toFixed(2) : Number(canvasDpr).toFixed(2)} - Post Off
         </div>
       </div>
 
       {debugGravity && (
-        <div className="pointer-events-none absolute bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
+        <div className="pointer-events-none fixed bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
           Gravity debug
         </div>
       )}

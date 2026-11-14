@@ -12,6 +12,7 @@ import {
   ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
+  Vector2,
   Vector3
 } from "three";
 import type { BodyData, BodyId, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
@@ -273,10 +274,13 @@ export default function BodyMesh({
   }, [isTitan]);
 
   const material = useMemo(() => {
+    const normalStrength = materialPreset.normalScale ?? 0.55;
     return new MeshStandardMaterial({
       map: baseMap ?? null,
       normalMap: normalMap ?? null,
+      normalScale: new Vector2(normalStrength, normalStrength),
       bumpMap: bumpMap ?? null,
+      bumpScale: 0.02,
       roughness: materialPreset.roughness,
       metalness: materialPreset.metalness,
       emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
@@ -288,14 +292,15 @@ export default function BodyMesh({
     if (!rimPreset) return null;
     const rimScale = rimPreset.scale ?? 1.04;
     const limbMu = Math.sqrt(Math.max(0.001, 1 - 1 / (rimScale * rimScale)));
+    const baseColor = rimPreset.color ?? glowPreset.color;
     return new ShaderMaterial({
       uniforms: {
-        uColor: { value: new Color(rimPreset.color ?? glowPreset.color) },
-        uOuterColor: {
-          value: new Color(isTitan ? "#7ea8e0" : (rimPreset.color ?? glowPreset.color))
-        },
-        uTerminatorColor: { value: new Color(isTitan ? "#d96324" : (rimPreset.color ?? glowPreset.color)) },
-        uOuterMix: { value: isTitan ? 1.0 : 0.0 },
+        uColor: { value: new Color(baseColor) },
+        uOuterColor: { value: new Color(rimPreset.outerColor ?? baseColor) },
+        uTerminatorColor: { value: new Color(rimPreset.terminatorColor ?? baseColor) },
+        uOuterMix: { value: rimPreset.colorMix ?? 0.0 },
+        uUpperHaze: { value: isTitan ? 1.0 : 0.0 },
+        uPower: { value: rimPreset.power ?? 2.8 },
         uOpacity: { value: rimPreset.opacity ?? 0.08 },
         uLimbMu: { value: limbMu }
       },
@@ -313,6 +318,8 @@ export default function BodyMesh({
         uniform vec3 uOuterColor;
         uniform vec3 uTerminatorColor;
         uniform float uOuterMix;
+        uniform float uUpperHaze;
+        uniform float uPower;
         uniform float uOpacity;
         uniform float uLimbMu;
         varying vec3 vNormal;
@@ -329,9 +336,9 @@ export default function BodyMesh({
 
           // Exponential-like radial scale-height decay with smooth zero fade at outer boundary
           float edgeFade = smoothstep(0.0, 0.24, t);
-          float mainHaze = pow(t, 2.5) * edgeFade;
+          float mainHaze = pow(t, uPower) * edgeFade;
           // Faint high-altitude detached bluish upper-haze layer for Titan
-          float upperHaze = exp(-pow((t - 0.36) / 0.18, 2.0)) * smoothstep(0.0, 0.22, t) * 0.14 * uOuterMix;
+          float upperHaze = exp(-pow((t - 0.36) / 0.18, 2.0)) * smoothstep(0.0, 0.22, t) * 0.14 * uUpperHaze;
           float radial = mainHaze + upperHaze;
 
           float sunDot = dot(N, sunDir);

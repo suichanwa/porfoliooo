@@ -1,5 +1,5 @@
 import type { BodyData, GlowPreset, MaterialPreset } from "./types";
-import { PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
+import { PLANET_NORMAL_TEXTURES, PLANET_TEXTURES, SATURN_RING_ALPHA_TEXTURE } from "./textures";
 import { auToKm } from "../utils/units";
 
 const G = 6.6743e-11;
@@ -51,7 +51,8 @@ export const PLANETS: BodyData[] = [
       radiusKm: 2439.7,
       colorFallback: "#9f9a91",
       textureUrl: PLANET_TEXTURES.mercury,
-      materialPreset: DEFAULT_MATERIAL,
+      normalUrl: PLANET_NORMAL_TEXTURES.mercury,
+      materialPreset: { roughness: 0.9, metalness: 0, normalScale: 0.65 },
       glowPreset: PLANET_GLOW,
       bendingDimensions: {
         topHeight: 0.35,
@@ -85,7 +86,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d8c38f",
       textureUrl: PLANET_TEXTURES.venus,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#f5dca8",
+          outerColor: "#e6b86a",
+          terminatorColor: "#d97724",
+          colorMix: 0.65,
+          opacity: 0.42,
+          scale: 1.075,
+          power: 2.6
+        }
+      },
       bendingDimensions: {
         topHeight: 0.48,
         bottomDepth: 1.35,
@@ -118,7 +130,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#4c8fbe",
       textureUrl: PLANET_TEXTURES.earth,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#6ec1ff",
+          outerColor: "#2563eb",
+          terminatorColor: "#f97316",
+          colorMix: 0.55,
+          opacity: 0.52,
+          scale: 1.06,
+          power: 2.8
+        }
+      },
       bendingDimensions: {
         topHeight: 0.5,
         bottomDepth: 1.45,
@@ -150,8 +173,20 @@ export const PLANETS: BodyData[] = [
       radiusKm: 3389.5,
       colorFallback: "#c96f49",
       textureUrl: PLANET_TEXTURES.mars,
-      materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW,
+      normalUrl: PLANET_NORMAL_TEXTURES.mars,
+      materialPreset: { roughness: 0.88, metalness: 0, normalScale: 0.55 },
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#e88a68",
+          outerColor: "#93c5fd",
+          terminatorColor: "#c2410c",
+          colorMix: 0.35,
+          opacity: 0.24,
+          scale: 1.036,
+          power: 3.1
+        }
+      },
       bendingDimensions: {
         topHeight: 0.4,
         bottomDepth: 1.05,
@@ -184,7 +219,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d1b38d",
       textureUrl: PLANET_TEXTURES.jupiter,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#e8d2b0",
+          outerColor: "#93b8d8",
+          terminatorColor: "#b47b4e",
+          colorMix: 0.4,
+          opacity: 0.18,
+          scale: 1.03,
+          power: 3.4
+        }
+      },
       bendingDimensions: {
         topHeight: 1.15,
         bottomDepth: 3.4,
@@ -225,7 +271,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#d8c190",
       textureUrl: PLANET_TEXTURES.saturn,
       materialPreset: DEFAULT_MATERIAL,
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#ead9b0",
+          outerColor: "#8faec9",
+          terminatorColor: "#b58952",
+          colorMix: 0.35,
+          opacity: 0.16,
+          scale: 1.03,
+          power: 3.4
+        }
+      },
       bendingDimensions: {
         topHeight: 1.0,
         bottomDepth: 2.8,
@@ -269,7 +326,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#93c7db",
       textureUrl: PLANET_TEXTURES.uranus,
       materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.15 },
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#8be0f0",
+          outerColor: "#38bdf8",
+          terminatorColor: "#0284c7",
+          colorMix: 0.4,
+          opacity: 0.24,
+          scale: 1.038,
+          power: 3.0
+        }
+      },
       bendingDimensions: {
         topHeight: 0.75,
         bottomDepth: 2.0,
@@ -310,7 +378,18 @@ export const PLANETS: BodyData[] = [
       colorFallback: "#3f6fb3",
       textureUrl: PLANET_TEXTURES.neptune,
       materialPreset: { roughness: 0.55, metalness: 0.4, illuminationBoost: 0.18 },
-      glowPreset: PLANET_GLOW,
+      glowPreset: {
+        ...PLANET_GLOW,
+        rim: {
+          color: "#4f8cff",
+          outerColor: "#1d4ed8",
+          terminatorColor: "#312e81",
+          colorMix: 0.5,
+          opacity: 0.28,
+          scale: 1.04,
+          power: 3.0
+        }
+      },
       bendingDimensions: {
         topHeight: 0.72,
         bottomDepth: 1.95,
@@ -389,7 +468,8 @@ export const PLANETS: BodyData[] = [
       radiusKm: 473,
       colorFallback: "#8d8c89",
       textureUrl: PLANET_TEXTURES.ceres,
-      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.15 },
+      normalUrl: PLANET_NORMAL_TEXTURES.ceres,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.15, normalScale: 0.65 },
       glowPreset: DWARF_GLOW,
       bendingDimensions: {
         topHeight: 0.18,
@@ -422,7 +502,8 @@ export const PLANETS: BodyData[] = [
       radiusKm: 1188.3,
       colorFallback: "#b7a99a",
       textureUrl: PLANET_TEXTURES.pluto,
-      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
+      normalUrl: PLANET_NORMAL_TEXTURES.pluto,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22, normalScale: 0.52 },
       glowPreset: DWARF_GLOW,
       bendingDimensions: {
         topHeight: 0.2,
@@ -456,7 +537,8 @@ export const PLANETS: BodyData[] = [
       radiusKm: 606.0,
       colorFallback: "#a3a3a3",
       textureUrl: PLANET_TEXTURES.charon,
-      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22 },
+      normalUrl: PLANET_NORMAL_TEXTURES.charon,
+      materialPreset: { roughness: 0.85, metalness: 0, illuminationBoost: 0.22, normalScale: 0.6 },
       glowPreset: DWARF_GLOW,
       bendingDimensions: {
         topHeight: 0.15,

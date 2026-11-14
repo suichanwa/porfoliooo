@@ -112,7 +112,7 @@ export default function PlanetariumNavbar({
   return (
     <div
       ref={navRef}
-      className="pointer-events-none fixed bottom-2 sm:bottom-6 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center w-[calc(100vw-1.25rem)] sm:w-auto max-w-4xl pb-[env(safe-area-inset-bottom)]"
+      className="pointer-events-none fixed bottom-2 sm:bottom-4 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center w-[calc(100vw-1.25rem)] sm:w-auto max-w-[calc(100vw-2rem)] pb-[env(safe-area-inset-bottom)]"
     >
       {/* 1. POPUP DRAWER: Celestial Bodies Quick Strip */}
       {activeMenu === "planets" && (
@@ -399,16 +399,16 @@ export default function PlanetariumNavbar({
       {/* ============================================================ */}
       <nav
         aria-label="Planetarium desktop navigation"
-        className="pointer-events-auto hidden sm:flex items-center justify-between gap-1.5 sm:gap-2 rounded-full border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.42),rgba(20,28,40,0.28))] px-3.5 py-2 shadow-[0_10px_24px_-10px_rgba(99,102,241,0.45)] backdrop-blur-xl max-w-full overflow-x-auto"
+        className="pointer-events-auto hidden sm:flex items-center justify-between gap-1 sm:gap-1.5 rounded-full border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.42),rgba(20,28,40,0.28))] px-2.5 py-1.5 shadow-[0_10px_24px_-10px_rgba(99,102,241,0.45)] backdrop-blur-xl max-w-full overflow-x-auto"
       >
         {/* Return Home */}
         <a
           href="/"
-          className={`${navButtonBase} px-3 py-1.5`}
+          className={`${navButtonBase} px-2.5 py-1`}
           title="Return to Portfolio Homepage"
         >
           <Home className="h-3.5 w-3.5 text-slate-300" />
-          <span>Home</span>
+          <span className="hidden xl:inline">Home</span>
         </a>
 
         <div className="h-4 w-px bg-slate-700/50" />
@@ -419,7 +419,7 @@ export default function PlanetariumNavbar({
           onClick={() =>
             setActiveMenu((curr) => (curr === "planets" ? null : "planets"))
           }
-          className={`${navButtonBase} px-3 py-1.5 ${
+          className={`${navButtonBase} px-2.5 py-1 ${
             activeMenu === "planets" || selectedId ? navButtonActive : ""
           }`}
           title="Browse Celestial Bodies"
@@ -432,21 +432,21 @@ export default function PlanetariumNavbar({
         <button
           type="button"
           onClick={handleOverviewClick}
-          className={`${navButtonBase} px-2.5 py-1.5`}
+          className={`${navButtonBase} px-2.5 py-1`}
           title="Reset View to Solar System Overview"
         >
           <RotateCcw className="h-3.5 w-3.5 text-secondary-accent" />
-          <span className="hidden md:inline">Overview</span>
+          <span className="hidden xl:inline">Overview</span>
         </button>
 
         <div className="h-4 w-px bg-slate-700/50" />
 
         {/* Integrated Time Simulation Controls */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={onSlower}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
             aria-label="Slow down simulation"
             title="Slow down"
           >
@@ -456,7 +456,7 @@ export default function PlanetariumNavbar({
           <button
             type="button"
             onClick={onTogglePause}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-primary-accent/60 bg-primary-accent/25 text-white transition hover:border-primary-accent hover:bg-primary-accent/35 active:scale-95 shadow-[0_0_12px_rgba(99,102,241,0.45)]"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-primary-accent/60 bg-primary-accent/25 text-white transition hover:border-primary-accent hover:bg-primary-accent/35 active:scale-95 shadow-[0_0_12px_rgba(99,102,241,0.45)]"
             aria-label={isPaused ? "Resume simulation" : "Pause simulation"}
             title={isPaused ? "Resume" : "Pause"}
           >
@@ -470,7 +470,7 @@ export default function PlanetariumNavbar({
           <button
             type="button"
             onClick={onFaster}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] text-slate-300 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
             aria-label="Speed up simulation"
             title="Speed up"
           >
@@ -478,7 +478,7 @@ export default function PlanetariumNavbar({
           </button>
 
           {/* Date & Speed Display */}
-          <div className="mx-1.5 flex min-w-[7.5rem] flex-col overflow-hidden leading-none text-left">
+          <div className="mx-1 flex min-w-[6.25rem] flex-col overflow-hidden leading-none text-left">
             <span className="text-[11px] font-bold text-white tabular-nums tracking-tight">
               {dateParts ? dateParts.map((p) => p.value).join("") : "--"}
             </span>
@@ -490,7 +490,7 @@ export default function PlanetariumNavbar({
           <button
             type="button"
             onClick={onNow}
-            className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-200 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
+            className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-200 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
             title="Jump to current real-world date"
           >
             Now
@@ -505,13 +505,13 @@ export default function PlanetariumNavbar({
           onClick={() =>
             setActiveMenu((curr) => (curr === "layers" ? null : "layers"))
           }
-          className={`${navButtonBase} px-2.5 py-1.5 ${
+          className={`${navButtonBase} px-2.5 py-1 ${
             activeMenu === "layers" ? navButtonActive : ""
           }`}
           title="Toggle Visual Overlays"
         >
           <Layers className="h-3.5 w-3.5 text-secondary-accent" />
-          <span>Layers</span>
+          <span className="hidden xl:inline">Layers</span>
         </button>
 
         {/* Toggle Full Settings / Controls */}
@@ -519,11 +519,11 @@ export default function PlanetariumNavbar({
           <button
             type="button"
             onClick={onToggleControls}
-            className={`${navButtonBase} px-2.5 py-1.5`}
+            className={`${navButtonBase} px-2.5 py-1`}
             title="Configure Controls"
           >
             <Sliders className="h-3.5 w-3.5 text-primary-accent" />
-            <span className="hidden lg:inline">Settings</span>
+            <span className="hidden xl:inline">Settings</span>
           </button>
         )}
       </nav>

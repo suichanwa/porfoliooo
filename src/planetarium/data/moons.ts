@@ -1,5 +1,5 @@
 import type { BodyData, MaterialPreset } from "./types";
-import { PLANET_TEXTURES } from "./textures";
+import { PLANET_NORMAL_TEXTURES, PLANET_TEXTURES } from "./textures";
 
 const G = 6.6743e-11;
 const toMu = (massKg: number) => massKg * G;
@@ -25,7 +25,8 @@ export const MOONS: BodyData[] = [
       radiusKm: 1737.4,
       colorFallback: "#c2c2c2",
       textureUrl: PLANET_TEXTURES.moon,
-      materialPreset: DEFAULT_MATERIAL,
+      normalUrl: PLANET_NORMAL_TEXTURES.moon,
+      materialPreset: { roughness: 0.9, metalness: 0, normalScale: 0.65 },
       glowPreset: { color: "#d8d8d8", intensity: 0.08 },
       bendingDimensions: {
         topHeight: 0.22,
@@ -181,7 +182,8 @@ export const MOONS: BodyData[] = [
       radiusKm: 252.1,
       colorFallback: "#f8fafc",
       textureUrl: PLANET_TEXTURES.enceladus,
-      materialPreset: { roughness: 0.2, metalness: 0.05, illuminationBoost: 0.18 },
+      normalUrl: PLANET_NORMAL_TEXTURES.enceladus,
+      materialPreset: { roughness: 0.2, metalness: 0.05, illuminationBoost: 0.18, normalScale: 0.42 },
       glowPreset: { color: "#f8fafc", intensity: 0.14 }
     },
     orbit: {
@@ -217,8 +219,12 @@ export const MOONS: BodyData[] = [
         intensity: 0.15,
         rim: {
           color: "#f5a623",
+          outerColor: "#7ea8e0",
+          terminatorColor: "#d96324",
+          colorMix: 1.0,
           opacity: 0.48,
-          scale: 1.12
+          scale: 1.12,
+          power: 2.5
         }
       }
     },
