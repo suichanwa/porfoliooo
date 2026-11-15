@@ -235,14 +235,14 @@ export default function PlanetariumScene({
           debug={debugGravity}
         />
       )}
-      <ambientLight intensity={0.24} color="#1e293b" />
-      <hemisphereLight intensity={0.08} color="#263859" groundColor="#030712" />
+      <ambientLight intensity={0.09} color="#17233a" />
+      <hemisphereLight intensity={0.055} color="#28406b" groundColor="#03060f" />
       <pointLight
         position={[0, 0, 0]}
-        intensity={3.0}
+        intensity={2.9}
         distance={0}
         decay={0}
-        color="#fffaf0"
+        color="#fff5e1"
       />
       <Sun
         meshRef={sunRef}

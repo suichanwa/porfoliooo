@@ -1,14 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   CanvasTexture,
   Color,
   DataTexture,
   DoubleSide,
   LinearFilter,
-  MeshStandardMaterial,
   NoColorSpace,
   RGBAFormat,
-  RingGeometry
+  RingGeometry,
+  ShaderMaterial,
+  UnsignedByteType
 } from "three";
 import type { Texture } from "three";
 import { useTextureAsset } from "../../../planetarium/hooks/usePlanetTexture";
@@ -138,6 +139,20 @@ const createProceduralAlphaTexture = (seed: number, bandDensity: number) => {
   return texture;
 };
 
+let cachedRingFallback: DataTexture | null = null;
+function getRingFallbackTexture(): DataTexture {
+  if (cachedRingFallback) return cachedRingFallback;
+  cachedRingFallback = new DataTexture(
+    new Uint8Array([255, 255, 255, 255]),
+    1,
+    1,
+    RGBAFormat,
+    UnsignedByteType
+  );
+  cachedRingFallback.needsUpdate = true;
+  return cachedRingFallback;
+}
+
 export default function RingBand({
   innerRadius,
   outerRadius,
@@ -174,21 +189,95 @@ export default function RingBand({
 
   const material = useMemo(
     () =>
-      new MeshStandardMaterial({
-        color,
+      new ShaderMaterial({
+        uniforms: {
+          uAlphaMap: { value: alphaMap ?? getRingFallbackTexture() },
+          uHasAlpha: { value: alphaMap ? 1.0 : 0.0 },
+          uHasTexColor: { value: textureUrl ? 1.0 : 0.0 },
+          uColor: { value: new Color(color) },
+          uSunTint: { value: new Color("#ffefd6") },
+          uOpacity: { value: opacity }
+        },
+        vertexShader: /* glsl */ `
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+          varying vec3 vRadialWorld;
+          void main() {
+            vUv = uv;
+            vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+            vec3 localDir = vec3(position.x, 0.0, position.z);
+            float localLen = max(length(localDir), 0.0001);
+            vRadialWorld = normalize(mat3(modelMatrix) * (localDir / localLen));
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform sampler2D uAlphaMap;
+          uniform float uHasAlpha;
+          uniform float uHasTexColor;
+          uniform vec3 uColor;
+          uniform vec3 uSunTint;
+          uniform float uOpacity;
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+          varying vec3 vRadialWorld;
+
+          void main() {
+            vec4 tex = texture2D(uAlphaMap, vUv);
+            float alphaMask = uHasAlpha > 0.5
+              ? (uHasTexColor > 0.5 ? tex.a : tex.g)
+              : 0.72;
+            float finalAlpha = alphaMask * uOpacity;
+            if (finalAlpha < 0.025) discard;
+
+            // Subtle tonal band modulation from ring map without harsh shadow cutouts
+            vec3 bandTint = uHasTexColor > 0.5
+              ? mix(vec3(1.0), clamp(tex.rgb * 1.45, 0.45, 1.3), 0.42)
+              : vec3(1.0);
+
+            vec3 sunDir = normalize(-vWorldPos);
+            vec3 viewDir = normalize(cameraPosition - vWorldPos);
+            vec3 radialWorld = normalize(vRadialWorld);
+
+            // Smooth ice-particle solar phase scattering so rings glow warmly toward sunlight
+            float sunSide = 0.70 + 0.30 * (0.5 + 0.5 * dot(radialWorld, sunDir));
+            float icePhase = pow(0.5 + 0.5 * dot(viewDir, sunDir), 2.0) * 0.22;
+
+            vec3 litColor = uColor * bandTint * (sunSide + icePhase);
+            litColor = mix(litColor, litColor * uSunTint * 1.08, 0.45);
+
+            gl_FragColor = vec4(litColor, finalAlpha);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }
+        `,
         transparent: true,
-        opacity,
-        alphaMap: alphaMap ?? null,
-        alphaTest: 0.05,
         side: DoubleSide,
-        roughness: 0.9,
-        metalness: 0,
-        emissive: new Color(color),
-        emissiveIntensity: 0.08,
         depthWrite: false
       }),
-    [alphaMap, color, opacity]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
+
+  useEffect(() => {
+    material.uniforms.uAlphaMap.value = alphaMap ?? getRingFallbackTexture();
+    material.uniforms.uHasAlpha.value = alphaMap ? 1.0 : 0.0;
+    material.uniforms.uHasTexColor.value = textureUrl ? 1.0 : 0.0;
+    (material.uniforms.uColor.value as Color).set(color);
+    material.uniforms.uOpacity.value = opacity;
+  }, [alphaMap, color, material, opacity, textureUrl]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
 
   return (
     <mesh

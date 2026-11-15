@@ -1,4 +1,4 @@
-import { useMemo, useRef, type Ref } from "react";
+import { useEffect, useMemo, useRef, type Ref } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
   AdditiveBlending,
@@ -21,6 +21,10 @@ import { useTextureAsset } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
 import RingSystem from "../../components/Planetarium/rings/RingSystem";
 import { getPlutoCharonOrbitalPhase } from "../orbits/orbitMath";
+import {
+  applySolarShineShader,
+  createSolarShineUniforms
+} from "../shaders/solarShineShader";
 
 interface BodyMeshProps {
   data: BodyData;
@@ -181,8 +185,10 @@ export default function BodyMesh({
           float polarLat = abs(normalize(vObjPos).y);
           float polarFade = smoothstep(0.92, 0.72, polarLat);
 
-          vec3 color = uCloudColor * (litCloud * 0.95 + 0.05);
-          gl_FragColor = vec4(color, cloudDensity * 0.40 * litCloud * polarFade);
+          float twilight = exp(-pow((sunDot + 0.02) * 4.8, 2.0));
+          vec3 cloudTint = mix(uCloudColor, vec3(1.0, 0.78, 0.56), twilight * 0.36);
+          vec3 color = cloudTint * (litCloud * 0.95 + 0.05);
+          gl_FragColor = vec4(color, cloudDensity * 0.38 * litCloud * polarFade);
         }
       `,
       transparent: true,
@@ -273,9 +279,11 @@ export default function BodyMesh({
     });
   }, [isTitan]);
 
+  const solarUniforms = useMemo(() => createSolarShineUniforms(data), [data]);
+
   const material = useMemo(() => {
     const normalStrength = materialPreset.normalScale ?? 0.55;
-    return new MeshStandardMaterial({
+    const mat = new MeshStandardMaterial({
       map: baseMap ?? null,
       normalMap: normalMap ?? null,
       normalScale: new Vector2(normalStrength, normalStrength),
@@ -286,7 +294,21 @@ export default function BodyMesh({
       emissive: isEarth ? new Color("#000000") : new Color(glowPreset.color),
       emissiveIntensity: isEarth ? 0 : 0.005
     });
-  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap]);
+    applySolarShineShader(mat, solarUniforms);
+    return mat;
+  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap, solarUniforms]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;
