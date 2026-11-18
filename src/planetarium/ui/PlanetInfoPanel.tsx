@@ -5,19 +5,19 @@ import { PLANET_BY_ID } from "../data/planetRegistry";
 import { usePlanetSelection } from "../context/SelectionContext";
 import type { BodyData, BodyId } from "../data/types";
 
-interface RelatedBodyLinkProps {
+interface ParentOrbitPillProps {
   targetBody: BodyData;
   relationLabel: string;
   onSelect: (id: BodyId) => void;
   compact?: boolean;
 }
 
-function RelatedBodyLink({
+function ParentOrbitPill({
   targetBody,
   relationLabel,
   onSelect,
   compact = false
-}: RelatedBodyLinkProps) {
+}: ParentOrbitPillProps) {
   const accentColor = targetBody.render.colorFallback ?? "#5e9fff";
 
   return (
@@ -25,43 +25,99 @@ function RelatedBodyLink({
       type="button"
       onClick={() => onSelect(targetBody.id)}
       aria-label={`${relationLabel} ${targetBody.name} — focus ${targetBody.name}`}
-      title={`Jump to ${targetBody.name}`}
-      className={`group flex w-full items-center justify-between gap-2.5 rounded-xl border border-slate-700/50 bg-[rgba(var(--primary-bg-rgb),0.26)] text-left backdrop-blur-md transition-all duration-200 hover:border-primary-accent/55 hover:bg-[rgba(var(--primary-bg-rgb),0.46)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.35),0_0_16px_rgba(94,159,255,0.16)] active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 cursor-pointer ${
-        compact ? "px-2.5 py-1.5" : "px-3 py-2"
+      title={`Focus ${targetBody.name}`}
+      className={`group inline-flex items-center gap-1.5 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.26)] font-medium text-slate-300 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/55 hover:bg-[rgba(var(--primary-bg-rgb),0.48)] hover:text-white hover:shadow-[0_0_12px_rgba(94,159,255,0.18)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 cursor-pointer ${
+        compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-[10px]"
       }`}
     >
-      <span className="flex min-w-0 items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className={`relative flex flex-shrink-0 items-center justify-center rounded-full border border-dashed border-slate-400/40 bg-white/[0.03] transition-transform duration-300 group-hover:rotate-45 group-hover:border-slate-200/60 ${
-            compact ? "h-5 w-5" : "h-6 w-6"
-          }`}
-        >
-          <span
-            className={`rounded-full transition-transform duration-200 group-hover:scale-110 ${
-              compact ? "h-2 w-2" : "h-2.5 w-2.5"
-            }`}
-            style={{
-              backgroundColor: accentColor,
-              boxShadow: `0 0 10px ${accentColor}`
-            }}
-          />
-        </span>
-        <span
-          className={`truncate font-medium text-slate-300 transition-colors group-hover:text-slate-100 ${
-            compact ? "text-[11px]" : "text-xs"
-          }`}
-        >
-          {relationLabel}{" "}
-          <span className="font-semibold text-white">{targetBody.name}</span>
-        </span>
+      <span
+        aria-hidden="true"
+        className="h-2 w-2 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+        style={{
+          backgroundColor: accentColor,
+          boxShadow: `0 0 8px ${accentColor}`
+        }}
+      />
+      <span>
+        {relationLabel}{" "}
+        <span className="font-semibold text-white">{targetBody.name}</span>
       </span>
-
-      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-slate-300 transition-all duration-200 group-hover:border-primary-accent/45 group-hover:bg-primary-accent/15 group-hover:text-white">
-        <span>View</span>
-        <ArrowRight className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-      </span>
+      <ArrowRight className="h-2.5 w-2.5 text-primary-accent transition-transform duration-200 group-hover:translate-x-0.5" />
     </button>
+  );
+}
+
+interface StatTileProps {
+  label: string;
+  value: React.ReactNode;
+  compact?: boolean;
+  centered?: boolean;
+  className?: string;
+}
+
+function StatTile({
+  label,
+  value,
+  compact = false,
+  centered = false,
+  className = ""
+}: StatTileProps) {
+  return (
+    <div
+      className={`rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)] ${
+        compact ? "px-2 py-1.5" : "p-2.5"
+      } ${centered ? "text-center" : ""} ${className}`}
+    >
+      <div
+        className={`font-semibold uppercase text-slate-400 ${
+          compact ? "text-[9px] tracking-wider" : "text-[10px] tracking-[0.15em]"
+        }`}
+      >
+        {label}
+      </div>
+      <div
+        className={`font-semibold text-white ${
+          compact
+            ? "mt-0.5 text-xs font-bold tabular-nums truncate"
+            : "mt-0.5 text-sm"
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function BodyHighlights({
+  facts,
+  compact = false
+}: {
+  facts: string[];
+  compact?: boolean;
+}) {
+  if (facts.length === 0) return null;
+  return (
+    <div className={compact ? "flex flex-col gap-1.5" : "mt-3"}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary-accent">
+        {compact ? "Key Highlights" : "Highlights"}
+      </div>
+      <ul
+        className={`${compact ? "space-y-1.5 text-[11px]" : "mt-1.5 space-y-1.5 text-xs"} text-slate-300`}
+      >
+        {facts.map((fact) => (
+          <li
+            key={fact}
+            className={`border-l-2 pl-2.5 ${
+              compact
+                ? "border-primary-accent/60 leading-relaxed"
+                : "border-primary-accent/50 leading-snug"
+            }`}
+          >
+            {fact}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -213,6 +269,25 @@ export default function PlanetInfoPanel() {
 
   const isMoon = Boolean(planet.parentId && planet.parentId !== "sun");
   const parentPlanet = isMoon && planet.parentId ? PLANET_BY_ID[planet.parentId] ?? null : null;
+  const relatedLink =
+    planet.id === "pluto" && PLANET_BY_ID.charon
+      ? { targetBody: PLANET_BY_ID.charon, relationLabel: "Binary Companion" }
+      : isMoon && parentPlanet
+        ? {
+            targetBody: parentPlanet,
+            relationLabel: planet.id === "charon" ? "Orbiting Binary" : "Orbiting"
+          }
+        : null;
+  const categoryLabel =
+    planet.kind === "dwarf"
+      ? "Dwarf planet details"
+      : isMoon
+        ? "Moon details"
+        : "Planet details";
+  const radiusValue = `${formatNumber(planet.render.radiusKm)} km`;
+  const periodDays = planet.orbit ? Math.round(planet.orbit.orbitalPeriodDays) : null;
+  const tiltValue = `${planet.rotation.axialTiltDeg.toFixed(1)}\u00B0`;
+  const massValue = formatMass(planet.massKg);
 
   return (
     <>
@@ -296,53 +371,33 @@ export default function PlanetInfoPanel() {
                 </div>
               </div>
 
-              {/* Parent Planet / Binary Companion Quick Navigation */}
-              {planet.id === "pluto" && PLANET_BY_ID.charon ? (
-                <div className="mt-2">
-                  <RelatedBodyLink
-                    targetBody={PLANET_BY_ID.charon}
-                    relationLabel="Binary Companion"
+              {/* Parent Planet / Binary Companion Quick Navigation (inline header pill) */}
+              {relatedLink && (
+                <div className="mt-1.5 flex items-center">
+                  <ParentOrbitPill
+                    targetBody={relatedLink.targetBody}
+                    relationLabel={relatedLink.relationLabel}
                     onSelect={selectPlanet}
                     compact
                   />
                 </div>
-              ) : isMoon && parentPlanet ? (
-                <div className="mt-2">
-                  <RelatedBodyLink
-                    targetBody={parentPlanet}
-                    relationLabel={planet.id === "charon" ? "Orbiting Binary" : "Orbiting"}
-                    onSelect={selectPlanet}
-                    compact
-                  />
-                </div>
-              ) : null}
+              )}
 
-              {/* Compact Quick Stats (Visible in both peek and expanded) */}
+              {/* Compact Quick Stats (Shared tiles across planets & moons) */}
               <div className="grid grid-cols-3 gap-1.5 mt-2">
-                <div className="rounded-xl border border-slate-700/40 bg-white/[0.03] px-2 py-1.5 text-center">
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                    {isMoon ? "Orbit" : "Distance"}
-                  </div>
-                  <div className="text-xs font-bold text-white tabular-nums truncate">
-                    {distanceText}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-700/40 bg-white/[0.03] px-2 py-1.5 text-center">
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                    Radius
-                  </div>
-                  <div className="text-xs font-bold text-white tabular-nums truncate">
-                    {formatNumber(planet.render.radiusKm)} km
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-700/40 bg-white/[0.03] px-2 py-1.5 text-center">
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                    Period
-                  </div>
-                  <div className="text-xs font-bold text-white tabular-nums truncate">
-                    {planet.orbit ? `${Math.round(planet.orbit.orbitalPeriodDays)}d` : "-"}
-                  </div>
-                </div>
+                <StatTile
+                  label={isMoon ? "Orbit" : "Distance"}
+                  value={distanceText}
+                  compact
+                  centered
+                />
+                <StatTile label="Radius" value={radiusValue} compact centered />
+                <StatTile
+                  label="Period"
+                  value={periodDays !== null ? `${periodDays}d` : "-"}
+                  compact
+                  centered
+                />
               </div>
 
               {/* Collapsed Peek Summary Teaser */}
@@ -361,44 +416,12 @@ export default function PlanetInfoPanel() {
                     </p>
                   )}
 
-                  {/* Additional Stats: Tilt and Mass */}
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="rounded-xl border border-slate-700/40 bg-white/[0.03] p-2.5">
-                      <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                        Axial Tilt
-                      </div>
-                      <div className="mt-0.5 text-xs font-bold text-white">
-                        {planet.rotation.axialTiltDeg.toFixed(1)}&deg;
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-slate-700/40 bg-white/[0.03] p-2.5">
-                      <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                        Mass
-                      </div>
-                      <div className="mt-0.5 text-xs font-bold text-white">
-                        {formatMass(planet.massKg)}
-                      </div>
-                    </div>
+                    <StatTile label="Axial Tilt" value={tiltValue} />
+                    <StatTile label="Mass" value={massValue} />
                   </div>
 
-                  {/* Highlights Bullet List */}
-                  {info && info.facts.length > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary-accent">
-                        Key Highlights
-                      </div>
-                      <ul className="space-y-1.5 text-[11px] text-slate-300">
-                        {info.facts.map((fact) => (
-                          <li
-                            key={fact}
-                            className="border-l-2 border-primary-accent/60 pl-2.5 leading-relaxed"
-                          >
-                            {fact}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {info && <BodyHighlights facts={info.facts} compact />}
 
                   <button
                     type="button"
@@ -435,9 +458,18 @@ export default function PlanetInfoPanel() {
         >
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
-                {planet.kind === "dwarf" ? "Dwarf planet details" : isMoon ? "Moon details" : "Planet details"}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
+                  {categoryLabel}
+                </span>
+                {relatedLink && (
+                  <ParentOrbitPill
+                    targetBody={relatedLink.targetBody}
+                    relationLabel={relatedLink.relationLabel}
+                    onSelect={selectPlanet}
+                  />
+                )}
+              </div>
               <div className="mt-1 text-lg font-bold text-white tracking-wide">
                 {planet.name}
               </div>
@@ -467,81 +499,18 @@ export default function PlanetInfoPanel() {
             </div>
           </div>
 
-          {planet.id === "pluto" && PLANET_BY_ID.charon ? (
-            <div className="mt-3">
-              <RelatedBodyLink
-                targetBody={PLANET_BY_ID.charon}
-                relationLabel="Binary Companion"
-                onSelect={selectPlanet}
-              />
-            </div>
-          ) : isMoon && parentPlanet ? (
-            <div className="mt-3">
-              <RelatedBodyLink
-                targetBody={parentPlanet}
-                relationLabel={planet.id === "charon" ? "Orbiting Binary" : "Orbiting"}
-                onSelect={selectPlanet}
-              />
-            </div>
-          ) : null}
-
           <div className="mt-3 grid grid-cols-2 gap-2.5 text-[11px]">
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                {isMoon ? "Orbit Radius" : "Distance"}
-              </div>
-              <div className="mt-0.5 text-sm font-semibold text-white">
-                {distanceText}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                Radius
-              </div>
-              <div className="mt-0.5 text-sm font-semibold text-white">
-                {formatNumber(planet.render.radiusKm)} km
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                Period
-              </div>
-              <div className="mt-0.5 text-sm font-semibold text-white">
-                {planet.orbit ? `${Math.round(planet.orbit.orbitalPeriodDays)} days` : "-"}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                Tilt
-              </div>
-              <div className="mt-0.5 text-sm font-semibold text-white">
-                {planet.rotation.axialTiltDeg.toFixed(1)}&deg;
-              </div>
-            </div>
-            <div className="col-span-2 rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
-                Mass
-              </div>
-              <div className="mt-0.5 text-sm font-semibold text-white">
-                {formatMass(planet.massKg)}
-              </div>
-            </div>
+            <StatTile label={isMoon ? "Orbit Radius" : "Distance"} value={distanceText} />
+            <StatTile label="Radius" value={radiusValue} />
+            <StatTile
+              label="Period"
+              value={periodDays !== null ? `${periodDays} days` : "-"}
+            />
+            <StatTile label="Tilt" value={tiltValue} />
+            <StatTile label="Mass" value={massValue} className="col-span-2" />
           </div>
 
-          {info && info.facts.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary-accent">
-                Highlights
-              </div>
-              <ul className="mt-1.5 space-y-1.5 text-xs text-slate-300">
-                {info.facts.map((fact) => (
-                  <li key={fact} className="border-l-2 border-primary-accent/50 pl-2.5 leading-snug">
-                    {fact}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {info && <BodyHighlights facts={info.facts} />}
         </div>
       </div>
 

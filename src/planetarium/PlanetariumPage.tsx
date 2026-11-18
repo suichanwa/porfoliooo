@@ -209,18 +209,19 @@ function PlanetariumView() {
         onNow={handleNow}
         simDateMs={simDateMs}
         onToggleControls={() => setControlsOpen((prev) => !prev)}
+        isControlsOpen={controlsOpen}
         gravitySettings={gravitySettings}
         onGravityChange={setGravitySettings}
       />
 
-      <div className="pointer-events-none fixed bottom-4 right-3 sm:right-4 z-20 hidden sm:flex w-auto justify-end">
+      <div className="pointer-events-none fixed bottom-4 right-4 z-20 hidden xl:flex w-auto justify-end">
         <GravityPanel
           settings={gravitySettings}
           onChange={setGravitySettings}
         />
       </div>
 
-      <div className="pointer-events-none fixed bottom-4 left-4 z-20 hidden lg:flex flex-col gap-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40 max-w-[14rem]">
+      <div className="pointer-events-none fixed bottom-4 left-4 z-20 hidden xl:flex flex-col gap-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40 max-w-[14rem]">
         <div className="truncate">
           {settings.distanceScaleMode} scale - 1 AU ~{" "}
           {computeRenderOrbitRadius(
