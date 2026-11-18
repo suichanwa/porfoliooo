@@ -5,6 +5,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import UniverseBackground from "./UniverseBackground";
 import CameraRig from "./CameraRig";
 import Sun from "./bodies/Sun";
+import MoonGlints from "./bodies/MoonGlints";
 import OrbitingPlanet from "./orbits/OrbitingPlanet";
 import OrbitPath from "./orbits/OrbitPath";
 import PlutoBarycenterVisuals from "./orbits/PlutoBarycenterVisuals";
@@ -298,6 +299,13 @@ export default function PlanetariumScene({
           moonSystemVisRef={moonSystemVisRef}
         />
       ))}
+      <MoonGlints
+        planetRefs={planetRefs}
+        moonSystemVisRef={moonSystemVisRef}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        prefersReducedMotion={prefersReducedMotion}
+      />
       <CameraRig
         controlsRef={controlsRef}
         isInspecting={Boolean(selectedId)}
