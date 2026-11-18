@@ -238,12 +238,43 @@ export const MOONS: BodyData[] = [
     }
   },
   {
+    id: "ariel",
+    name: "Ariel",
+    kind: "moon",
+    parentId: "uranus",
+    moonIndex: 0,
+    totalSiblingMoons: 3,
+    massKg: 1.251e21,
+    mu: toMu(1.251e21),
+    rotation: {
+      axialTiltDeg: 0,
+      rotationPeriodHours: 60.49,
+      tidallyLocked: true
+    },
+    render: {
+      radiusKm: 578.9,
+      colorFallback: "#cdd2d8",
+      textureUrl: PLANET_TEXTURES.ariel,
+      normalUrl: PLANET_NORMAL_TEXTURES.ariel,
+      materialPreset: { roughness: 0.56, metalness: 0.04, illuminationBoost: 0.16, normalScale: 0.55 },
+      glowPreset: { color: "#cdd2d8", intensity: 0.09 }
+    },
+    orbit: {
+      semiMajorAxisKm: 191020,
+      eccentricity: 0.0012,
+      inclinationDeg: 0.26,
+      orbitalPeriodDays: 2.520,
+      meanLongitudeAtEpochDeg: 142.0,
+      longitudeOfPerihelionDeg: 115.0
+    }
+  },
+  {
     id: "titania",
     name: "Titania",
     kind: "moon",
     parentId: "uranus",
-    moonIndex: 0,
-    totalSiblingMoons: 2,
+    moonIndex: 1,
+    totalSiblingMoons: 3,
     massKg: 3.4e21,
     mu: toMu(3.4e21),
     rotation: {
@@ -253,10 +284,11 @@ export const MOONS: BodyData[] = [
     },
     render: {
       radiusKm: 788.4,
-      colorFallback: "#cbd5e1",
-      textureUrl: null,
-      materialPreset: { roughness: 0.7, metalness: 0, illuminationBoost: 0.08 },
-      glowPreset: { color: "#cbd5e1", intensity: 0.08 }
+      colorFallback: "#b7b2ae",
+      textureUrl: PLANET_TEXTURES.titania,
+      normalUrl: PLANET_NORMAL_TEXTURES.titania,
+      materialPreset: { roughness: 0.78, metalness: 0.02, illuminationBoost: 0.12, normalScale: 0.62 },
+      glowPreset: { color: "#b7b2ae", intensity: 0.08 }
     },
     orbit: {
       semiMajorAxisKm: 435910,
@@ -272,8 +304,8 @@ export const MOONS: BodyData[] = [
     name: "Oberon",
     kind: "moon",
     parentId: "uranus",
-    moonIndex: 1,
-    totalSiblingMoons: 2,
+    moonIndex: 2,
+    totalSiblingMoons: 3,
     massKg: 3.014e21,
     mu: toMu(3.014e21),
     rotation: {
@@ -283,10 +315,11 @@ export const MOONS: BodyData[] = [
     },
     render: {
       radiusKm: 761.4,
-      colorFallback: "#94a3b8",
-      textureUrl: null,
-      materialPreset: { roughness: 0.8, metalness: 0, illuminationBoost: 0.06 },
-      glowPreset: { color: "#94a3b8", intensity: 0.07 }
+      colorFallback: "#9e948c",
+      textureUrl: PLANET_TEXTURES.oberon,
+      normalUrl: PLANET_NORMAL_TEXTURES.oberon,
+      materialPreset: { roughness: 0.82, metalness: 0.0, illuminationBoost: 0.12, normalScale: 0.65 },
+      glowPreset: { color: "#9e948c", intensity: 0.07 }
     },
     orbit: {
       semiMajorAxisKm: 583520,
@@ -313,10 +346,23 @@ export const MOONS: BodyData[] = [
     },
     render: {
       radiusKm: 1353.4,
-      colorFallback: "#e2e8f0",
-      textureUrl: null,
-      materialPreset: { roughness: 0.4, metalness: 0.1, illuminationBoost: 0.14 },
-      glowPreset: { color: "#e2e8f0", intensity: 0.1 }
+      colorFallback: "#d8cec6",
+      textureUrl: PLANET_TEXTURES.triton,
+      normalUrl: PLANET_NORMAL_TEXTURES.triton,
+      materialPreset: { roughness: 0.62, metalness: 0.04, illuminationBoost: 0.14, normalScale: 0.55 },
+      glowPreset: {
+        color: "#d8cec6",
+        intensity: 0.1,
+        rim: {
+          color: "#cfe4f5",
+          outerColor: "#7ea8d8",
+          terminatorColor: "#b89b8c",
+          colorMix: 0.4,
+          opacity: 0.16,
+          scale: 1.03,
+          power: 3.4
+        }
+      }
     },
     orbit: {
       semiMajorAxisKm: 354759,

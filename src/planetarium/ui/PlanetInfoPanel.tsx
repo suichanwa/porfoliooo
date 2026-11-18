@@ -1,8 +1,69 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, ChevronDown, ChevronUp, Globe, GripVertical, Maximize2, Minimize2, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, GripVertical, Maximize2, Minimize2, X } from "lucide-react";
 import { kmToAu } from "../utils/units";
 import { PLANET_BY_ID } from "../data/planetRegistry";
 import { usePlanetSelection } from "../context/SelectionContext";
+import type { BodyData, BodyId } from "../data/types";
+
+interface RelatedBodyLinkProps {
+  targetBody: BodyData;
+  relationLabel: string;
+  onSelect: (id: BodyId) => void;
+  compact?: boolean;
+}
+
+function RelatedBodyLink({
+  targetBody,
+  relationLabel,
+  onSelect,
+  compact = false
+}: RelatedBodyLinkProps) {
+  const accentColor = targetBody.render.colorFallback ?? "#5e9fff";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(targetBody.id)}
+      aria-label={`${relationLabel} ${targetBody.name} — focus ${targetBody.name}`}
+      title={`Jump to ${targetBody.name}`}
+      className={`group flex w-full items-center justify-between gap-2.5 rounded-xl border border-slate-700/50 bg-[rgba(var(--primary-bg-rgb),0.26)] text-left backdrop-blur-md transition-all duration-200 hover:border-primary-accent/55 hover:bg-[rgba(var(--primary-bg-rgb),0.46)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.35),0_0_16px_rgba(94,159,255,0.16)] active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 cursor-pointer ${
+        compact ? "px-2.5 py-1.5" : "px-3 py-2"
+      }`}
+    >
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className={`relative flex flex-shrink-0 items-center justify-center rounded-full border border-dashed border-slate-400/40 bg-white/[0.03] transition-transform duration-300 group-hover:rotate-45 group-hover:border-slate-200/60 ${
+            compact ? "h-5 w-5" : "h-6 w-6"
+          }`}
+        >
+          <span
+            className={`rounded-full transition-transform duration-200 group-hover:scale-110 ${
+              compact ? "h-2 w-2" : "h-2.5 w-2.5"
+            }`}
+            style={{
+              backgroundColor: accentColor,
+              boxShadow: `0 0 10px ${accentColor}`
+            }}
+          />
+        </span>
+        <span
+          className={`truncate font-medium text-slate-300 transition-colors group-hover:text-slate-100 ${
+            compact ? "text-[11px]" : "text-xs"
+          }`}
+        >
+          {relationLabel}{" "}
+          <span className="font-semibold text-white">{targetBody.name}</span>
+        </span>
+      </span>
+
+      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-slate-300 transition-all duration-200 group-hover:border-primary-accent/45 group-hover:bg-primary-accent/15 group-hover:text-white">
+        <span>View</span>
+        <ArrowRight className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+      </span>
+    </button>
+  );
+}
 
 const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-US").format(Math.round(value));
@@ -235,37 +296,26 @@ export default function PlanetInfoPanel() {
                 </div>
               </div>
 
-              {/* Binary Dwarf Companion Link Pill (Pluto <-> Charon) */}
-              {(planet.id === "pluto" || planet.id === "charon") && (
-                <div className="mt-1 flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => selectPlanet(planet.id === "pluto" ? "charon" : "pluto")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-200 transition-colors hover:border-purple-400 hover:bg-purple-500/20 hover:text-white active:scale-95 cursor-pointer"
-                    title={`Focus binary companion ${planet.id === "pluto" ? "Charon" : "Pluto"}`}
-                  >
-                    <Globe className="h-3 w-3 text-purple-400" />
-                    <span>Binary Companion: {planet.id === "pluto" ? "Charon" : "Pluto"}</span>
-                    <ArrowRight className="h-3 w-3 text-purple-400" />
-                  </button>
+              {/* Parent Planet / Binary Companion Quick Navigation */}
+              {planet.id === "pluto" && PLANET_BY_ID.charon ? (
+                <div className="mt-2">
+                  <RelatedBodyLink
+                    targetBody={PLANET_BY_ID.charon}
+                    relationLabel="Binary Companion"
+                    onSelect={selectPlanet}
+                    compact
+                  />
                 </div>
-              )}
-
-              {/* Moon Parent Link Pill */}
-              {isMoon && parentPlanet && (
-                <div className="mt-1 flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => selectPlanet(parentPlanet.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-200 transition-colors hover:border-sky-400 hover:bg-sky-500/20 hover:text-white active:scale-95 cursor-pointer"
-                    title={`Focus parent planet ${parentPlanet.name}`}
-                  >
-                    <Globe className="h-3 w-3 text-sky-400" />
-                    <span>Orbiting {parentPlanet.name}</span>
-                    <ArrowRight className="h-3 w-3 text-sky-400" />
-                  </button>
+              ) : isMoon && parentPlanet ? (
+                <div className="mt-2">
+                  <RelatedBodyLink
+                    targetBody={parentPlanet}
+                    relationLabel={planet.id === "charon" ? "Orbiting Binary" : "Orbiting"}
+                    onSelect={selectPlanet}
+                    compact
+                  />
                 </div>
-              )}
+              ) : null}
 
               {/* Compact Quick Stats (Visible in both peek and expanded) */}
               <div className="grid grid-cols-3 gap-1.5 mt-2">
@@ -385,35 +435,9 @@ export default function PlanetInfoPanel() {
         >
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
-                  {planet.kind === "dwarf" ? "Dwarf planet details" : isMoon ? "Moon details" : "Planet details"}
-                </span>
-                {(planet.id === "pluto" || planet.id === "charon") && (
-                  <button
-                    type="button"
-                    onClick={() => selectPlanet(planet.id === "pluto" ? "charon" : "pluto")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[9px] font-medium text-purple-200 transition-colors hover:border-purple-400 hover:bg-purple-500/20 hover:text-white active:scale-95 cursor-pointer"
-                    title={`Focus binary companion ${planet.id === "pluto" ? "Charon" : "Pluto"}`}
-                  >
-                    <Globe className="h-2.5 w-2.5 text-purple-400" />
-                    <span>Binary Companion: {planet.id === "pluto" ? "Charon" : "Pluto"}</span>
-                    <ArrowRight className="h-2.5 w-2.5 text-purple-400" />
-                  </button>
-                )}
-                {isMoon && parentPlanet && (
-                  <button
-                    type="button"
-                    onClick={() => selectPlanet(parentPlanet.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[9px] font-medium text-sky-200 transition-colors hover:border-sky-400 hover:bg-sky-500/20 hover:text-white active:scale-95 cursor-pointer"
-                    title={`Focus parent planet ${parentPlanet.name}`}
-                  >
-                    <Globe className="h-2.5 w-2.5 text-sky-400" />
-                    <span>Orbiting {parentPlanet.name}</span>
-                    <ArrowRight className="h-2.5 w-2.5 text-sky-400" />
-                  </button>
-                )}
-              </div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-accent">
+                {planet.kind === "dwarf" ? "Dwarf planet details" : isMoon ? "Moon details" : "Planet details"}
+              </span>
               <div className="mt-1 text-lg font-bold text-white tracking-wide">
                 {planet.name}
               </div>
@@ -440,6 +464,24 @@ export default function PlanetInfoPanel() {
               </button>
             </div>
           </div>
+
+          {planet.id === "pluto" && PLANET_BY_ID.charon ? (
+            <div className="mt-3">
+              <RelatedBodyLink
+                targetBody={PLANET_BY_ID.charon}
+                relationLabel="Binary Companion"
+                onSelect={selectPlanet}
+              />
+            </div>
+          ) : isMoon && parentPlanet ? (
+            <div className="mt-3">
+              <RelatedBodyLink
+                targetBody={parentPlanet}
+                relationLabel={planet.id === "charon" ? "Orbiting Binary" : "Orbiting"}
+                onSelect={selectPlanet}
+              />
+            </div>
+          ) : null}
 
           <div className="mt-3 grid grid-cols-2 gap-2.5 text-[11px]">
             <div className="rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] p-2.5 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)]">

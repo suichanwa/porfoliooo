@@ -126,6 +126,14 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Has faint rings and icy moons."
     ]
   },
+  ariel: {
+    summary: "The brightest and geologically youngest large moon of Uranus, scored by sweeping canyon valleys.",
+    facts: [
+      "Surface is crisscrossed by vast, flat-floored rift grabens like Kachina Chasmata.",
+      "Bright water-ice plains reveal past cryovolcanic resurfacing.",
+      "Orbits inside Uranus's tilted equatorial plane every 2.5 days."
+    ]
+  },
   titania: {
     summary: "The largest moon of Uranus, marked by prominent rift canyons and impact craters.",
     facts: [

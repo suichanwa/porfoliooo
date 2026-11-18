@@ -14,6 +14,7 @@ export type BodyId =
   | "enceladus"
   | "titan"
   | "uranus"
+  | "ariel"
   | "titania"
   | "oberon"
   | "neptune"

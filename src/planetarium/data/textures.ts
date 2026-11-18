@@ -19,6 +19,10 @@ import moonTexture from "../../assets/planetarium/2k_moon.webp";
 import enceladusTexture from "../../assets/planetarium/2k_enceladus.webp";
 import titanTexture from "../../assets/planetarium/2k_titan.webp";
 import charonTexture from "../../assets/planetarium/2k_charon.webp";
+import tritonTexture from "../../assets/planetarium/2k_triton.webp";
+import titaniaTexture from "../../assets/planetarium/2k_titania.webp";
+import oberonTexture from "../../assets/planetarium/2k_oberon.webp";
+import arielTexture from "../../assets/planetarium/2k_ariel.webp";
 
 import mercuryNormalTexture from "../../assets/planetarium/1k_mercury_normal.webp";
 import moonNormalTexture from "../../assets/planetarium/1k_moon_normal.webp";
@@ -27,6 +31,10 @@ import ceresNormalTexture from "../../assets/planetarium/1k_ceres_normal.webp";
 import plutoNormalTexture from "../../assets/planetarium/1k_pluto_normal.webp";
 import charonNormalTexture from "../../assets/planetarium/1k_charon_normal.webp";
 import enceladusNormalTexture from "../../assets/planetarium/1k_enceladus_normal.webp";
+import tritonNormalTexture from "../../assets/planetarium/1k_triton_normal.webp";
+import titaniaNormalTexture from "../../assets/planetarium/1k_titania_normal.webp";
+import oberonNormalTexture from "../../assets/planetarium/1k_oberon_normal.webp";
+import arielNormalTexture from "../../assets/planetarium/1k_ariel_normal.webp";
 
 type TextureAsset = string | { src: string };
 
@@ -51,10 +59,11 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   enceladus: toUrl(enceladusTexture),
   titan: toUrl(titanTexture),
   uranus: toUrl(uranusTexture),
-  titania: null,
-  oberon: null,
+  ariel: toUrl(arielTexture),
+  titania: toUrl(titaniaTexture),
+  oberon: toUrl(oberonTexture),
   neptune: toUrl(neptuneTexture),
-  triton: null,
+  triton: toUrl(tritonTexture),
   ceres: toUrl(ceresTexture),
   pluto: toUrl(plutoTexture),
   charon: toUrl(charonTexture),
@@ -66,6 +75,10 @@ export const PLANET_NORMAL_TEXTURES: Partial<Record<BodyId, string | null>> = {
   moon: toUrl(moonNormalTexture),
   mars: toUrl(marsNormalTexture),
   enceladus: toUrl(enceladusNormalTexture),
+  ariel: toUrl(arielNormalTexture),
+  titania: toUrl(titaniaNormalTexture),
+  oberon: toUrl(oberonNormalTexture),
+  triton: toUrl(tritonNormalTexture),
   ceres: toUrl(ceresNormalTexture),
   pluto: toUrl(plutoNormalTexture),
   charon: toUrl(charonNormalTexture)
