@@ -37,6 +37,7 @@ interface PlanetariumSceneProps {
   activeSystemId?: BodyId | null;
   isInfoVisible?: boolean;
   resetSignal: number;
+  zoomOutSignal?: number;
   onSelect: (id: BodyId | null) => void;
   isLowEnd?: boolean;
   prefersReducedMotion?: boolean;
@@ -64,6 +65,7 @@ export default function PlanetariumScene({
   activeSystemId,
   isInfoVisible = false,
   resetSignal,
+  zoomOutSignal = 0,
   onSelect,
   isLowEnd = false,
   prefersReducedMotion = false,
@@ -192,6 +194,7 @@ export default function PlanetariumScene({
   useFocusTarget({
     selectedId,
     resetSignal,
+    zoomOutSignal,
     controlsRef,
     planetRefs,
     planetData: PLANET_BY_ID,

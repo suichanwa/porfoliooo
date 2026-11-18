@@ -23,6 +23,7 @@ interface SelectionContextValue {
   infoHidden: boolean;
   isInfoVisible: boolean;
   resetSignal: number;
+  zoomOutSignal: number;
   pickerOpen: boolean;
   pickerQuery: string;
   filteredPlanets: BodyData[];
@@ -44,6 +45,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const [isFocused, setIsFocused] = useState(false);
   const [infoHidden, setInfoHidden] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  const [zoomOutSignal, setZoomOutSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
 
@@ -111,7 +113,8 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
 
   const closeInfo = useCallback(() => {
     clearSelection();
-    setResetSignal((prev) => prev + 1);
+    setInfoHidden(false);
+    setZoomOutSignal((prev) => prev + 1);
   }, [clearSelection]);
 
   const togglePicker = useCallback(() => {
@@ -132,6 +135,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       infoHidden,
       isInfoVisible,
       resetSignal,
+      zoomOutSignal,
       pickerOpen,
       pickerQuery,
       filteredPlanets,
@@ -154,6 +158,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       infoHidden,
       isInfoVisible,
       resetSignal,
+      zoomOutSignal,
       pickerOpen,
       pickerQuery,
       filteredPlanets,

@@ -288,8 +288,8 @@ export default function PlanetInfoPanel() {
                     type="button"
                     onClick={closeInfo}
                     className="rounded-full border border-slate-700/60 bg-white/[0.05] p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.1] active:scale-95 transition"
-                    title="Deselect and reset view"
-                    aria-label="Deselect and reset view"
+                    title="Close details and zoom out"
+                    aria-label="Close details and zoom out"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -458,6 +458,8 @@ export default function PlanetInfoPanel() {
               <button
                 type="button"
                 onClick={closeInfo}
+                title="Close details and zoom out"
+                aria-label="Close details and zoom out"
                 className="rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.22)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-300 transition-all duration-200 hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.42)] hover:text-white active:scale-95"
               >
                 Close

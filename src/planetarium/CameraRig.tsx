@@ -24,8 +24,8 @@ const KEYBOARD_CONTROL_KEYS = new Set([
 
 export default function CameraRig({
   controlsRef,
-  minDistance = 8,
-  maxDistance = 140,
+  minDistance = 0.5,
+  maxDistance = 180,
   isInspecting = false,
   onZoomOut
 }: CameraRigProps) {

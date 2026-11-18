@@ -9,10 +9,35 @@ import { getPlutoBarycenterPosition, R_CHARON_BARYCENTER } from "../orbits/orbit
 
 const DEFAULT_TARGET = new Vector3(0, 0, 0);
 const DEFAULT_POSITION = new Vector3(0, 0, 28);
+const FREE_FLY_MIN_DISTANCE = 0.5;
+const FREE_FLY_MAX_DISTANCE = 180;
+
+function syncCameraFrustum(
+  camera: OrbitControlsImpl["object"],
+  nearRef: React.MutableRefObject<number | null>,
+  farRef: React.MutableRefObject<number | null>,
+  nextNear: number,
+  nextFar: number
+) {
+  const EPS = 1e-9;
+  if (
+    nearRef.current === null ||
+    Math.abs(nearRef.current - nextNear) > EPS ||
+    farRef.current === null ||
+    Math.abs(farRef.current - nextFar) > EPS
+  ) {
+    camera.near = nextNear;
+    camera.far = nextFar;
+    camera.updateProjectionMatrix();
+    nearRef.current = nextNear;
+    farRef.current = nextFar;
+  }
+}
 
 interface FocusTargetOptions {
   selectedId: BodyId | null;
   resetSignal: number;
+  zoomOutSignal?: number;
   controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
   planetRefs: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   planetData: Record<BodyId, BodyData>;
@@ -26,6 +51,7 @@ interface FocusTargetOptions {
 export const useFocusTarget = ({
   selectedId,
   resetSignal,
+  zoomOutSignal = 0,
   controlsRef,
   planetRefs,
   planetData,
@@ -36,21 +62,56 @@ export const useFocusTarget = ({
   scaleParams
 }: FocusTargetOptions) => {
   const resetTokenRef = useRef(resetSignal);
+  const zoomOutTokenRef = useRef(zoomOutSignal);
   const isResettingRef = useRef(false);
+  const resetTimeRef = useRef(0);
+  const isZoomingOutRef = useRef(false);
+  const zoomOutNeedsInitRef = useRef(false);
+  const zoomOutTimeRef = useRef(0);
   const focusStateRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const transitionTimeRef = useRef(0);
+  const attachedControlsRef = useRef<OrbitControlsImpl | null>(null);
+  const cancelAutoMotionRef = useRef<() => void>(() => {
+    isResettingRef.current = false;
+    isZoomingOutRef.current = false;
+    isTransitioningRef.current = false;
+  });
+
+  useEffect(() => {
+    return () => {
+      if (attachedControlsRef.current) {
+        attachedControlsRef.current.removeEventListener(
+          "start",
+          cancelAutoMotionRef.current
+        );
+        attachedControlsRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (resetSignal !== resetTokenRef.current) {
       resetTokenRef.current = resetSignal;
+      isZoomingOutRef.current = false;
       isResettingRef.current = true;
+      resetTimeRef.current = 0;
       isTransitioningRef.current = true;
       transitionTimeRef.current = 0;
     }
   }, [resetSignal]);
 
-  const defaultDirection = useMemo(() => new Vector3(0, 0, 1), []);
+  useEffect(() => {
+    if (zoomOutSignal !== zoomOutTokenRef.current) {
+      zoomOutTokenRef.current = zoomOutSignal;
+      isResettingRef.current = false;
+      isTransitioningRef.current = false;
+      isZoomingOutRef.current = true;
+      zoomOutNeedsInitRef.current = true;
+      zoomOutTimeRef.current = 0;
+    }
+  }, [zoomOutSignal]);
+
   const approachDirectionRef = useRef(new Vector3(0, 0.28, 1));
   const target = useMemo(() => new Vector3(), []);
   const desiredPosition = useMemo(() => new Vector3(), []);
@@ -65,6 +126,8 @@ export const useFocusTarget = ({
 
   useEffect(() => {
     if (selectedId) {
+      isResettingRef.current = false;
+      isZoomingOutRef.current = false;
       isTransitioningRef.current = true;
       transitionTimeRef.current = 0;
     }
@@ -73,6 +136,17 @@ export const useFocusTarget = ({
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
+
+    if (attachedControlsRef.current !== controls) {
+      if (attachedControlsRef.current) {
+        attachedControlsRef.current.removeEventListener(
+          "start",
+          cancelAutoMotionRef.current
+        );
+      }
+      controls.addEventListener("start", cancelAutoMotionRef.current);
+      attachedControlsRef.current = controls;
+    }
 
     const camera = controls.object;
 
@@ -217,13 +291,7 @@ export const useFocusTarget = ({
 
       const nextNear = 0.01;
       const nextFar = 800;
-      if (nearRef.current !== nextNear || farRef.current !== nextFar) {
-        camera.near = nextNear;
-        camera.far = nextFar;
-        camera.updateProjectionMatrix();
-        nearRef.current = nextNear;
-        farRef.current = nextFar;
-      }
+      syncCameraFrustum(camera, nearRef, farRef, nextNear, nextFar);
 
       controls.update();
 
@@ -232,12 +300,57 @@ export const useFocusTarget = ({
         focusStateRef.current = isFocused;
         onFocusChange?.(isFocused);
       }
+    } else if (isZoomingOutRef.current) {
+      trackedIdRef.current = null;
+      if (focusStateRef.current) {
+        focusStateRef.current = false;
+        onFocusChange?.(false);
+      }
+      onDistanceTarget?.(null);
+
+      if (zoomOutNeedsInitRef.current) {
+        zoomOutNeedsInitRef.current = false;
+        direction.copy(camera.position).sub(controls.target);
+        const currDist = direction.length();
+        if (currDist < 1e-4) {
+          direction.set(0, 0.28, 1).normalize();
+        } else {
+          direction.divideScalar(currDist);
+        }
+        const zoomOutDist = Math.min(14, Math.max(currDist * 4.5, 4.8));
+        desiredPosition.copy(controls.target).addScaledVector(direction, zoomOutDist);
+      }
+
+      zoomOutTimeRef.current += delta;
+      const ease = 1 - Math.exp(-delta * 5.0);
+      camera.up.set(0, 1, 0);
+      camera.position.lerp(desiredPosition, ease);
+
+      controls.minDistance = FREE_FLY_MIN_DISTANCE;
+      controls.maxDistance = FREE_FLY_MAX_DISTANCE;
+      minDistanceRef.current = null;
+      maxDistanceRef.current = null;
+      syncCameraFrustum(camera, nearRef, farRef, 0.05, 2000);
+
+      controls.update();
+
+      if (
+        camera.position.distanceTo(desiredPosition) < 0.2 ||
+        zoomOutTimeRef.current > 0.75
+      ) {
+        isZoomingOutRef.current = false;
+      }
     } else if (isResettingRef.current) {
       trackedIdRef.current = null;
+      if (focusStateRef.current) {
+        focusStateRef.current = false;
+        onFocusChange?.(false);
+      }
       target.copy(DEFAULT_TARGET);
       desiredPosition.copy(DEFAULT_POSITION);
       onDistanceTarget?.(null);
 
+      resetTimeRef.current += delta;
       const positionEase = 1 - Math.exp(-delta * 3.5);
       const targetEase = 1 - Math.exp(-delta * 5);
 
@@ -245,25 +358,28 @@ export const useFocusTarget = ({
       camera.position.lerp(desiredPosition, positionEase);
       controls.target.lerp(target, targetEase);
 
-      controls.minDistance = 8;
-      controls.maxDistance = 140;
-
-      const EPS = 1e-9;
-      if (Math.abs(nearRef.current - 0.1) > EPS || Math.abs(farRef.current - 2000) > EPS) {
-        camera.near = 0.1;
-        camera.far = 2000;
-        camera.updateProjectionMatrix();
-        nearRef.current = 0.1;
-        farRef.current = 2000;
-      }
+      controls.minDistance = FREE_FLY_MIN_DISTANCE;
+      controls.maxDistance = FREE_FLY_MAX_DISTANCE;
+      minDistanceRef.current = null;
+      maxDistanceRef.current = null;
+      syncCameraFrustum(camera, nearRef, farRef, 0.1, 2000);
 
       controls.update();
 
-      if (camera.position.distanceTo(DEFAULT_POSITION) < 0.2) {
+      if (
+        (camera.position.distanceTo(DEFAULT_POSITION) < 0.2 &&
+          controls.target.distanceTo(DEFAULT_TARGET) < 0.15) ||
+        resetTimeRef.current > 1.6
+      ) {
         isResettingRef.current = false;
       }
     } else {
       trackedIdRef.current = null;
+      minDistanceRef.current = null;
+      maxDistanceRef.current = null;
+      controls.minDistance = FREE_FLY_MIN_DISTANCE;
+      controls.maxDistance = FREE_FLY_MAX_DISTANCE;
+      syncCameraFrustum(camera, nearRef, farRef, 0.05, 2000);
       if (focusStateRef.current) {
         focusStateRef.current = false;
         onFocusChange?.(false);
