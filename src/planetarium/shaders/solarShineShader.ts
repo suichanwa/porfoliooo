@@ -233,10 +233,11 @@ export function applySolarShineShader(
         reflectedLight.directDiffuse +=
           uShineTint * _fresnel * _backlit * smoothstep(-0.55, 0.25, _sunDot) * uShineStrength * 0.65;
 
-        // Subtle cool cosmic rim on dark limb so unlit sides stay cleanly defined
+        // Subtle starlight fill + cool cosmic rim on dark hemispheres so unlit sides keep 3D depth
         float _nightMask = smoothstep(0.15, -0.35, _sunDot);
+        float _nightRim = pow(1.0 - _ndotv, 2.8);
         reflectedLight.indirectDiffuse +=
-          diffuseColor.rgb * vec3(0.38, 0.56, 0.90) * pow(1.0 - _ndotv, 3.2) * _nightMask * 0.065;
+          diffuseColor.rgb * vec3(0.58, 0.72, 0.96) * (0.055 * (0.55 + 0.45 * _ndotv) + _nightRim * 0.085) * _nightMask;
         `
       );
   };
