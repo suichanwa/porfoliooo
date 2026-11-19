@@ -292,10 +292,10 @@ export default function MoonGlints({
       const distToParent = camPos.distanceTo(parentObj.position);
       const distToMoon = camPos.distanceTo(moonObj.position);
 
-      // Proximity-prioritized background warm-up: as soon as the camera approaches a planet,
-      // ensure its moons' albedo & normal textures are preloaded ahead of zooming in.
+      // Proximity-prioritized warm-up: only trigger if the user flies genuinely close to a planet
+      // before the gentle 1-by-1 background preloader reaches that planet's moons.
       if (
-        distToParent < entry.nearFull * 1.35 &&
+        distToParent < entry.nearFull * 0.75 &&
         !warmedSystemsRef.current.has(entry.parentId)
       ) {
         warmedSystemsRef.current.add(entry.parentId);
@@ -307,7 +307,8 @@ export default function MoonGlints({
             { url: m.render.textureUrl, colorSpace: SRGBColorSpace },
             { url: m.render.normalUrl, colorSpace: NoColorSpace },
             { url: m.render.bumpUrl, colorSpace: NoColorSpace }
-          ])
+          ]),
+          { preUploadGpu: true }
         );
       }
 

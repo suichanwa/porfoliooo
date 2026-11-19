@@ -3,18 +3,11 @@ import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
-import { NoColorSpace, SRGBColorSpace } from "three";
-import { PLANETS } from "./data/planets";
-import { MOONS } from "./data/moons";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
 import PlanetariumNavbar from "./ui/PlanetariumNavbar";
 import PerfOverlay from "./ui/PerfOverlay";
-import {
-  preloadTextureAssets,
-  preloadTextureAssetsInBackground
-} from "./hooks/usePlanetTexture";
 import {
   computeDistanceScaleParams,
   computeRenderOrbitRadius
@@ -59,11 +52,16 @@ function PlanetariumView() {
   const isClient = useIsClient();
   const deviceInfo = useDeviceInfo(isClient);
   const canvasDpr: [number, number] = useMemo(() => {
-    if (typeof window === "undefined") return [1, 2];
-    if (deviceInfo.isLowEnd) return [1, 1.5];
-    const maxDpr = Math.min(window.devicePixelRatio || 2, 2.25);
-    return [1.25, Math.max(1.5, maxDpr)];
-  }, [deviceInfo.isLowEnd]);
+    if (typeof window === "undefined") return [1, 1.5];
+    const nativeDpr = window.devicePixelRatio || 1;
+    if (deviceInfo.isLowEnd) return [0.75, 1.0];
+    if (deviceInfo.isIntegratedGpu) {
+      // Cap integrated GPUs (e.g. Intel Iris on Retina) to 1.25x (~61% fewer pixels than 2.0x)
+      return [1.0, Math.min(nativeDpr, 1.25)];
+    }
+    const maxDpr = Math.min(nativeDpr, 1.75);
+    return [1.0, Math.max(1.25, maxDpr)];
+  }, [deviceInfo.isIntegratedGpu, deviceInfo.isLowEnd]);
 
   const distanceScaleParams = useMemo(
     () =>
@@ -136,36 +134,6 @@ function PlanetariumView() {
 
   useEffect(() => {
     if (!isClient) return;
-
-    // 1. Prioritize primary visible bodies (planets, Sun, and Pluto's always-visible Charon)
-    const primaryBodies = [
-      ...PLANETS,
-      ...MOONS.filter((moon) => moon.id === "charon")
-    ];
-    preloadTextureAssets(
-      primaryBodies.flatMap((body) => [
-        { url: body.render.textureUrl, colorSpace: SRGBColorSpace },
-        { url: body.render.normalUrl, colorSpace: NoColorSpace },
-        { url: body.render.bumpUrl, colorSpace: NoColorSpace }
-      ])
-    );
-
-    // 2. Gently preload hidden moons' textures (only revealed on zoom/selection) in the background
-    const deferredMoonAssets = MOONS.filter((moon) => moon.id !== "charon").flatMap(
-      (moon) => [
-        { url: moon.render.textureUrl, colorSpace: SRGBColorSpace },
-        { url: moon.render.normalUrl, colorSpace: NoColorSpace },
-        { url: moon.render.bumpUrl, colorSpace: NoColorSpace }
-      ]
-    );
-    return preloadTextureAssetsInBackground(deferredMoonAssets, {
-      initialDelayMs: 1400,
-      stepDelayMs: 140
-    });
-  }, [isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
     const params = new URLSearchParams(window.location.search);
     setDebugGravity(params.get("debugGravity") === "1");
     if (params.has("perf")) {
@@ -193,7 +161,11 @@ function PlanetariumView() {
 
   return (
     <div className="relative h-[calc(100dvh-65px)] overflow-hidden">
-      <PlanetariumCanvas dpr={canvasDpr} onPointerMissed={handlePointerMissed}>
+      <PlanetariumCanvas
+        dpr={canvasDpr}
+        antialias={!deviceInfo.isLowEnd}
+        onPointerMissed={handlePointerMissed}
+      >
         <PlanetariumScene
           showOrbits={settings.showOrbits}
           showLabels={settings.showLabels}
@@ -206,6 +178,7 @@ function PlanetariumView() {
           zoomOutSignal={zoomOutSignal}
           onSelect={handleSceneSelect}
           isLowEnd={deviceInfo.isLowEnd}
+          isIntegratedGpu={deviceInfo.isIntegratedGpu}
           prefersReducedMotion={deviceInfo.prefersReducedMotion}
           onFocusChange={setIsFocused}
           distanceScaleMode={settings.distanceScaleMode}

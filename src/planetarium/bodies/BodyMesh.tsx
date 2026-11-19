@@ -17,7 +17,11 @@ import {
 } from "three";
 import type { BodyData, BodyId, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
 import { PLANET_BY_ID } from "../data/planetRegistry";
-import { useTextureAsset } from "../hooks/usePlanetTexture";
+import {
+  getFlatNormalTexture,
+  getNeutralBumpTexture,
+  useTextureAsset
+} from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
 import RingSystem from "../../components/Planetarium/rings/RingSystem";
 import { getPlutoCharonOrbitalPhase } from "../orbits/orbitMath";
@@ -45,6 +49,25 @@ const DEFAULT_MATERIAL: MaterialPreset = { roughness: 0.85, metalness: 0 };
 const DEFAULT_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.12 };
 const DWARF_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.08 };
 const STAR_GLOW: GlowPreset = { color: "#f5c96b", intensity: 1.2 };
+
+// Shared unit-radius SphereGeometry pools (scaled per body by radius) so we allocate
+// only 2 GPU vertex buffers across all planets, moons, clouds, and atmosphere shells.
+let sharedPlanetSphere: SphereGeometry | null = null;
+let sharedMoonShellSphere: SphereGeometry | null = null;
+
+function getSharedPlanetSphere(): SphereGeometry {
+  if (!sharedPlanetSphere) {
+    sharedPlanetSphere = new SphereGeometry(1, 44, 32);
+  }
+  return sharedPlanetSphere;
+}
+
+function getSharedMoonShellSphere(): SphereGeometry {
+  if (!sharedMoonShellSphere) {
+    sharedMoonShellSphere = new SphereGeometry(1, 32, 24);
+  }
+  return sharedMoonShellSphere;
+}
 
 export default function BodyMesh({
   data,
@@ -82,10 +105,12 @@ export default function BodyMesh({
     enabled: loadTextures
   });
   const normalMap = useTextureAsset(data.render.normalUrl, {
+    fallbackTexture: data.render.normalUrl ? getFlatNormalTexture() : null,
     colorSpace: NoColorSpace,
     enabled: loadTextures
   });
   const bumpMap = useTextureAsset(data.render.bumpUrl, {
+    fallbackTexture: data.render.bumpUrl ? getNeutralBumpTexture() : null,
     colorSpace: NoColorSpace,
     enabled: loadTextures
   });
@@ -103,7 +128,11 @@ export default function BodyMesh({
           ? {}
           : glowPreset.rim ?? null;
 
-  const geometry = useMemo(() => new SphereGeometry(radius, 64, 48), [radius]);
+  const bodyGeometry = useMemo(
+    () => (isMoon ? getSharedMoonShellSphere() : getSharedPlanetSphere()),
+    [isMoon]
+  );
+  const shellGeometry = useMemo(() => getSharedMoonShellSphere(), []);
   const ringPresets = useMemo(() => {
     if (!data.rings) return null;
     return Array.isArray(data.rings) ? data.rings : [data.rings];
@@ -286,13 +315,16 @@ export default function BodyMesh({
 
   const solarUniforms = useMemo(() => createSolarShineUniforms(data), [data]);
 
+  const hasNormalMap = Boolean(data.render.normalUrl);
+  const hasBumpMap = Boolean(data.render.bumpUrl);
+
   const material = useMemo(() => {
     const normalStrength = materialPreset.normalScale ?? 0.55;
     const mat = new MeshStandardMaterial({
       map: baseMap ?? null,
-      normalMap: normalMap ?? null,
+      normalMap: hasNormalMap ? (normalMap ?? getFlatNormalTexture()) : null,
       normalScale: new Vector2(normalStrength, normalStrength),
-      bumpMap: bumpMap ?? null,
+      bumpMap: hasBumpMap ? (bumpMap ?? getNeutralBumpTexture()) : null,
       bumpScale: 0.02,
       roughness: materialPreset.roughness,
       metalness: materialPreset.metalness,
@@ -301,19 +333,39 @@ export default function BodyMesh({
     });
     applySolarShineShader(mat, solarUniforms);
     return mat;
-  }, [baseMap, bumpMap, glowPreset.color, isEarth, materialPreset, normalMap, solarUniforms]);
+    // Intentionally exclude baseMap/normalMap/bumpMap so swapping placeholder -> loaded
+    // textures never destroys the material or recompiles custom PBR GLSL shaders on click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glowPreset.color, hasBumpMap, hasNormalMap, isEarth, materialPreset, solarUniforms]);
+
+  useEffect(() => {
+    const prevHasMap = Boolean(material.map);
+    const prevHasNormal = Boolean(material.normalMap);
+    const prevHasBump = Boolean(material.bumpMap);
+
+    const nextMap = baseMap ?? null;
+    const nextNormal = hasNormalMap ? (normalMap ?? getFlatNormalTexture()) : null;
+    const nextBump = hasBumpMap ? (bumpMap ?? getNeutralBumpTexture()) : null;
+
+    material.map = nextMap;
+    material.normalMap = nextNormal;
+    material.bumpMap = nextBump;
+
+    // Only trigger shader recompile if a texture slot toggled between null and non-null
+    if (
+      prevHasMap !== Boolean(nextMap) ||
+      prevHasNormal !== Boolean(nextNormal) ||
+      prevHasBump !== Boolean(nextBump)
+    ) {
+      material.needsUpdate = true;
+    }
+  }, [material, baseMap, normalMap, bumpMap, hasNormalMap, hasBumpMap]);
 
   useEffect(() => {
     return () => {
       material.dispose();
     };
   }, [material]);
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose();
-    };
-  }, [geometry]);
 
   const rimMaterial = useMemo(() => {
     if (!rimPreset) return null;
@@ -453,8 +505,9 @@ export default function BodyMesh({
     <group ref={groupRef} position={position} rotation={[0, 0, tilt]}>
       <mesh
         ref={meshRef}
-        geometry={geometry}
+        geometry={bodyGeometry}
         material={material}
+        scale={radius}
         onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}
         onClick={(event) => {
@@ -465,25 +518,25 @@ export default function BodyMesh({
       {isEarth && cloudsMaterial && (
         <mesh
           ref={cloudsMeshRef}
-          geometry={geometry}
+          geometry={shellGeometry}
           material={cloudsMaterial}
-          scale={1.008}
+          scale={radius * 1.008}
           raycast={() => null}
         />
       )}
       {isTitan && titanHazeMaterial && (
         <mesh
-          geometry={geometry}
+          geometry={shellGeometry}
           material={titanHazeMaterial}
-          scale={1.008}
+          scale={radius * 1.008}
           raycast={() => null}
         />
       )}
       {rimMaterial && (
         <mesh
-          geometry={geometry}
+          geometry={shellGeometry}
           material={rimMaterial}
-          scale={rimPreset?.scale ?? 1.04}
+          scale={radius * (rimPreset?.scale ?? 1.04)}
           raycast={() => null}
         />
       )}

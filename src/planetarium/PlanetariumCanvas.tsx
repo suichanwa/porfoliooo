@@ -17,12 +17,14 @@ interface PlanetariumCanvasProps {
   children?: ReactNode;
   onPointerMissed?: (event: ThreeEvent<PointerEvent>) => void;
   dpr?: number | [number, number];
+  antialias?: boolean;
 }
 
 export default function PlanetariumCanvas({
   children,
   onPointerMissed,
-  dpr = [1, 1.5]
+  dpr = [1, 1.5],
+  antialias = true
 }: PlanetariumCanvasProps) {
   const [frameloop, setFrameloop] = useState<"always" | "never">("always");
 
@@ -52,7 +54,12 @@ export default function PlanetariumCanvas({
         frameloop={frameloop}
         dpr={dpr}
         camera={{ position: [0, 0, 20], fov: 45, near: 0.1, far: 2000 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        gl={{
+          antialias,
+          alpha: false,
+          stencil: false,
+          powerPreference: "high-performance"
+        }}
         onPointerMissed={onPointerMissed}
       >
         <color attach="background" args={["#05070d"]} />

@@ -79,16 +79,25 @@ function StarLayer({
 
 interface UniverseBackgroundProps {
   isLowEnd?: boolean;
+  isIntegratedGpu?: boolean;
   prefersReducedMotion?: boolean;
   useMilkyWay?: boolean;
 }
 
 export default function UniverseBackground({
   isLowEnd = false,
+  isIntegratedGpu = false,
   prefersReducedMotion = false,
   useMilkyWay = false
 }: UniverseBackgroundProps) {
   const milkyWayMap = useTextureAsset(useMilkyWay ? MILKY_WAY_TEXTURE : null);
+  const bgUniforms = useMemo(
+    () => ({
+      colorInner: { value: new Color("#0c1624") },
+      colorOuter: { value: new Color("#04060d") }
+    }),
+    []
+  );
   const layers = useMemo(() => {
     if (isLowEnd || prefersReducedMotion) {
       return [
@@ -107,6 +116,35 @@ export default function UniverseBackground({
           opacity: 0.5,
           baseColor: "#b6c3d9",
           brightnessJitter: 0.7
+        }
+      ];
+    }
+
+    if (isIntegratedGpu) {
+      return [
+        {
+          count: 650,
+          radius: 260,
+          size: 0.8,
+          opacity: 0.8,
+          baseColor: "#dfe7ff",
+          brightnessJitter: 0.5
+        },
+        {
+          count: 480,
+          radius: 320,
+          size: 0.5,
+          opacity: 0.55,
+          baseColor: "#b6c3d9",
+          brightnessJitter: 0.65
+        },
+        {
+          count: 160,
+          radius: 200,
+          size: 1.4,
+          opacity: 0.15,
+          baseColor: "#6a5a8a",
+          brightnessJitter: 0.4
         }
       ];
     }
@@ -137,12 +175,12 @@ export default function UniverseBackground({
         brightnessJitter: 0.4
       }
     ];
-  }, [isLowEnd, prefersReducedMotion]);
+  }, [isIntegratedGpu, isLowEnd, prefersReducedMotion]);
 
   if (useMilkyWay && milkyWayMap) {
     return (
       <mesh frustumCulled={false}>
-        <sphereGeometry args={[500, 48, 32]} />
+        <sphereGeometry args={[500, 32, 24]} />
         <meshBasicMaterial map={milkyWayMap} side={BackSide} depthWrite={false} />
       </mesh>
     );
@@ -151,14 +189,11 @@ export default function UniverseBackground({
   return (
     <>
       <mesh frustumCulled={false}>
-        <sphereGeometry args={[500, 48, 32]} />
+        <sphereGeometry args={[500, 24, 16]} />
         <shaderMaterial
           side={BackSide}
           depthWrite={false}
-          uniforms={{
-            colorInner: { value: new Color("#0c1624") },
-            colorOuter: { value: new Color("#04060d") }
-          }}
+          uniforms={bgUniforms}
           vertexShader={`
             varying vec2 vUv;
             void main() {

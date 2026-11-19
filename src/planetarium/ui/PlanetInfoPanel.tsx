@@ -26,7 +26,7 @@ function ParentOrbitPill({
       onClick={() => onSelect(targetBody.id)}
       aria-label={`${relationLabel} ${targetBody.name} — focus ${targetBody.name}`}
       title={`Focus ${targetBody.name}`}
-      className={`group inline-flex items-center gap-1.5 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.26)] font-medium text-slate-300 backdrop-blur-md transition-all duration-200 hover:border-primary-accent/55 hover:bg-[rgba(var(--primary-bg-rgb),0.48)] hover:text-white hover:shadow-[0_0_12px_rgba(94,159,255,0.18)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 cursor-pointer ${
+      className={`group inline-flex items-center gap-1.5 rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.36)] font-medium text-slate-300 transition-all duration-200 hover:border-primary-accent/55 hover:bg-[rgba(var(--primary-bg-rgb),0.56)] hover:text-white hover:shadow-[0_0_12px_rgba(94,159,255,0.18)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 cursor-pointer ${
         compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-[10px]"
       }`}
     >
@@ -64,7 +64,7 @@ function StatTile({
 }: StatTileProps) {
   return (
     <div
-      className={`rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.25)] backdrop-blur-md transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.4)] ${
+      className={`rounded-xl border border-slate-700/45 bg-[rgba(var(--primary-bg-rgb),0.34)] transition-all duration-200 hover:border-primary-accent/35 hover:bg-[rgba(var(--primary-bg-rgb),0.48)] ${
         compact ? "px-2 py-1.5" : "p-2.5"
       } ${centered ? "text-center" : ""} ${className}`}
     >
@@ -304,7 +304,7 @@ export default function PlanetInfoPanel() {
               role="region"
               aria-label="Planet info card"
               tabIndex={-1}
-              className="pointer-events-auto w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.92),rgba(20,28,40,0.86))] p-3 text-[12px] text-slate-200 shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(99,102,241,0.2)] backdrop-blur-2xl transition-all duration-300 ease-out"
+              className="pointer-events-auto w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(12,18,34,0.95),rgba(18,26,40,0.92))] p-3 text-[12px] text-slate-200 shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(99,102,241,0.2)] transition-all duration-300 ease-out"
             >
               {/* Drag / Tap Handle Pill */}
               <button
@@ -448,7 +448,7 @@ export default function PlanetInfoPanel() {
           role="region"
           aria-label="Planet details panel"
           tabIndex={-1}
-          className={`pointer-events-auto w-[min(24.5rem,33vw)] rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] p-4 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl transition-all duration-500 ease-out max-h-[calc(100vh-10.5rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] ${
+          className={`pointer-events-auto w-[min(24.5rem,33vw)] rounded-2xl border border-slate-700/55 bg-[linear-gradient(165deg,rgba(12,18,34,0.93),rgba(18,26,40,0.89))] p-4 text-sm text-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.75),0_0_24px_rgba(99,102,241,0.16)] transition-all duration-500 ease-out max-h-[calc(100vh-10.5rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] ${
             isInfoVisible
               ? "translate-x-0 opacity-100"
               : "translate-x-6 opacity-0 pointer-events-none hidden"
@@ -546,7 +546,7 @@ export default function PlanetInfoPanel() {
               left: 0,
               top: 0
             }}
-            className={`fixed z-40 group flex items-center gap-2.5 rounded-full border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.92),rgba(20,28,40,0.85))] px-3.5 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_16px_rgba(94,159,255,0.25)] backdrop-blur-2xl cursor-grab active:cursor-grabbing select-none touch-none transition-[border-color,box-shadow,opacity] duration-200 hover:border-primary-accent/60 hover:shadow-[0_14px_36px_rgba(0,0,0,0.85),0_0_24px_rgba(94,159,255,0.45)] ${
+            className={`fixed z-40 group flex items-center gap-2.5 rounded-full border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.92),rgba(20,28,40,0.85))] px-3.5 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_16px_rgba(94,159,255,0.25)] backdrop-blur-md cursor-grab active:cursor-grabbing select-none touch-none transition-[border-color,box-shadow,opacity] duration-200 hover:border-primary-accent/60 hover:shadow-[0_14px_36px_rgba(0,0,0,0.85),0_0_24px_rgba(94,159,255,0.45)] ${
               isPillDragging ? "cursor-grabbing shadow-[0_16px_40px_rgba(0,0,0,0.9),0_0_24px_rgba(94,159,255,0.5)] border-primary-accent scale-[1.04]" : ""
             } ${
               infoHidden

@@ -148,6 +148,7 @@ export default function OrbitingPlanet({
         <ModelMesh
           data={data}
           position={initialPosition}
+          isSelected={isSelected}
           groupRef={groupRef}
           onPointerOver={() => {
             hoveredRef.current = true;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { MathUtils, Mesh, Object3D, Vector3 } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { MathUtils, Mesh, NoColorSpace, Object3D, SRGBColorSpace, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import UniverseBackground from "./UniverseBackground";
 import CameraRig from "./CameraRig";
@@ -10,7 +10,12 @@ import OrbitingPlanet from "./orbits/OrbitingPlanet";
 import OrbitPath from "./orbits/OrbitPath";
 import PlutoBarycenterVisuals from "./orbits/PlutoBarycenterVisuals";
 import { PLANETS } from "./data/planets";
+import { MOONS } from "./data/moons";
 import type { BodyId } from "./data/types";
+import {
+  registerTextureRenderer,
+  runTwoStageTexturePreload
+} from "./hooks/usePlanetTexture";
 import {
   ALL_BODIES,
   createBodyRefStore,
@@ -41,6 +46,7 @@ interface PlanetariumSceneProps {
   zoomOutSignal?: number;
   onSelect: (id: BodyId | null) => void;
   isLowEnd?: boolean;
+  isIntegratedGpu?: boolean;
   prefersReducedMotion?: boolean;
   onFocusChange?: (focused: boolean) => void;
   distanceScaleMode: DistanceScaleMode;
@@ -69,6 +75,7 @@ export default function PlanetariumScene({
   zoomOutSignal = 0,
   onSelect,
   isLowEnd = false,
+  isIntegratedGpu = false,
   prefersReducedMotion = false,
   onFocusChange,
   distanceScaleMode,
@@ -81,6 +88,7 @@ export default function PlanetariumScene({
   onSimDateChange,
   useMilkyWayBackground = false
 }: PlanetariumSceneProps) {
+  const { gl } = useThree();
   const startEpochDays = useMemo(() => nowEpochDays(), []);
   const { timeRef } = useSimulationTime(orbitSpeed, startEpochDays);
   const simDateAccumRef = useRef(0);
@@ -97,8 +105,8 @@ export default function PlanetariumScene({
     neptune: 0,
     pluto: 0
   });
-  const orbitSegments = isLowEnd ? 180 : 320;
-  const gridDivisions = isLowEnd ? 160 : 300;
+  const orbitSegments = isLowEnd || isIntegratedGpu ? 140 : 200;
+  const gridDivisions = isLowEnd || isIntegratedGpu ? 96 : 140;
   const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
   const lensingSoftening = gravitySettings.softening * 0.03;
   const perfSampleRef = useRef({ elapsed: 0, frames: 0, logged: false });
@@ -130,6 +138,53 @@ export default function PlanetariumScene({
   useEffect(() => {
     planetRefs.current.sun = sunRef.current;
   }, []);
+
+  // Two-stage texture pipeline:
+  // Stage 1: Immediately load & GPU-upload all primary visible planets + Sun + Charon.
+  // Stage 2: Once primary planets are ready, slowly stream & GPU-upload hidden moons
+  //          one at a time in the background (Uranus & Neptune first) so they are already
+  //          warm in VRAM within ~4-5s before the user clicks any planet.
+  useEffect(() => {
+    registerTextureRenderer(gl);
+
+    const primaryBodies = [
+      ...PLANETS,
+      ...MOONS.filter((moon) => moon.id === "charon")
+    ];
+    const primaryAssets = primaryBodies.flatMap((body) => [
+      { url: body.render.textureUrl, colorSpace: SRGBColorSpace },
+      { url: body.render.normalUrl, colorSpace: NoColorSpace },
+      { url: body.render.bumpUrl, colorSpace: NoColorSpace }
+    ]);
+
+    const secondaryOrder: Record<string, number> = {
+      uranus: 0,
+      neptune: 1,
+      saturn: 2,
+      earth: 3,
+      jupiter: 4
+    };
+    const deferredMoons = MOONS.filter((moon) => moon.id !== "charon").sort(
+      (a, b) =>
+        (secondaryOrder[a.parentId ?? ""] ?? 99) -
+        (secondaryOrder[b.parentId ?? ""] ?? 99)
+    );
+    const secondaryAssets = deferredMoons.flatMap((moon) => [
+      { url: moon.render.textureUrl, colorSpace: SRGBColorSpace },
+      { url: moon.render.normalUrl, colorSpace: NoColorSpace },
+      { url: moon.render.bumpUrl, colorSpace: NoColorSpace }
+    ]);
+
+    const cancelPreload = runTwoStageTexturePreload(primaryAssets, secondaryAssets, {
+      settleDelayMs: 200,
+      stepDelayMs: 150
+    });
+
+    return () => {
+      cancelPreload();
+      registerTextureRenderer(null);
+    };
+  }, [gl]);
 
   useEffect(() => {
     perfSampleRef.current = { elapsed: 0, frames: 0, logged: false };
@@ -218,6 +273,7 @@ export default function PlanetariumScene({
         >
           <UniverseBackground
             isLowEnd={isLowEnd}
+            isIntegratedGpu={isIntegratedGpu}
             prefersReducedMotion={prefersReducedMotion}
             useMilkyWay={useMilkyWayBackground}
           />
@@ -225,6 +281,7 @@ export default function PlanetariumScene({
       ) : (
         <UniverseBackground
           isLowEnd={isLowEnd}
+          isIntegratedGpu={isIntegratedGpu}
           prefersReducedMotion={prefersReducedMotion}
           useMilkyWay={useMilkyWayBackground}
         />
@@ -239,11 +296,11 @@ export default function PlanetariumScene({
           debug={debugGravity}
         />
       )}
-      <ambientLight intensity={0.09} color="#17233a" />
-      <hemisphereLight intensity={0.055} color="#28406b" groundColor="#03060f" />
+      <ambientLight intensity={0.22} color="#1e2d4a" />
+      <hemisphereLight intensity={0.075} color="#28406b" groundColor="#03060f" />
       <pointLight
         position={[0, 0, 0]}
-        intensity={2.9}
+        intensity={3.15}
         distance={0}
         decay={0}
         color="#fff5e1"

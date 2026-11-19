@@ -245,6 +245,10 @@ export default function ControlsPanel({
     });
   };
 
+  if (!controlsOpen) {
+    return null;
+  }
+
   return (
     <div
       ref={panelRef}
@@ -256,12 +260,10 @@ export default function ControlsPanel({
       role="region"
       aria-label="Simulation controls panel"
       tabIndex={-1}
-      className={`fixed z-30 transition-all duration-300 ${
-        !controlsOpen
-          ? "pointer-events-none opacity-0"
-          : hovered || isMobile
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-auto opacity-85 hover:opacity-100"
+      className={`fixed z-30 transition-opacity duration-200 ${
+        hovered || isMobile
+          ? "pointer-events-auto opacity-100"
+          : "pointer-events-auto opacity-90 hover:opacity-100"
       } ${className}`}
       style={{
         transform: isMobile ? "translateX(-50%)" : `translate3d(${position.x}px, ${position.y}px, 0)`,
@@ -272,7 +274,7 @@ export default function ControlsPanel({
         width: isMobile ? "min(calc(100vw - 24px), 22rem)" : "min(92vw, 20rem)"
       }}
     >
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.85),rgba(20,28,40,0.72))] text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(99,102,241,0.15)] backdrop-blur-2xl">
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-700/55 bg-[linear-gradient(165deg,rgba(12,18,34,0.95),rgba(18,26,40,0.91))] text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.75),0_0_24px_rgba(99,102,241,0.16)]">
         {/* Header / Title Bar */}
         <div className="flex items-center justify-between border-b border-slate-700/40 px-3.5 py-2.5">
           <div className="flex items-center gap-2">

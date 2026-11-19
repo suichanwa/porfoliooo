@@ -52,7 +52,7 @@ export default function GravityPanel({ settings, onChange }: GravityPanelProps) 
 
   return (
     <div
-      className={`pointer-events-auto rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.45),rgba(20,28,40,0.30))] px-3 py-2 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(99,102,241,0.35)] backdrop-blur-xl ${
+      className={`pointer-events-auto rounded-2xl border border-slate-700/50 bg-[linear-gradient(165deg,rgba(15,23,42,0.72),rgba(20,28,40,0.62))] px-3 py-2 text-[11px] text-slate-200 shadow-[0_15px_35px_-10px_rgba(99,102,241,0.35)] backdrop-blur-md ${
         open ? "w-[17rem] sm:w-[18rem]" : "w-auto"
       }`}
     >

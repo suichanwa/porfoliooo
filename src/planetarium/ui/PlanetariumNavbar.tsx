@@ -182,7 +182,7 @@ export default function PlanetariumNavbar({
         <div
           role="dialog"
           aria-label="Celestial bodies navigation"
-          className="pointer-events-auto mb-2 w-full sm:w-auto max-w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-2.5 sm:p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="pointer-events-auto mb-2 w-full sm:w-auto max-w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-2.5 sm:p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
         >
           <div className="flex items-center justify-between gap-3 border-b border-slate-700/40 pb-2 mb-2 px-1">
             <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-primary-accent">
@@ -288,7 +288,7 @@ export default function PlanetariumNavbar({
         <div
           role="dialog"
           aria-label="Time simulation controls"
-          className="pointer-events-auto mb-2 w-full max-w-sm sm:w-80 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="pointer-events-auto mb-2 w-full max-w-sm sm:w-80 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
         >
           <div className="flex items-center justify-between gap-2 border-b border-slate-700/40 pb-2 mb-2.5 px-1">
             <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-primary-accent">
@@ -392,7 +392,7 @@ export default function PlanetariumNavbar({
         <div
           role="dialog"
           aria-label="Visual layers and gravity presets"
-          className="pointer-events-auto mb-2 w-full max-w-xs sm:w-72 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="pointer-events-auto mb-2 w-full max-w-xs sm:w-72 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
         >
           <div className="flex items-center justify-between border-b border-slate-700/40 pb-2 mb-2 px-1">
             <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-secondary-accent">
@@ -528,7 +528,7 @@ export default function PlanetariumNavbar({
       {/* ============================================================ */}
       <nav
         aria-label="Planetarium mobile navigation"
-        className="pointer-events-auto flex sm:hidden items-center gap-1 min-[410px]:gap-1.5 w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.9),rgba(20,28,40,0.84))] px-1.5 min-[410px]:px-2 py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(99,102,241,0.22)] backdrop-blur-2xl"
+        className="pointer-events-auto flex sm:hidden items-center gap-1 min-[410px]:gap-1.5 w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.9),rgba(20,28,40,0.84))] px-1.5 min-[410px]:px-2 py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(99,102,241,0.22)] backdrop-blur-md"
       >
         {/* Return Home */}
         <a
@@ -670,7 +670,7 @@ export default function PlanetariumNavbar({
       {/* ============================================================ */}
       <nav
         aria-label="Planetarium desktop navigation"
-        className="pointer-events-auto hidden sm:flex items-center gap-1 md:gap-1.5 rounded-full border border-slate-700/50 bg-[linear-gradient(165deg,rgba(var(--primary-bg-rgb),0.5),rgba(20,28,40,0.36))] px-2 md:px-2.5 py-1.5 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.65),0_8px_22px_-10px_rgba(99,102,241,0.45)] backdrop-blur-xl max-w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="pointer-events-auto hidden sm:flex items-center gap-1 md:gap-1.5 rounded-full border border-slate-700/50 bg-[linear-gradient(165deg,rgba(15,23,42,0.78),rgba(20,28,40,0.68))] px-2 md:px-2.5 py-1.5 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.65),0_8px_22px_-10px_rgba(99,102,241,0.45)] backdrop-blur-md max-w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {/* Return Home */}
         <a
