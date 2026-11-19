@@ -35,6 +35,7 @@ interface BodyMeshProps {
   groupRef?: Ref<Group>;
   planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
   simTimeRef?: React.MutableRefObject<number>;
+  loadTextures?: boolean;
   onPointerOver?: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (event: ThreeEvent<PointerEvent>) => void;
   onClick?: (event: ThreeEvent<MouseEvent>) => void;
@@ -54,6 +55,7 @@ export default function BodyMesh({
   groupRef,
   planetRefs,
   simTimeRef,
+  loadTextures = true,
   onPointerOver,
   onPointerOut,
   onClick
@@ -76,13 +78,16 @@ export default function BodyMesh({
 
   const baseMap = useTextureAsset(data.render.textureUrl, {
     fallbackColor: data.render.colorFallback,
-    colorSpace: SRGBColorSpace
+    colorSpace: SRGBColorSpace,
+    enabled: loadTextures
   });
   const normalMap = useTextureAsset(data.render.normalUrl, {
-    colorSpace: NoColorSpace
+    colorSpace: NoColorSpace,
+    enabled: loadTextures
   });
   const bumpMap = useTextureAsset(data.render.bumpUrl, {
-    colorSpace: NoColorSpace
+    colorSpace: NoColorSpace,
+    enabled: loadTextures
   });
 
   const materialPreset = data.render.materialPreset ?? DEFAULT_MATERIAL;

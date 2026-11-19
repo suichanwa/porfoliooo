@@ -139,6 +139,8 @@ export default function OrbitingPlanet({
   }, [data.id, onObjectRef]);
 
   const usePlutoFallback = data.id === "pluto" && !data.render.textureUrl;
+  const shouldLoadTextures =
+    !isMoon || data.id === "charon" || activeSystemId === data.parentId;
 
   return (
     <>
@@ -180,6 +182,7 @@ export default function OrbitingPlanet({
           groupRef={groupRef}
           planetRefs={planetRefs}
           simTimeRef={timeRef}
+          loadTextures={shouldLoadTextures}
           onPointerOver={() => {
             hoveredRef.current = true;
           }}

@@ -3,14 +3,18 @@ import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
+import { NoColorSpace, SRGBColorSpace } from "three";
 import { PLANETS } from "./data/planets";
-import { ALL_BODIES } from "./data/planetRegistry";
+import { MOONS } from "./data/moons";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
 import GravityPanel from "./ui/GravityPanel";
 import PlanetariumNavbar from "./ui/PlanetariumNavbar";
 import PerfOverlay from "./ui/PerfOverlay";
-import { preloadPlanetTextures } from "./hooks/usePlanetTexture";
+import {
+  preloadTextureAssets,
+  preloadTextureAssetsInBackground
+} from "./hooks/usePlanetTexture";
 import {
   computeDistanceScaleParams,
   computeRenderOrbitRadius
@@ -132,7 +136,32 @@ function PlanetariumView() {
 
   useEffect(() => {
     if (!isClient) return;
-    preloadPlanetTextures(ALL_BODIES.map((planet) => planet.render.textureUrl));
+
+    // 1. Prioritize primary visible bodies (planets, Sun, and Pluto's always-visible Charon)
+    const primaryBodies = [
+      ...PLANETS,
+      ...MOONS.filter((moon) => moon.id === "charon")
+    ];
+    preloadTextureAssets(
+      primaryBodies.flatMap((body) => [
+        { url: body.render.textureUrl, colorSpace: SRGBColorSpace },
+        { url: body.render.normalUrl, colorSpace: NoColorSpace },
+        { url: body.render.bumpUrl, colorSpace: NoColorSpace }
+      ])
+    );
+
+    // 2. Gently preload hidden moons' textures (only revealed on zoom/selection) in the background
+    const deferredMoonAssets = MOONS.filter((moon) => moon.id !== "charon").flatMap(
+      (moon) => [
+        { url: moon.render.textureUrl, colorSpace: SRGBColorSpace },
+        { url: moon.render.normalUrl, colorSpace: NoColorSpace },
+        { url: moon.render.bumpUrl, colorSpace: NoColorSpace }
+      ]
+    );
+    return preloadTextureAssetsInBackground(deferredMoonAssets, {
+      initialDelayMs: 1400,
+      stepDelayMs: 140
+    });
   }, [isClient]);
 
   useEffect(() => {

@@ -6,14 +6,17 @@ import {
   BufferGeometry,
   Color,
   MathUtils,
+  NoColorSpace,
   Object3D,
   Points,
-  ShaderMaterial
+  ShaderMaterial,
+  SRGBColorSpace
 } from "three";
 import { MOONS } from "../data/moons";
 import { PLANET_BY_ID } from "../data/planetRegistry";
 import type { BodyData, BodyId } from "../data/types";
 import { scalePlanetRadius } from "../utils/scale";
+import { preloadTextureAssets } from "../hooks/usePlanetTexture";
 
 interface MoonGlintsProps {
   planetRefs: React.MutableRefObject<Record<BodyId, Object3D | null>>;
@@ -59,8 +62,8 @@ const VERTEX_SHADER = /* glsl */ `
     }
 
     float dist = max(1.2, -mvPosition.z);
-    float projected = aSize * uPixelRatio * (22.0 / dist);
-    gl_PointSize = clamp(projected, 26.0 * uPixelRatio, 108.0 * uPixelRatio);
+    float projected = aSize * uPixelRatio * (18.0 / dist);
+    gl_PointSize = clamp(projected, 11.0 * uPixelRatio, 44.0 * uPixelRatio);
   }
 `;
 
@@ -74,12 +77,12 @@ const FRAGMENT_SHADER = /* glsl */ `
   varying float vAlpha;
   varying float vSeed;
 
-  // Dual-layer anti-aliased diffraction spike (colored glow sheath + razor-sharp needle)
+  // Fine anti-aliased JWST diffraction spike
   float spikeAlong(vec2 p, vec2 dir, float lengthDecay) {
     float par = abs(dot(p, dir));
     float perp = abs(p.x * (-dir.y) + p.y * dir.x);
-    float needle = exp(-perp * 36.0) * exp(-par * lengthDecay);
-    float sheath = exp(-perp * 15.5) * exp(-par * (lengthDecay * 1.25)) * 0.48;
+    float needle = exp(-perp * 44.0) * exp(-par * lengthDecay);
+    float sheath = exp(-perp * 20.0) * exp(-par * (lengthDecay * 1.35)) * 0.36;
     return needle + sheath;
   }
 
@@ -91,28 +94,28 @@ const FRAGMENT_SHADER = /* glsl */ `
     if (r > 1.0) discard;
 
     // Smooth radial fadeout at sprite boundary so square edges never appear
-    float edgeMask = smoothstep(1.0, 0.58, r);
+    float edgeMask = smoothstep(1.0, 0.56, r);
 
-    // 1. Hot pinpoint astronomical star nucleus
-    float core = exp(-r * r * 115.0);
+    // 1. Tight pinpoint astronomical star nucleus
+    float core = exp(-r * r * 145.0);
 
-    // 2. Luminous JWST sapphire/tinted inner & outer corona
-    float innerHalo = exp(-r * 6.2) * 0.65;
-    float outerHalo = exp(-r * 2.75) * 0.24 * edgeMask;
+    // 2. Delicate sapphire/tinted corona
+    float innerHalo = exp(-r * 7.8) * 0.56;
+    float outerHalo = exp(-r * 3.6) * 0.16 * edgeMask;
 
-    // 3. Signature JWST 6-point hexagonal diffraction spikes + faint horizontal strut
-    float s1 = spikeAlong(p, vec2(0.1392, 0.9903), 1.95);
-    float s2 = spikeAlong(p, vec2(0.9272, 0.3746), 2.15);
-    float s3 = spikeAlong(p, vec2(-0.7880, 0.6157), 2.15);
-    float sHoriz = spikeAlong(p, vec2(0.9903, -0.1392), 3.4);
+    // 3. Delicate JWST 6-point hexagonal diffraction spikes + subtle horizontal strut
+    float s1 = spikeAlong(p, vec2(0.1392, 0.9903), 2.15);
+    float s2 = spikeAlong(p, vec2(0.9272, 0.3746), 2.35);
+    float s3 = spikeAlong(p, vec2(-0.7880, 0.6157), 2.35);
+    float sHoriz = spikeAlong(p, vec2(0.9903, -0.1392), 3.7);
 
-    float spikes = ((s1 + s2 + s3) * 0.52 + sHoriz * 0.16) * edgeMask;
+    float spikes = ((s1 + s2 + s3) * 0.48 + sHoriz * 0.14) * edgeMask;
 
     float shimmer = 1.0 + uShimmerAmp * sin(uTime * 2.1 + vSeed * 6.283185);
 
     vec3 color =
-      vColor * (innerHalo * 1.15 + outerHalo * 1.35 + spikes * 1.35) +
-      vec3(0.96, 0.99, 1.0) * (core * 1.45 + innerHalo * 0.4 + spikes * 0.42 * exp(-r * 2.4));
+      vColor * (innerHalo * 1.15 + outerHalo * 1.3 + spikes * 1.35) +
+      vec3(0.96, 0.99, 1.0) * (core * 1.45 + innerHalo * 0.38 + spikes * 0.4 * exp(-r * 2.6));
 
     color *= vAlpha * shimmer;
     float alpha = clamp((core * 1.3 + innerHalo + outerHalo + spikes) * vAlpha * shimmer, 0.0, 1.0);
@@ -152,6 +155,7 @@ export default function MoonGlints({
   const { camera, gl } = useThree();
   const pointsRef = useRef<Points>(null);
   const hoveredIndexRef = useRef<number | null>(null);
+  const warmedSystemsRef = useRef<Set<BodyId>>(new Set());
 
   const entries = useMemo<GlintEntry[]>(() => {
     const jwstSapphire = new Color("#5b9bff");
@@ -166,14 +170,14 @@ export default function MoonGlints({
       const maxOrbit = estimateMaxMoonOrbitRadius(parentId);
       const isIceGiantMoon = parentId === "uranus" || parentId === "neptune";
 
-      // Distance thresholds tuned so wide solar-system overview stays uncluttered,
-      // while approaching any planet smoothly reveals its orbiting moon glints.
+      // Wide visibility envelope so moon glints remain visible much further away
+      // from the camera and only fade out at genuinely deep-space overview distances.
       const farStart = MathUtils.clamp(
-        maxOrbit * (isIceGiantMoon ? 12.2 : 11.2),
-        14.5,
-        35.0
+        maxOrbit * (isIceGiantMoon ? 40.0 : 38.0),
+        52.0,
+        115.0
       );
-      const nearFull = MathUtils.clamp(maxOrbit * 3.8, 5.2, 12.0);
+      const nearFull = MathUtils.clamp(maxOrbit * 12.0, 16.0, 38.0);
 
       // Blend each moon's authentic color with crisp JWST sapphire/ice-blue starlight
       const baseColor = new Color(moon.render.colorFallback ?? "#cbd5e1");
@@ -181,11 +185,11 @@ export default function MoonGlints({
         ? baseColor.clone().lerp(jwstSapphire, 0.78).lerp(jwstIceBlue, 0.16)
         : baseColor.clone().lerp(jwstIceBlue, 0.52);
 
-      // Slightly larger glint for larger major moons (Titania/Oberon/Ganymede/Titan/Triton)
+      // Compact, delicate scale with subtle size distinction for larger major moons
       const sizeWeight = MathUtils.clamp(
         Math.cbrt(moon.render.radiusKm / 600),
-        0.88,
-        1.35
+        0.86,
+        1.24
       );
 
       return {
@@ -193,7 +197,7 @@ export default function MoonGlints({
         parentId,
         farStart,
         nearFull,
-        baseSize: 34.0 * sizeWeight,
+        baseSize: 15.0 * sizeWeight,
         tint,
         seed: (idx * 0.371 + 0.13) % 1.0
       };
@@ -281,17 +285,33 @@ export default function MoonGlints({
       }
 
       // OrbitingPlanet keeps moonObj.position & parentObj.position synced in world space every frame
-      const mx = moonObj.position.x;
-      const my = moonObj.position.y;
-      const mz = moonObj.position.z;
-      posArray[i * 3] = mx;
-      posArray[i * 3 + 1] = my;
-      posArray[i * 3 + 2] = mz;
+      posArray[i * 3] = moonObj.position.x;
+      posArray[i * 3 + 1] = moonObj.position.y;
+      posArray[i * 3 + 2] = moonObj.position.z;
 
       const distToParent = camPos.distanceTo(parentObj.position);
       const distToMoon = camPos.distanceTo(moonObj.position);
 
-      // 1. Proximity reveal: invisible from far solar-system overview, blooms in as you approach
+      // Proximity-prioritized background warm-up: as soon as the camera approaches a planet,
+      // ensure its moons' albedo & normal textures are preloaded ahead of zooming in.
+      if (
+        distToParent < entry.nearFull * 1.35 &&
+        !warmedSystemsRef.current.has(entry.parentId)
+      ) {
+        warmedSystemsRef.current.add(entry.parentId);
+        const systemMoons = MOONS.filter(
+          (m) => m.parentId === entry.parentId && m.id !== "charon"
+        );
+        preloadTextureAssets(
+          systemMoons.flatMap((m) => [
+            { url: m.render.textureUrl, colorSpace: SRGBColorSpace },
+            { url: m.render.normalUrl, colorSpace: NoColorSpace },
+            { url: m.render.bumpUrl, colorSpace: NoColorSpace }
+          ])
+        );
+      }
+
+      // 1. Wide proximity reveal: remains visible far away, fading gently only at deep distance
       const proximityReveal =
         1.0 - MathUtils.smoothstep(distToParent, entry.nearFull, entry.farStart);
 
@@ -304,16 +324,17 @@ export default function MoonGlints({
         ? MathUtils.smoothstep(distToMoon, 1.15, 3.0)
         : MathUtils.smoothstep(distToMoon, 0.85, 2.35);
 
-      const selectedSystemIntensity = 0.56 * closeMeshFade;
+      const selectedSystemIntensity = 0.52 * closeMeshFade;
       const targetAlpha =
         proximityReveal * MathUtils.lerp(1.0, selectedSystemIntensity, systemVis);
 
       const isHovered = hoveredIndexRef.current === i && targetAlpha > 0.14;
-      const finalAlpha = Math.min(1.0, targetAlpha * (isHovered ? 1.32 : 1.0));
+      const finalAlpha = Math.min(1.0, targetAlpha * (isHovered ? 1.28 : 1.0));
+      const distanceScale = MathUtils.lerp(0.68, 1.0, proximityReveal);
 
       alphaArray[i] = finalAlpha;
       alphasRef.current[i] = finalAlpha;
-      sizeArray[i] = entry.baseSize * (isHovered ? 1.24 : 1.0);
+      sizeArray[i] = entry.baseSize * distanceScale * (isHovered ? 1.22 : 1.0);
     }
 
     posAttr.needsUpdate = true;
@@ -321,13 +342,15 @@ export default function MoonGlints({
     sizeAttr.needsUpdate = true;
   });
 
-  const findVisibleGlintIndex = (event: ThreeEvent<PointerEvent | MouseEvent>): number | null => {
+  const findVisibleGlintIndex = (
+    event: ThreeEvent<PointerEvent | MouseEvent>
+  ): number | null => {
     const idx = event.index;
     if (idx === undefined || idx < 0 || idx >= count) return null;
     if (alphasRef.current[idx] <= 0.14) return null;
 
     // Require tight ray proximity so glints never steal clicks from nearby planets
-    const hitLimit = Math.min(0.45, Math.max(0.16, event.distance * 0.022));
+    const hitLimit = Math.min(0.42, Math.max(0.14, event.distance * 0.02));
     if (event.distanceToRay !== undefined && event.distanceToRay > hitLimit) {
       return null;
     }
