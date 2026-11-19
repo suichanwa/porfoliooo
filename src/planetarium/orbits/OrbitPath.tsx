@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferGeometry, Line, LineBasicMaterial, MathUtils, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
@@ -114,6 +114,18 @@ export default function OrbitPath({
     line.frustumCulled = false;
     return line;
   }, [geometry, material]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
 
   useFrame((_, delta) => {
     if (isMoon && planet?.parentId && planetRefs?.current?.[planet.parentId]) {

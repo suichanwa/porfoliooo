@@ -170,7 +170,6 @@ function PlanetariumView() {
           showOrbits={settings.showOrbits}
           showLabels={settings.showLabels}
           showGrid={settings.showGrid}
-          showLensing={false}
           selectedId={selectedId}
           activeSystemId={activeSystemId}
           isInfoVisible={isInfoVisible}

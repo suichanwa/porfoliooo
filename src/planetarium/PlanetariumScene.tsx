@@ -26,7 +26,6 @@ import { useSimulationTime } from "./hooks/useSimulationTime";
 import { useFocusTarget } from "./hooks/useFocusTarget";
 import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
 import SpacetimeGrid from "./gravity/SpacetimeGrid";
-import BackgroundPass from "./gravity/BackgroundPass";
 import {
   DEFAULT_MASS_SCALE_PARAMS,
   type GravitySettings,
@@ -38,7 +37,6 @@ interface PlanetariumSceneProps {
   showOrbits: boolean;
   showLabels: boolean;
   showGrid: boolean;
-  showLensing: boolean;
   selectedId: BodyId | null;
   activeSystemId?: BodyId | null;
   isInfoVisible?: boolean;
@@ -67,7 +65,6 @@ export default function PlanetariumScene({
   showOrbits,
   showLabels,
   showGrid,
-  showLensing,
   selectedId,
   activeSystemId,
   isInfoVisible = false,
@@ -107,8 +104,6 @@ export default function PlanetariumScene({
   });
   const orbitSegments = isLowEnd || isIntegratedGpu ? 140 : 200;
   const gridDivisions = isLowEnd || isIntegratedGpu ? 96 : 140;
-  const lensingScale = isLowEnd || prefersReducedMotion ? 0.6 : 0.8;
-  const lensingSoftening = gravitySettings.softening * 0.03;
   const perfSampleRef = useRef({ elapsed: 0, frames: 0, logged: false });
   const handleSunSelect = useCallback(() => onSelect("sun"), [onSelect]);
   const handleZoomOut = useCallback(() => onSelect(null), [onSelect]);
@@ -227,7 +222,7 @@ export default function PlanetariumScene({
   });
 
   useFrame(() => {
-    if (!showGrid && !showLensing) return;
+    if (!showGrid) return;
     gravityBodies.forEach((body) => {
       const object = planetRefs.current[body.id];
       if (object) {
@@ -262,30 +257,12 @@ export default function PlanetariumScene({
 
   return (
     <>
-      {showLensing ? (
-        <BackgroundPass
-          bodies={gravityBodies}
-          strength={gravitySettings.lensingStrength}
-          softening={lensingSoftening}
-          maxInfluence={gravitySettings.maxInfluence}
-          resolutionScale={lensingScale}
-          debug={debugGravity}
-        >
-          <UniverseBackground
-            isLowEnd={isLowEnd}
-            isIntegratedGpu={isIntegratedGpu}
-            prefersReducedMotion={prefersReducedMotion}
-            useMilkyWay={useMilkyWayBackground}
-          />
-        </BackgroundPass>
-      ) : (
-        <UniverseBackground
-          isLowEnd={isLowEnd}
-          isIntegratedGpu={isIntegratedGpu}
-          prefersReducedMotion={prefersReducedMotion}
-          useMilkyWay={useMilkyWayBackground}
-        />
-      )}
+      <UniverseBackground
+        isLowEnd={isLowEnd}
+        isIntegratedGpu={isIntegratedGpu}
+        prefersReducedMotion={prefersReducedMotion}
+        useMilkyWay={useMilkyWayBackground}
+      />
       {showGrid && (
         <SpacetimeGrid
           bodies={gravityBodies}

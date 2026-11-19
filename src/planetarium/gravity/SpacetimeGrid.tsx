@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   Color,
@@ -224,6 +224,18 @@ export default function SpacetimeGrid({
       }),
     [uniforms]
   );
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
 
   useFrame((state) => {
     const count = Math.min(bodies.length, MAX_BODIES);

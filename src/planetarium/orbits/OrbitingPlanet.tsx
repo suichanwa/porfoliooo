@@ -4,7 +4,6 @@ import { Group, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import Planet from "../bodies/Planet";
-import Pluton from "../planets_render/pluton";
 import ModelMesh from "../bodies/ModelMesh";
 import { getOrbitPosition, getPlutoCharonBinaryState } from "./orbitMath";
 import Labels from "../ui/Labels";
@@ -138,7 +137,6 @@ export default function OrbitingPlanet({
     };
   }, [data.id, onObjectRef]);
 
-  const usePlutoFallback = data.id === "pluto" && !data.render.textureUrl;
   const shouldLoadTextures =
     !isMoon || data.id === "charon" || activeSystemId === data.parentId;
 
@@ -149,21 +147,6 @@ export default function OrbitingPlanet({
           data={data}
           position={initialPosition}
           isSelected={isSelected}
-          groupRef={groupRef}
-          onPointerOver={() => {
-            hoveredRef.current = true;
-          }}
-          onPointerOut={() => {
-            hoveredRef.current = false;
-          }}
-          onClick={() => {
-            onSelect?.(data.id);
-          }}
-        />
-      ) : usePlutoFallback ? (
-        <Pluton
-          data={data}
-          position={initialPosition}
           groupRef={groupRef}
           onPointerOver={() => {
             hoveredRef.current = true;

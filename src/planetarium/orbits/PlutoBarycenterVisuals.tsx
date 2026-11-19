@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   BufferGeometry,
@@ -149,6 +149,53 @@ export default function PlutoBarycenterVisuals({
     []
   );
 
+  const innerRingLine = useMemo(
+    () => new Line(innerRingGeometry, innerRingMaterial),
+    [innerRingGeometry, innerRingMaterial]
+  );
+  const outerRingLine = useMemo(
+    () => new Line(outerRingGeometry, outerRingMaterial),
+    [outerRingGeometry, outerRingMaterial]
+  );
+  const tetherLine = useMemo(
+    () => new Line(tetherGeometry, tetherMaterial),
+    [tetherGeometry, tetherMaterial]
+  );
+  const crosshairSegments = useMemo(
+    () => new LineSegments(crosshairGeometry, crosshairMaterial),
+    [crosshairGeometry, crosshairMaterial]
+  );
+
+  useEffect(() => {
+    return () => {
+      innerRingGeometry.dispose();
+    };
+  }, [innerRingGeometry]);
+
+  useEffect(() => {
+    return () => {
+      outerRingGeometry.dispose();
+    };
+  }, [outerRingGeometry]);
+
+  useEffect(() => {
+    return () => {
+      tetherGeometry.dispose();
+      crosshairGeometry.dispose();
+      innerRingMaterial.dispose();
+      outerRingMaterial.dispose();
+      tetherMaterial.dispose();
+      crosshairMaterial.dispose();
+    };
+  }, [
+    tetherGeometry,
+    crosshairGeometry,
+    innerRingMaterial,
+    outerRingMaterial,
+    tetherMaterial,
+    crosshairMaterial
+  ]);
+
   useFrame((_, delta) => {
     if (!groupRef.current) return;
 
@@ -229,12 +276,10 @@ export default function PlutoBarycenterVisuals({
 
   return (
     <group ref={groupRef} rotation={[0, 0, tiltRad]}>
-      <primitive object={new Line(innerRingGeometry, innerRingMaterial)} />
-      <primitive object={new Line(outerRingGeometry, outerRingMaterial)} />
-      <primitive object={new Line(tetherGeometry, tetherMaterial)} />
-      <primitive
-        object={new LineSegments(crosshairGeometry, crosshairMaterial)}
-      />
+      <primitive object={innerRingLine} />
+      <primitive object={outerRingLine} />
+      <primitive object={tetherLine} />
+      <primitive object={crosshairSegments} />
     </group>
   );
 }

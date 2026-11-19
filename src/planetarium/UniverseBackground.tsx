@@ -1,5 +1,14 @@
-import { useMemo } from "react";
-import { Color, BackSide } from "three";
+import { useEffect, useMemo } from "react";
+import {
+  BackSide,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  MeshBasicMaterial,
+  PointsMaterial,
+  ShaderMaterial,
+  SphereGeometry
+} from "three";
 import { MILKY_WAY_TEXTURE } from "./data/textures";
 import { useTextureAsset } from "./hooks/usePlanetTexture";
 
@@ -20,7 +29,7 @@ function StarLayer({
   baseColor,
   brightnessJitter
 }: StarLayerProps) {
-  const { positions, colors } = useMemo(() => {
+  const geometry = useMemo(() => {
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
     const color = new Color(baseColor);
@@ -31,50 +40,48 @@ function StarLayer({
       const distance = radius * (0.4 + Math.random() * 0.6);
       const sqrt = Math.sqrt(1 - u * u);
 
-      const x = distance * sqrt * Math.cos(theta);
-      const y = distance * u;
-      const z = distance * sqrt * Math.sin(theta);
-
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
+      pos[i * 3] = distance * sqrt * Math.cos(theta);
+      pos[i * 3 + 1] = distance * u;
+      pos[i * 3 + 2] = distance * sqrt * Math.sin(theta);
 
       const brightness = 1 - Math.random() * brightnessJitter;
-      const tinted = color.clone().multiplyScalar(brightness);
-      col[i * 3] = tinted.r;
-      col[i * 3 + 1] = tinted.g;
-      col[i * 3 + 2] = tinted.b;
+      col[i * 3] = color.r * brightness;
+      col[i * 3 + 1] = color.g * brightness;
+      col[i * 3 + 2] = color.b * brightness;
     }
 
-    return { positions: pos, colors: col };
+    const geom = new BufferGeometry();
+    geom.setAttribute("position", new BufferAttribute(pos, 3));
+    geom.setAttribute("color", new BufferAttribute(col, 3));
+    return geom;
   }, [count, radius, baseColor, brightnessJitter]);
 
-  return (
-    <points frustumCulled={false}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          array={positions}
-          itemSize={3}
-          count={positions.length / 3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          array={colors}
-          itemSize={3}
-          count={colors.length / 3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={size}
-        vertexColors
-        transparent
-        opacity={opacity}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
+  const material = useMemo(
+    () =>
+      new PointsMaterial({
+        size,
+        vertexColors: true,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        sizeAttenuation: true
+      }),
+    [size, opacity]
   );
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  return <points geometry={geometry} material={material} frustumCulled={false} />;
 }
 
 interface UniverseBackgroundProps {
@@ -91,13 +98,65 @@ export default function UniverseBackground({
   useMilkyWay = false
 }: UniverseBackgroundProps) {
   const milkyWayMap = useTextureAsset(useMilkyWay ? MILKY_WAY_TEXTURE : null);
-  const bgUniforms = useMemo(
-    () => ({
-      colorInner: { value: new Color("#0c1624") },
-      colorOuter: { value: new Color("#04060d") }
-    }),
+
+  const milkyWayGeometry = useMemo(() => new SphereGeometry(500, 32, 24), []);
+  const voidGeometry = useMemo(() => new SphereGeometry(500, 24, 16), []);
+
+  const milkyWayMaterial = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        map: milkyWayMap ?? null,
+        side: BackSide,
+        depthWrite: false
+      }),
+    [milkyWayMap]
+  );
+
+  const voidMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        side: BackSide,
+        depthWrite: false,
+        uniforms: {
+          colorInner: { value: new Color("#0c1624") },
+          colorOuter: { value: new Color("#04060d") }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec2 vUv;
+          uniform vec3 colorInner;
+          uniform vec3 colorOuter;
+          void main() {
+            float dist = distance(vUv, vec2(0.5));
+            float vignette = smoothstep(0.15, 0.85, dist);
+            vec3 color = mix(colorInner, colorOuter, vignette);
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `
+      }),
     []
   );
+
+  useEffect(() => {
+    return () => {
+      milkyWayGeometry.dispose();
+      voidGeometry.dispose();
+      voidMaterial.dispose();
+    };
+  }, [milkyWayGeometry, voidGeometry, voidMaterial]);
+
+  useEffect(() => {
+    return () => {
+      milkyWayMaterial.dispose();
+    };
+  }, [milkyWayMaterial]);
+
   const layers = useMemo(() => {
     if (isLowEnd || prefersReducedMotion) {
       return [
@@ -179,41 +238,21 @@ export default function UniverseBackground({
 
   if (useMilkyWay && milkyWayMap) {
     return (
-      <mesh frustumCulled={false}>
-        <sphereGeometry args={[500, 32, 24]} />
-        <meshBasicMaterial map={milkyWayMap} side={BackSide} depthWrite={false} />
-      </mesh>
+      <mesh
+        geometry={milkyWayGeometry}
+        material={milkyWayMaterial}
+        frustumCulled={false}
+      />
     );
   }
 
   return (
     <>
-      <mesh frustumCulled={false}>
-        <sphereGeometry args={[500, 24, 16]} />
-        <shaderMaterial
-          side={BackSide}
-          depthWrite={false}
-          uniforms={bgUniforms}
-          vertexShader={`
-            varying vec2 vUv;
-            void main() {
-              vUv = uv;
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `}
-          fragmentShader={`
-            varying vec2 vUv;
-            uniform vec3 colorInner;
-            uniform vec3 colorOuter;
-            void main() {
-              float dist = distance(vUv, vec2(0.5));
-              float vignette = smoothstep(0.15, 0.85, dist);
-              vec3 color = mix(colorInner, colorOuter, vignette);
-              gl_FragColor = vec4(color, 1.0);
-            }
-          `}
-        />
-      </mesh>
+      <mesh
+        geometry={voidGeometry}
+        material={voidMaterial}
+        frustumCulled={false}
+      />
 
       {layers.map((layer, index) => (
         <StarLayer
