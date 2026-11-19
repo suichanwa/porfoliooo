@@ -4,7 +4,7 @@ import { PLANET_NORMAL_TEXTURES, PLANET_TEXTURES } from "./textures";
 const G = 6.6743e-11;
 const toMu = (massKg: number) => massKg * G;
 
-const DEFAULT_MATERIAL: MaterialPreset = { roughness: 0.85, metalness: 0 };
+// const DEFAULT_MATERIAL: MaterialPreset = { roughness: 0.85, metalness: 0 };
 
 export const MOONS: BodyData[] = [
   {
