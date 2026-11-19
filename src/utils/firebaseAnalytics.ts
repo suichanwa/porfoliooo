@@ -1,5 +1,3 @@
-import { app } from "./firebaseApp";
-
 type AnalyticsEventParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -13,7 +11,6 @@ type PageSection =
   | "letters"
   | "write_letter"
   | "planetarium"
-  | "game"
   | "other";
 
 type NavigationSurface = "desktop_main" | "desktop_more" | "mobile";
@@ -48,7 +45,6 @@ const getPageSection = (pagePath?: string): PageSection => {
   if (pagePath.startsWith("/letters")) return "letters";
   if (pagePath.startsWith("/write-letter")) return "write_letter";
   if (pagePath.startsWith("/planetarium")) return "planetarium";
-  if (pagePath.startsWith("/game")) return "game";
 
   return "other";
 };
@@ -84,7 +80,10 @@ export async function initializeFirebaseAnalytics() {
         return null;
       }
 
-      const analyticsModule = await import("firebase/analytics");
+      const [{ app }, analyticsModule] = await Promise.all([
+        import("./firebaseApp"),
+        import("firebase/analytics"),
+      ]);
       const supported = await analyticsModule.isSupported().catch(() => false);
 
       if (!supported) {

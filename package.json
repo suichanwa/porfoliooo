@@ -8,42 +8,22 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "add-sample-books": "node src/scripts/addSampleBooks.js",
-    "add-books": "node src/scripts/addBooksToFirebase.js"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.8",
-    "@headlessui/react": "^2.2.10",
-    "@motionone/dom": "^10.18.0",
-    "@pixi/react": "^8.0.5",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
-    "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.20",
-    "@tsparticles/engine": "^4.4.0",
-    "@tsparticles/react": "^4.4.0",
-    "@tsparticles/slim": "^4.4.0",
     "astro": "^7.4.11",
-    "astro-remote": "^0.3.4",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "daisyui": "^5.7.27",
     "firebase": "^12.18.0",
     "framer-motion": "^12.43.0",
-    "gsap": "^3.15.0",
     "lucide-react": "^1.39.0",
     "motion": "^12.43.0",
-    "neverthrow": "^8.2.0",
-    "pdfjs-dist": "^5.7.284",
-    "phaser": "^3.90.0",
-    "pixi.js": "^8.20.1",
-    "r3f-perf": "^7.2.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-pdf": "^9.2.1",
     "react-router-dom": "^7.18.3",
-    "sass": "^1.103.1",
-    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^3.4.19",
     "three": "^0.185.1"
   },
@@ -51,6 +31,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
-    "autoprefixer": "^10.5.4"
+    "autoprefixer": "^10.5.4",
+    "typescript": "^7.0.2"
   }
 }

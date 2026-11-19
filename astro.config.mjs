@@ -9,4 +9,9 @@ export default defineConfig({
     defaultStrategy: 'hover',
   },
   integrations: [react()],
+  vite: {
+    css: {
+      postcss: './config/postcss.config.cjs',
+    },
+  },
 });
