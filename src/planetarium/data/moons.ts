@@ -61,8 +61,9 @@ export const MOONS: BodyData[] = [
     render: {
       radiusKm: 1821.6,
       colorFallback: "#eab308",
-      textureUrl: null,
-      materialPreset: { roughness: 0.8, metalness: 0, illuminationBoost: 0.05 },
+      textureUrl: PLANET_TEXTURES.io,
+      normalUrl: PLANET_NORMAL_TEXTURES.io,
+      materialPreset: { roughness: 0.82, metalness: 0, normalScale: 0.52, illuminationBoost: 0.05 },
       glowPreset: { color: "#eab308", intensity: 0.08 }
     },
     orbit: {
@@ -91,8 +92,9 @@ export const MOONS: BodyData[] = [
     render: {
       radiusKm: 1560.8,
       colorFallback: "#cffafe",
-      textureUrl: null,
-      materialPreset: { roughness: 0.45, metalness: 0.05, illuminationBoost: 0.12 },
+      textureUrl: PLANET_TEXTURES.europa,
+      normalUrl: PLANET_NORMAL_TEXTURES.europa,
+      materialPreset: { roughness: 0.48, metalness: 0.04, normalScale: 0.42, illuminationBoost: 0.1 },
       glowPreset: { color: "#cffafe", intensity: 0.1 }
     },
     orbit: {
@@ -121,8 +123,9 @@ export const MOONS: BodyData[] = [
     render: {
       radiusKm: 2634.1,
       colorFallback: "#cbd5e1",
-      textureUrl: null,
-      materialPreset: { roughness: 0.75, metalness: 0 },
+      textureUrl: PLANET_TEXTURES.ganymede,
+      normalUrl: PLANET_NORMAL_TEXTURES.ganymede,
+      materialPreset: { roughness: 0.78, metalness: 0, normalScale: 0.56 },
       glowPreset: { color: "#cbd5e1", intensity: 0.06 }
     },
     orbit: {
@@ -151,8 +154,9 @@ export const MOONS: BodyData[] = [
     render: {
       radiusKm: 2410.3,
       colorFallback: "#94a3b8",
-      textureUrl: null,
-      materialPreset: { roughness: 0.85, metalness: 0 },
+      textureUrl: PLANET_TEXTURES.callisto,
+      normalUrl: PLANET_NORMAL_TEXTURES.callisto,
+      materialPreset: { roughness: 0.86, metalness: 0, normalScale: 0.62 },
       glowPreset: { color: "#94a3b8", intensity: 0.05 }
     },
     orbit: {

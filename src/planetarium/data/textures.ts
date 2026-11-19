@@ -16,6 +16,10 @@ import milkyWayTexture from "../../assets/planetarium/2k_milky_way.webp";
 import plutoTexture from "../../assets/planetarium/Pluto-SolarSystemScope.webp";
 import earthTexture from "../../assets/planetarium/2k_earth_daymap.webp";
 import moonTexture from "../../assets/planetarium/2k_moon.webp";
+import ioTexture from "../../assets/planetarium/2k_io.webp";
+import europaTexture from "../../assets/planetarium/2k_europa.webp";
+import ganymedeTexture from "../../assets/planetarium/2k_ganymede.webp";
+import callistoTexture from "../../assets/planetarium/2k_callisto.webp";
 import enceladusTexture from "../../assets/planetarium/2k_enceladus.webp";
 import titanTexture from "../../assets/planetarium/2k_titan.webp";
 import charonTexture from "../../assets/planetarium/2k_charon.webp";
@@ -26,6 +30,10 @@ import arielTexture from "../../assets/planetarium/2k_ariel.webp";
 
 import mercuryNormalTexture from "../../assets/planetarium/1k_mercury_normal.webp";
 import moonNormalTexture from "../../assets/planetarium/1k_moon_normal.webp";
+import ioNormalTexture from "../../assets/planetarium/1k_io_normal.webp";
+import europaNormalTexture from "../../assets/planetarium/1k_europa_normal.webp";
+import ganymedeNormalTexture from "../../assets/planetarium/1k_ganymede_normal.webp";
+import callistoNormalTexture from "../../assets/planetarium/1k_callisto_normal.webp";
 import marsNormalTexture from "../../assets/planetarium/1k_mars_normal.webp";
 import ceresNormalTexture from "../../assets/planetarium/1k_ceres_normal.webp";
 import plutoNormalTexture from "../../assets/planetarium/1k_pluto_normal.webp";
@@ -51,10 +59,10 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   moon: toUrl(moonTexture),
   mars: toUrl(marsTexture),
   jupiter: toUrl(jupiterTexture),
-  io: null,
-  europa: null,
-  ganymede: null,
-  callisto: null,
+  io: toUrl(ioTexture),
+  europa: toUrl(europaTexture),
+  ganymede: toUrl(ganymedeTexture),
+  callisto: toUrl(callistoTexture),
   saturn: toUrl(saturnTexture),
   enceladus: toUrl(enceladusTexture),
   titan: toUrl(titanTexture),
@@ -73,6 +81,10 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
 export const PLANET_NORMAL_TEXTURES: Partial<Record<BodyId, string | null>> = {
   mercury: toUrl(mercuryNormalTexture),
   moon: toUrl(moonNormalTexture),
+  io: toUrl(ioNormalTexture),
+  europa: toUrl(europaNormalTexture),
+  ganymede: toUrl(ganymedeNormalTexture),
+  callisto: toUrl(callistoNormalTexture),
   mars: toUrl(marsNormalTexture),
   enceladus: toUrl(enceladusNormalTexture),
   ariel: toUrl(arielNormalTexture),
