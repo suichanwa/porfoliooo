@@ -1,21 +1,25 @@
-import { useEffect, useMemo, useRef, type Ref } from "react";
+import { useEffect, useMemo, useRef, type Ref, type RefObject } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
-  AdditiveBlending,
-  BackSide,
   Color,
   Group,
   MathUtils,
   Mesh,
   MeshStandardMaterial,
   NoColorSpace,
-  ShaderMaterial,
+  Object3D,
   SphereGeometry,
   SRGBColorSpace,
   Vector2,
   Vector3
 } from "three";
-import type { BodyData, BodyId, GlowPreset, MaterialPreset, RimGlowPreset } from "../data/types";
+import type {
+  BodyData,
+  BodyId,
+  GlowPreset,
+  MaterialPreset,
+  RimGlowPreset
+} from "../data/types";
 import { PLANET_BY_ID } from "../data/planetRegistry";
 import {
   getFlatNormalTexture,
@@ -29,6 +33,9 @@ import {
   applySolarShineShader,
   createSolarShineUniforms
 } from "../shaders/solarShineShader";
+import { createEarthCloudsMaterial } from "../shaders/earthCloudsShader";
+import { createTitanHazeMaterial } from "../shaders/titanHazeShader";
+import { createPlanetaryRimMaterial } from "../shaders/planetaryRimShader";
 
 interface BodyMeshProps {
   data: BodyData;
@@ -37,8 +44,8 @@ interface BodyMeshProps {
   timeScale?: number;
   rimGlow?: boolean | RimGlowPreset;
   groupRef?: Ref<Group>;
-  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
-  simTimeRef?: React.MutableRefObject<number>;
+  planetRefs?: RefObject<Record<BodyId, Object3D | null>>;
+  simTimeRef?: RefObject<number>;
   loadTextures?: boolean;
   onPointerOver?: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (event: ThreeEvent<PointerEvent>) => void;
@@ -72,7 +79,6 @@ function getSharedMoonShellSphere(): SphereGeometry {
 export default function BodyMesh({
   data,
   position,
-  atmosphere = false,
   timeScale = 40,
   rimGlow,
   groupRef,
@@ -84,6 +90,7 @@ export default function BodyMesh({
   onClick
 }: BodyMeshProps) {
   const meshRef = useRef<Mesh>(null);
+  const cloudsMeshRef = useRef<Mesh>(null);
   const shadowFactorRef = useRef(1.0);
   const earthPosRef = useMemo(() => new Vector3(), []);
   const moonPosRef = useMemo(() => new Vector3(), []);
@@ -92,7 +99,10 @@ export default function BodyMesh({
   const projRef = useMemo(() => new Vector3(), []);
 
   const isMoon = data.kind === "moon";
-  const parentRadiusKm = isMoon && data.parentId ? PLANET_BY_ID[data.parentId]?.render.radiusKm : undefined;
+  const parentRadiusKm =
+    isMoon && data.parentId
+      ? PLANET_BY_ID[data.parentId]?.render.radiusKm
+      : undefined;
   const radius = useMemo(
     () => scalePlanetRadius(data.render.radiusKm, isMoon, parentRadiusKm),
     [data.render.radiusKm, isMoon, parentRadiusKm]
@@ -117,7 +127,11 @@ export default function BodyMesh({
 
   const materialPreset = data.render.materialPreset ?? DEFAULT_MATERIAL;
   const fallbackGlow =
-    data.kind === "dwarf" ? DWARF_GLOW : data.kind === "star" ? STAR_GLOW : DEFAULT_GLOW;
+    data.kind === "dwarf"
+      ? DWARF_GLOW
+      : data.kind === "star"
+        ? STAR_GLOW
+        : DEFAULT_GLOW;
   const glowPreset = data.render.glowPreset ?? fallbackGlow;
   const rimPreset =
     rimGlow === false
@@ -140,181 +154,24 @@ export default function BodyMesh({
 
   const isEarth = data.id === "earth";
   const isTitan = data.id === "titan";
-  const cloudsMeshRef = useRef<Mesh>(null);
 
-  const cloudsMaterial = useMemo(() => {
-    if (!isEarth) return null;
-    return new ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uCloudColor: { value: new Color("#ffffff") }
-      },
-      vertexShader: `
-        varying vec3 vObjPos;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vObjPos = position;
-          vNormal = normalize(mat3(modelMatrix) * normal);
-          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        uniform vec3 uCloudColor;
-        varying vec3 vObjPos;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-
-        float hash3(vec3 p) {
-          p = fract(p * 0.3183099 + 0.1);
-          p *= 17.0;
-          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-        }
-
-        float noise3(vec3 x) {
-          vec3 i = floor(x);
-          vec3 f = fract(x);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(mix(mix(hash3(i + vec3(0,0,0)), hash3(i + vec3(1,0,0)), f.x),
-                         mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
-                     mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
-                         mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z);
-        }
-
-        float fbm3(vec3 p) {
-          float v = 0.0;
-          float a = 0.5;
-          mat3 rot = mat3(
-             0.00,  0.80,  0.60,
-            -0.80,  0.36, -0.48,
-            -0.60, -0.48,  0.64
-          );
-          for (int i = 0; i < 4; ++i) {
-            v += a * noise3(p);
-            p = rot * p * 2.02 + vec3(1.2, 4.3, 2.1);
-            a *= 0.5;
-          }
-          return v;
-        }
-
-        void main() {
-          // 3D Cartesian spherical coordinates: completely seamless with zero polar pinching
-          vec3 p = normalize(vObjPos) * 4.2;
-          
-          float cosT = cos(uTime * 0.03);
-          float sinT = sin(uTime * 0.03);
-          p.xz = mat2(cosT, -sinT, sinT, cosT) * p.xz;
-
-          float n = fbm3(p);
-          float cloudDensity = smoothstep(0.38, 0.70, n);
-
-          // Sunlight calculation (Sun is at 0,0,0)
-          vec3 sunDir = normalize(-vWorldPos);
-          float sunDot = dot(vNormal, sunDir);
-          float litCloud = smoothstep(-0.20, 0.35, sunDot);
-
-          // Polar fade so Arctic & Antarctic ice caps from 8K daymap remain crisp and clear
-          float polarLat = abs(normalize(vObjPos).y);
-          float polarFade = smoothstep(0.92, 0.72, polarLat);
-
-          float twilight = exp(-pow((sunDot + 0.02) * 4.8, 2.0));
-          vec3 cloudTint = mix(uCloudColor, vec3(1.0, 0.78, 0.56), twilight * 0.36);
-          vec3 color = cloudTint * (litCloud * 0.95 + 0.05);
-          gl_FragColor = vec4(color, cloudDensity * 0.38 * litCloud * polarFade);
-        }
-      `,
-      transparent: true,
-      depthWrite: false
-    });
-  }, [isEarth]);
-
-  const titanHazeMaterial = useMemo(() => {
-    if (!isTitan) return null;
-    return new ShaderMaterial({
-      uniforms: {
-        uHazeColor: { value: new Color("#e8a848") },
-        uTerminatorColor: { value: new Color("#cf5d24") },
-        uPolarColor: { value: new Color("#8a7e82") }
-      },
-      vertexShader: `
-        varying vec3 vObjPos;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vObjPos = position;
-          vNormal = normalize(mat3(modelMatrix) * normal);
-          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uHazeColor;
-        uniform vec3 uTerminatorColor;
-        uniform vec3 uPolarColor;
-        varying vec3 vObjPos;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-
-        float hash3(vec3 p) {
-          p = fract(p * 0.3183099 + 0.1);
-          p *= 17.0;
-          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-        }
-
-        float noise3(vec3 x) {
-          vec3 i = floor(x);
-          vec3 f = fract(x);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(
-            mix(mix(hash3(i + vec3(0,0,0)), hash3(i + vec3(1,0,0)), f.x),
-                mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
-            mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
-                mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y),
-            f.z
-          );
-        }
-
-        void main() {
-          vec3 N = normalize(vNormal);
-          vec3 V = normalize(cameraPosition - vWorldPos);
-          vec3 sunDir = normalize(-vWorldPos);
-
-          float ndotv = max(dot(N, V), 0.0);
-          float fresnel = pow(1.0 - ndotv, 2.35);
-
-          float sunDot = dot(N, sunDir);
-          float dayFactor = smoothstep(-0.24, 0.38, sunDot);
-          float terminatorGlow = exp(-pow((sunDot + 0.03) * 5.2, 2.0));
-
-          // Subtle Cassini-style wind-sheared zonal haze bands and polar hood
-          vec3 p = normalize(vObjPos);
-          float n = noise3(p * vec3(3.2, 8.5, 3.2));
-          float band = 0.84 + 0.16 * sin(p.y * 14.0 + n * 2.8);
-          float polarHood = smoothstep(0.58, 0.94, abs(p.y));
-
-          // Forward Mie scattering brightens backlit crescent limbs
-          float forwardScatter = pow(max(dot(-V, sunDir), 0.0), 3.5) * fresnel * smoothstep(-0.65, 0.20, sunDot);
-
-          vec3 hazeCol = mix(uHazeColor, uPolarColor, polarHood * 0.48);
-          hazeCol = mix(hazeCol, uTerminatorColor, terminatorGlow * 0.52);
-          hazeCol *= band;
-
-          // Keep disk center subtle so hydrocarbon lakes & highlands remain crisp
-          float diskHaze = 0.04 + 0.62 * fresnel;
-          float alpha = diskHaze * (dayFactor * 0.94 + 0.03) + forwardScatter * 0.35;
-
-          gl_FragColor = vec4(hazeCol, clamp(alpha, 0.0, 0.78));
-        }
-      `,
-      transparent: true,
-      depthWrite: false
-    });
-  }, [isTitan]);
+  const cloudsMaterial = useMemo(
+    () => (isEarth ? createEarthCloudsMaterial() : null),
+    [isEarth]
+  );
+  const titanHazeMaterial = useMemo(
+    () => (isTitan ? createTitanHazeMaterial() : null),
+    [isTitan]
+  );
+  const rimMaterial = useMemo(
+    () =>
+      rimPreset
+        ? createPlanetaryRimMaterial(rimPreset, glowPreset.color, isTitan)
+        : null,
+    [glowPreset.color, isTitan, rimPreset]
+  );
 
   const solarUniforms = useMemo(() => createSolarShineUniforms(data), [data]);
-
   const hasNormalMap = Boolean(data.render.normalUrl);
   const hasBumpMap = Boolean(data.render.bumpUrl);
 
@@ -336,7 +193,14 @@ export default function BodyMesh({
     // Intentionally exclude baseMap/normalMap/bumpMap so swapping placeholder -> loaded
     // textures never destroys the material or recompiles custom PBR GLSL shaders on click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [glowPreset.color, hasBumpMap, hasNormalMap, isEarth, materialPreset, solarUniforms]);
+  }, [
+    glowPreset.color,
+    hasBumpMap,
+    hasNormalMap,
+    isEarth,
+    materialPreset,
+    solarUniforms
+  ]);
 
   useEffect(() => {
     const prevHasMap = Boolean(material.map);
@@ -361,83 +225,10 @@ export default function BodyMesh({
     }
   }, [material, baseMap, normalMap, bumpMap, hasNormalMap, hasBumpMap]);
 
-  useEffect(() => {
-    return () => {
-      material.dispose();
-    };
-  }, [material]);
-
-  const rimMaterial = useMemo(() => {
-    if (!rimPreset) return null;
-    const rimScale = rimPreset.scale ?? 1.04;
-    const limbMu = Math.sqrt(Math.max(0.001, 1 - 1 / (rimScale * rimScale)));
-    const baseColor = rimPreset.color ?? glowPreset.color;
-    return new ShaderMaterial({
-      uniforms: {
-        uColor: { value: new Color(baseColor) },
-        uOuterColor: { value: new Color(rimPreset.outerColor ?? baseColor) },
-        uTerminatorColor: { value: new Color(rimPreset.terminatorColor ?? baseColor) },
-        uOuterMix: { value: rimPreset.colorMix ?? 0.0 },
-        uUpperHaze: { value: isTitan ? 1.0 : 0.0 },
-        uPower: { value: rimPreset.power ?? 2.8 },
-        uOpacity: { value: rimPreset.opacity ?? 0.08 },
-        uLimbMu: { value: limbMu }
-      },
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vNormal = normalize(mat3(modelMatrix) * normal);
-          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform vec3 uOuterColor;
-        uniform vec3 uTerminatorColor;
-        uniform float uOuterMix;
-        uniform float uUpperHaze;
-        uniform float uPower;
-        uniform float uOpacity;
-        uniform float uLimbMu;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-
-        void main() {
-          vec3 N = normalize(vNormal);
-          vec3 V = normalize(cameraPosition - vWorldPos);
-          vec3 sunDir = normalize(-vWorldPos);
-
-          // On BackSide shell, -dot(N, V) is 0 at outer mesh edge and approaches uLimbMu at planet horizon
-          float mu = max(0.0, dot(N, -V));
-          float t = clamp(mu / uLimbMu, 0.0, 1.0);
-
-          // Exponential-like radial scale-height decay with smooth zero fade at outer boundary
-          float edgeFade = smoothstep(0.0, 0.24, t);
-          float mainHaze = pow(t, uPower) * edgeFade;
-          // Faint high-altitude detached bluish upper-haze layer for Titan
-          float upperHaze = exp(-pow((t - 0.36) / 0.18, 2.0)) * smoothstep(0.0, 0.22, t) * 0.14 * uUpperHaze;
-          float radial = mainHaze + upperHaze;
-
-          float sunDot = dot(N, sunDir);
-          float dayLight = smoothstep(-0.34, 0.48, sunDot);
-          float terminatorGlow = exp(-pow((sunDot + 0.04) * 4.5, 2.0));
-          float forwardScatter = pow(max(dot(-V, sunDir), 0.0), 4.0) * smoothstep(-0.68, 0.20, sunDot) * 0.42;
-
-          vec3 scatterColor = mix(uOuterColor, uColor, smoothstep(0.28, 0.80, t * mix(1.0, 0.92, uOuterMix)));
-          scatterColor = mix(scatterColor, uTerminatorColor, terminatorGlow * 0.42 * uOuterMix);
-
-          float alpha = radial * (dayLight * 0.95 + forwardScatter + 0.04) * uOpacity;
-          gl_FragColor = vec4(scatterColor, clamp(alpha, 0.0, 1.0));
-        }
-      `,
-      transparent: true,
-      blending: AdditiveBlending,
-      side: BackSide,
-      depthWrite: false
-    });
-  }, [glowPreset.color, isTitan, rimPreset]);
+  useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => () => cloudsMaterial?.dispose(), [cloudsMaterial]);
+  useEffect(() => () => titanHazeMaterial?.dispose(), [titanHazeMaterial]);
+  useEffect(() => () => rimMaterial?.dispose(), [rimMaterial]);
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
@@ -446,19 +237,17 @@ export default function BodyMesh({
       (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
 
     if ((data.id === "pluto" || data.id === "charon") && simTimeRef) {
-      // Mutual tidal locking: both Pluto and Charon keep the exact same hemisphere
-      // facing each other across the barycenter without spinning independently.
       const phase = getPlutoCharonOrbitalPhase(simTimeRef.current);
-      meshRef.current.rotation.y = data.id === "pluto" ? -phase : -phase - Math.PI;
+      meshRef.current.rotation.y =
+        data.id === "pluto" ? -phase : -phase - Math.PI;
     } else {
       meshRef.current.rotation.y += delta * rotationRate * timeScale;
     }
 
-    // Slowly drift clouds independently over Earth
     if (cloudsMeshRef.current) {
       cloudsMeshRef.current.rotation.y += delta * rotationRate * timeScale * 1.15;
     }
-    if (cloudsMaterial && cloudsMaterial.uniforms) {
+    if (cloudsMaterial?.uniforms) {
       cloudsMaterial.uniforms.uTime.value = state.clock.elapsedTime;
     }
 
@@ -468,7 +257,6 @@ export default function BodyMesh({
       earthObj.getWorldPosition(earthPosRef);
       meshRef.current.getWorldPosition(moonPosRef);
 
-      // Direction vector from Sun (0,0,0) to Earth
       dirRef.copy(earthPosRef).normalize();
       moonOffsetRef.copy(moonPosRef).sub(earthPosRef);
 
@@ -476,11 +264,8 @@ export default function BodyMesh({
       let targetShadow = 1.0;
 
       if (distAlongShadow > 0) {
-        // Moon is behind Earth (night side)
         projRef.copy(dirRef).multiplyScalar(distAlongShadow);
         const perpDist = moonOffsetRef.sub(projRef).length();
-
-        // Umbra shadow cone radius at Moon distance
         const umbraRadius = 0.55;
         if (perpDist < umbraRadius) {
           const t = Math.max(0, perpDist / umbraRadius);
@@ -494,10 +279,7 @@ export default function BodyMesh({
         Math.min(1.0, delta * 8.0)
       );
 
-      if (material && "color" in material) {
-        const mat = material as MeshStandardMaterial;
-        mat.color.setHSL(0, 0, shadowFactorRef.current);
-      }
+      material.color.setHSL(0, 0, shadowFactorRef.current);
     }
   });
 

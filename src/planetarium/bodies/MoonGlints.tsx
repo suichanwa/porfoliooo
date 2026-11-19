@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
   AdditiveBlending,
@@ -19,8 +19,8 @@ import { scalePlanetRadius } from "../utils/scale";
 import { preloadTextureAssets } from "../hooks/usePlanetTexture";
 
 interface MoonGlintsProps {
-  planetRefs: React.MutableRefObject<Record<BodyId, Object3D | null>>;
-  moonSystemVisRef: React.MutableRefObject<Record<string, number>>;
+  planetRefs: RefObject<Record<BodyId, Object3D | null>>;
+  moonSystemVisRef: RefObject<Record<string, number>>;
   selectedId: BodyId | null;
   onSelect: (id: BodyId | null) => void;
   prefersReducedMotion?: boolean;

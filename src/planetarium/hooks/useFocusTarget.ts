@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -14,8 +14,8 @@ const FREE_FLY_MAX_DISTANCE = 180;
 
 function syncCameraFrustum(
   camera: OrbitControlsImpl["object"],
-  nearRef: React.MutableRefObject<number | null>,
-  farRef: React.MutableRefObject<number | null>,
+  nearRef: RefObject<number | null>,
+  farRef: RefObject<number | null>,
   nextNear: number,
   nextFar: number
 ) {
@@ -38,12 +38,12 @@ interface FocusTargetOptions {
   selectedId: BodyId | null;
   resetSignal: number;
   zoomOutSignal?: number;
-  controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
-  planetRefs: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  controlsRef: RefObject<OrbitControlsImpl | null>;
+  planetRefs: RefObject<Record<BodyId, Object3D | null>>;
   planetData: Record<BodyId, BodyData>;
   onDistanceTarget?: (value: number | null) => void;
   onFocusChange?: (focused: boolean) => void;
-  timeRef?: React.MutableRefObject<number>;
+  timeRef?: RefObject<number>;
   scaleMode?: DistanceScaleMode;
   scaleParams?: DistanceScaleParams;
 }
@@ -236,9 +236,6 @@ export const useFocusTarget = ({
           let rMin = Math.max(radius * 1.65, rRingOuter * 1.2);
           if (selectedId === "earth") {
             rMin = 0.95;
-          } else if (selectedId === "pluto") {
-            // Pluto-Charon binary dwarf companion: maintain snug binary framing
-            rMin = radius * 2.2;
           }
           const maxMoonOrbitRadius = Math.max(rMin + deltaShell, rRingOuter);
           desiredDistance = Math.max(radius * 4.5, maxMoonOrbitRadius * 2.1);

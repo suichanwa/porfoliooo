@@ -1,30 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronUp,
-  Clock,
   FastForward,
   Globe,
-  Grid,
   Home,
   Layers,
-  Orbit,
   Pause,
   Play,
   Rewind,
   RotateCcw,
-  Sliders,
-  Sparkles,
-  Tag,
-  X
+  Sliders
 } from "lucide-react";
-import { PLANETS } from "../data/planets";
 import { MOONS } from "../data/moons";
 import { PLANET_BY_ID } from "../data/planetRegistry";
 import type { BodyId } from "../data/types";
 import type { GravitySettings } from "../gravity/gravityField";
-import { GRAVITY_PRESETS } from "./GravityPanel";
 import { useSettings } from "../context/SettingsContext";
 import { usePlanetSelection } from "../context/SelectionContext";
+import CelestialDrawer from "./navbar/CelestialDrawer";
+import TimeDrawer from "./navbar/TimeDrawer";
+import LayersDrawer from "./navbar/LayersDrawer";
 
 interface PlanetariumNavbarProps {
   speed: number;
@@ -41,14 +36,6 @@ interface PlanetariumNavbarProps {
 }
 
 type ActiveMenu = "planets" | "layers" | "time" | null;
-
-const QUICK_SPEED_PRESETS = [
-  { label: "Pause", value: 0 },
-  { label: "1 d/s", value: 1 },
-  { label: "10 d/s", value: 10 },
-  { label: "30 d/s", value: 30 },
-  { label: "1 yr/s", value: 365 }
-] as const;
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
@@ -179,348 +166,45 @@ export default function PlanetariumNavbar({
     >
       {/* 1. POPUP DRAWER: Celestial Bodies & Active System Moons */}
       {activeMenu === "planets" && (
-        <div
-          role="dialog"
-          aria-label="Celestial bodies navigation"
-          className="pointer-events-auto mb-2 w-full sm:w-auto max-w-full rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-2.5 sm:p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
-        >
-          <div className="flex items-center justify-between gap-3 border-b border-slate-700/40 pb-2 mb-2 px-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-primary-accent">
-              <Globe className="h-3.5 w-3.5 text-primary-accent" />
-              Celestial Bodies
-            </span>
-            <button
-              type="button"
-              onClick={() => setActiveMenu(null)}
-              className={`text-slate-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition ${focusRing}`}
-              aria-label="Close celestial drawer"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {/* Primary Planets Strip */}
-          <div className="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain py-1 px-0.5 max-w-full sm:max-w-[min(86vw,40rem)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              type="button"
-              onClick={handleOverviewClick}
-              className={`flex min-h-[34px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-secondary-accent/40 bg-secondary-accent/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-secondary-accent hover:bg-secondary-accent/25 transition active:scale-95 ${focusRing}`}
-            >
-              <RotateCcw className="h-3 w-3" />
-              <span>Overview</span>
-            </button>
-
-            {PLANETS.map((planet) => {
-              const isSelected = selectedId === planet.id;
-              const isParentOfSelected =
-                !isSelected && activeSystemId === planet.id;
-              return (
-                <button
-                  key={planet.id}
-                  type="button"
-                  onClick={() => handlePlanetSelect(planet.id)}
-                  className={`flex min-h-[34px] flex-shrink-0 items-center gap-2 rounded-xl px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] transition-all duration-200 active:scale-95 ${focusRing} ${
-                    isSelected
-                      ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_12px_rgba(99,102,241,0.45)]"
-                      : isParentOfSelected
-                        ? "bg-primary-accent/10 border border-primary-accent/40 text-slate-100 hover:bg-primary-accent/20"
-                        : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-primary-accent/40 hover:text-white"
-                  }`}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full flex-shrink-0 shadow-sm"
-                    style={{
-                      backgroundColor: planet.render.colorFallback ?? "#5e9fff"
-                    }}
-                  />
-                  <span>{planet.name}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Active System Moons Sub-Strip */}
-          {systemMoons.length > 0 && systemParent && (
-            <div className="mt-2 pt-2 border-t border-slate-700/40">
-              <div className="flex items-center justify-between px-1 mb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                  {systemParent.id === "pluto"
-                    ? "Pluto–Charon System"
-                    : `Moons of ${systemParent.name}`}
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-slate-500">
-                  {systemMoons.length}{" "}
-                  {systemMoons.length === 1 ? "moon" : "moons"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain py-0.5 px-0.5 max-w-full sm:max-w-[min(86vw,40rem)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                {systemMoons.map((moon) => {
-                  const isMoonSelected = selectedId === moon.id;
-                  return (
-                    <button
-                      key={moon.id}
-                      type="button"
-                      onClick={() => handlePlanetSelect(moon.id)}
-                      className={`flex min-h-[32px] flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] transition-all duration-200 active:scale-95 ${focusRing} ${
-                        isMoonSelected
-                          ? "bg-secondary-accent/25 border border-secondary-accent/70 text-white shadow-[0_0_12px_rgba(199,146,234,0.4)]"
-                          : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-secondary-accent/45 hover:text-white"
-                      }`}
-                    >
-                      <span
-                        className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-                        style={{
-                          backgroundColor: moon.render.colorFallback ?? "#c792ea"
-                        }}
-                      />
-                      <span>{moon.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        <CelestialDrawer
+          selectedId={selectedId}
+          activeSystemId={activeSystemId}
+          systemParent={systemParent}
+          systemMoons={systemMoons}
+          focusRing={focusRing}
+          onSelectBody={handlePlanetSelect}
+          onOverview={handleOverviewClick}
+          onClose={() => setActiveMenu(null)}
+        />
       )}
 
       {/* 2. POPUP DRAWER: Time Controls & Speed Presets */}
       {activeMenu === "time" && (
-        <div
-          role="dialog"
-          aria-label="Time simulation controls"
-          className="pointer-events-auto mb-2 w-full max-w-sm sm:w-80 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-slate-700/40 pb-2 mb-2.5 px-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-primary-accent">
-              <Clock className="h-3.5 w-3.5 text-primary-accent" />
-              Time Control
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-white tabular-nums">
-                {formattedDate}
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveMenu(null)}
-                className={`text-slate-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition ${focusRing}`}
-                aria-label="Close time controls"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Primary Transport Controls */}
-          <div className="flex items-center justify-between gap-1.5 mb-2.5">
-            <button
-              type="button"
-              onClick={onSlower}
-              className={`flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-700/60 bg-white/[0.04] text-slate-200 hover:bg-white/[0.1] hover:text-white active:scale-95 transition ${focusRing}`}
-              aria-label="Slow down simulation"
-              title="Slow down"
-            >
-              <Rewind className="h-3.5 w-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onTogglePause}
-              className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 text-[11px] font-bold uppercase tracking-wider transition active:scale-95 ${focusRing} ${
-                isPaused
-                  ? "border-slate-600/70 bg-slate-800/70 text-slate-200 hover:text-white"
-                  : "border-primary-accent/70 bg-primary-accent/25 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]"
-              }`}
-            >
-              {isPaused ? (
-                <>
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>Resume</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="h-3.5 w-3.5 fill-current" />
-                  <span className="tabular-nums">{speedStr}</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={onFaster}
-              className={`flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-700/60 bg-white/[0.04] text-slate-200 hover:bg-white/[0.1] hover:text-white active:scale-95 transition ${focusRing}`}
-              aria-label="Speed up simulation"
-              title="Speed up"
-            >
-              <FastForward className="h-3.5 w-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onNow}
-              className={`flex h-9 px-3 flex-shrink-0 items-center justify-center rounded-xl border border-secondary-accent/45 bg-secondary-accent/15 text-[10px] font-bold uppercase tracking-wider text-secondary-accent hover:bg-secondary-accent/25 hover:text-white active:scale-95 transition ${focusRing}`}
-              title="Jump to current real-world date"
-            >
-              Now
-            </button>
-          </div>
-
-          {/* Speed Presets */}
-          <div className="grid grid-cols-5 gap-1">
-            {QUICK_SPEED_PRESETS.map((preset) => {
-              const isPresetActive = Math.abs(speed - preset.value) < 1e-6;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => updateSetting("orbitSpeed", preset.value)}
-                  className={`rounded-lg py-1.5 text-[10px] font-bold tracking-wide transition active:scale-95 ${focusRing} ${
-                    isPresetActive
-                      ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_10px_rgba(99,102,241,0.35)]"
-                      : "bg-white/[0.04] border border-slate-700/50 text-slate-300 hover:bg-white/[0.09] hover:text-white"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <TimeDrawer
+          speed={speed}
+          speedStr={speedStr}
+          isPaused={isPaused}
+          formattedDate={formattedDate}
+          focusRing={focusRing}
+          onSlower={onSlower}
+          onFaster={onFaster}
+          onTogglePause={onTogglePause}
+          onNow={onNow}
+          onSelectSpeed={(value) => updateSetting("orbitSpeed", value)}
+          onClose={() => setActiveMenu(null)}
+        />
       )}
 
       {/* 3. POPUP DRAWER: Visual Layers & Gravity */}
       {activeMenu === "layers" && (
-        <div
-          role="dialog"
-          aria-label="Visual layers and gravity presets"
-          className="pointer-events-auto mb-2 w-full max-w-xs sm:w-72 rounded-2xl border border-slate-700/60 bg-[linear-gradient(165deg,rgba(15,23,42,0.95),rgba(20,28,40,0.9))] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.75)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200"
-        >
-          <div className="flex items-center justify-between border-b border-slate-700/40 pb-2 mb-2 px-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-secondary-accent">
-              <Layers className="h-3.5 w-3.5 text-secondary-accent" />
-              Visual Layers
-            </span>
-            <button
-              type="button"
-              onClick={() => setActiveMenu(null)}
-              className={`text-slate-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition ${focusRing}`}
-              aria-label="Close layers drawer"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={() => toggleSetting("showGrid")}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] transition ${focusRing} ${
-                settings.showGrid
-                  ? "bg-secondary-accent/25 border border-secondary-accent/70 text-white shadow-[0_0_12px_rgba(199,146,234,0.4)]"
-                  : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-slate-500/80 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Grid className="h-3.5 w-3.5 text-secondary-accent" />
-                Spacetime Grid
-              </span>
-              <span className="text-[10px] font-bold tracking-wider opacity-85">
-                {settings.showGrid ? "ON" : "OFF"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleSetting("showOrbits")}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] transition ${focusRing} ${
-                settings.showOrbits
-                  ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_12px_rgba(99,102,241,0.45)]"
-                  : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-slate-500/80 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Orbit className="h-3.5 w-3.5 text-primary-accent" />
-                Orbit Paths
-              </span>
-              <span className="text-[10px] font-bold tracking-wider opacity-85">
-                {settings.showOrbits ? "ON" : "OFF"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleSetting("showLabels")}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] transition ${focusRing} ${
-                settings.showLabels
-                  ? "bg-primary-accent/25 border border-primary-accent/70 text-white shadow-[0_0_12px_rgba(99,102,241,0.45)]"
-                  : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-slate-500/80 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Tag className="h-3.5 w-3.5 text-primary-accent" />
-                Planet Labels
-              </span>
-              <span className="text-[10px] font-bold tracking-wider opacity-85">
-                {settings.showLabels ? "ON" : "OFF"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleSetting("useMilkyWayBackground")}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] transition ${focusRing} ${
-                settings.useMilkyWayBackground
-                  ? "bg-secondary-accent/25 border border-secondary-accent/70 text-white shadow-[0_0_12px_rgba(199,146,234,0.4)]"
-                  : "bg-white/[0.04] border border-slate-700/55 text-slate-300 hover:bg-white/[0.08] hover:border-slate-500/80 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-secondary-accent" />
-                Milky Way Galaxy
-              </span>
-              <span className="text-[10px] font-bold tracking-wider opacity-85">
-                {settings.useMilkyWayBackground ? "ON" : "OFF"}
-              </span>
-            </button>
-
-            {onGravityChange && (
-              <div className="mt-1.5 pt-2 border-t border-slate-700/40 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
-                  <span>Spacetime Gravity</span>
-                  {gravitySettings && (
-                    <span className="text-secondary-accent tabular-nums">
-                      {gravitySettings.gridStrength.toFixed(1)}x
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  {Object.entries(GRAVITY_PRESETS).map(([label, preset]) => {
-                    const isPresetActive =
-                      gravitySettings !== undefined &&
-                      Math.abs(
-                        gravitySettings.gridStrength - preset.gridStrength
-                      ) < 0.05 &&
-                      Math.abs(
-                        gravitySettings.wellDepthScale - preset.wellDepthScale
-                      ) < 0.05;
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => onGravityChange(preset)}
-                        className={`rounded-lg py-1.5 text-[9.5px] font-bold uppercase tracking-wider active:scale-95 transition ${focusRing} ${
-                          isPresetActive
-                            ? "bg-secondary-accent/25 border border-secondary-accent/70 text-white shadow-[0_0_10px_rgba(199,146,234,0.35)]"
-                            : "bg-white/[0.04] hover:bg-white/[0.09] text-slate-300 hover:text-white border border-slate-700/50 hover:border-secondary-accent/40"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <LayersDrawer
+          settings={settings}
+          gravitySettings={gravitySettings}
+          focusRing={focusRing}
+          onToggleSetting={toggleSetting}
+          onGravityChange={onGravityChange}
+          onClose={() => setActiveMenu(null)}
+        />
       )}
 
       {/* ============================================================ */}

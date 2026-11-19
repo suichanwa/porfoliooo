@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Group, Vector3, Object3D } from "three";
@@ -8,17 +8,17 @@ import { getOrbitPosition } from "../orbits/orbitMath";
 
 interface LabelsProps {
   data: BodyData;
-  timeRef: React.MutableRefObject<number>;
+  timeRef: RefObject<number>;
   showLabels: boolean;
   isSelected?: boolean;
   isInfoVisible?: boolean;
   onSelect?: (id: BodyId | null) => void;
-  hoveredRef?: React.MutableRefObject<boolean>;
-  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  hoveredRef?: RefObject<boolean>;
+  planetRefs?: RefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
   activeSystemId?: BodyId | null;
-  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
+  moonSystemVisRef?: RefObject<Record<string, number>>;
 }
 
 const LABEL_DISTANCE = 22;
@@ -62,8 +62,9 @@ export default function Labels({
   useFrame(() => {
     if (!groupRef.current || !data.orbit) return;
 
-    if (planetRefs?.current?.[data.id]) {
-      planetRefs.current[data.id].getWorldPosition(groupRef.current.position);
+    const trackedObj = planetRefs?.current?.[data.id];
+    if (trackedObj) {
+      trackedObj.getWorldPosition(groupRef.current.position);
     } else {
       getOrbitPosition(
         data.orbit,

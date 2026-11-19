@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 function RendererTuning() {
@@ -15,7 +15,7 @@ function RendererTuning() {
 
 interface PlanetariumCanvasProps {
   children?: ReactNode;
-  onPointerMissed?: (event: ThreeEvent<PointerEvent>) => void;
+  onPointerMissed?: (event: MouseEvent) => void;
   dpr?: number | [number, number];
   antialias?: boolean;
 }

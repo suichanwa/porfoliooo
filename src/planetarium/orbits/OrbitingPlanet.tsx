@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId } from "../data/types";
@@ -10,18 +10,18 @@ import Labels from "../ui/Labels";
 
 interface OrbitingPlanetProps {
   data: BodyData;
-  timeRef: React.MutableRefObject<number>;
+  timeRef: RefObject<number>;
   atmosphere?: boolean;
   showLabels?: boolean;
   isSelected?: boolean;
   isInfoVisible?: boolean;
   onSelect?: (id: BodyId | null) => void;
   onObjectRef?: (id: BodyId, object: Object3D | null) => void;
-  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  planetRefs?: RefObject<Record<BodyId, Object3D | null>>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
   activeSystemId?: BodyId | null;
-  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
+  moonSystemVisRef?: RefObject<Record<string, number>>;
 }
 
 export default function OrbitingPlanet({

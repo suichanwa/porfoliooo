@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   BufferGeometry,
@@ -21,11 +21,11 @@ import {
 } from "./orbitMath";
 
 interface PlutoBarycenterVisualsProps {
-  timeRef: React.MutableRefObject<number>;
+  timeRef: RefObject<number>;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
   activeSystemId?: BodyId | null;
-  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
+  moonSystemVisRef?: RefObject<Record<string, number>>;
   isSelected?: boolean;
   segments?: number;
 }

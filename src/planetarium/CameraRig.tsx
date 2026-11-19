@@ -1,5 +1,5 @@
 import { OrbitControls } from "@react-three/drei";
-import { useCallback, useEffect, useRef, type MutableRefObject, type Ref } from "react";
+import { useCallback, useEffect, useRef, type Ref, type RefObject } from "react";
 import { MathUtils, MOUSE, Spherical, TOUCH, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
@@ -47,7 +47,7 @@ export default function CameraRig({
       if (typeof controlsRef === "function") {
         controlsRef(controls);
       } else {
-        (controlsRef as MutableRefObject<OrbitControlsImpl | null>).current = controls;
+        (controlsRef as RefObject<OrbitControlsImpl | null>).current = controls;
       }
     },
     [controlsRef]

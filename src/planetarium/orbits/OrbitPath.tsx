@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferGeometry, Line, LineBasicMaterial, MathUtils, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
@@ -30,10 +30,10 @@ interface OrbitPathProps {
   opacity?: number;
   scaleMode: DistanceScaleMode;
   scaleParams: DistanceScaleParams;
-  planetRefs?: React.MutableRefObject<Record<BodyId, Object3D | null>>;
+  planetRefs?: RefObject<Record<BodyId, Object3D | null>>;
   isSelected?: boolean;
   activeSystemId?: BodyId | null;
-  moonSystemVisRef?: React.MutableRefObject<Record<string, number>>;
+  moonSystemVisRef?: RefObject<Record<string, number>>;
 }
 
 export default function OrbitPath({

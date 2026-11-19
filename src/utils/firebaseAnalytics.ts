@@ -260,7 +260,7 @@ export async function trackPlanetariumDistanceScaleChanged(details: {
 
 export async function trackPlanetariumBodySelected(details: {
   bodyId: string;
-  source: "canvas" | "picker";
+  source: "canvas" | "picker" | "search";
 }) {
   return trackAnalyticsEvent("planetarium_body_select", {
     ...getPageContext(),

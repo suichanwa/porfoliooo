@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type Ref } from "react";
+import { useEffect, useMemo, useRef, useState, type Ref, type RefObject } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
   Box3,
@@ -271,7 +271,7 @@ export default function ModelMesh({
     if (typeof groupRef === "function") {
       groupRef(node);
     } else if (groupRef && "current" in groupRef) {
-      (groupRef as React.MutableRefObject<Group | null>).current = node;
+      (groupRef as RefObject<Group | null>).current = node;
     }
   };
 
