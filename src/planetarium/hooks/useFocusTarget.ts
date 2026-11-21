@@ -9,8 +9,8 @@ import { getPlutoBarycenterPosition, R_CHARON_BARYCENTER } from "../orbits/orbit
 
 const DEFAULT_TARGET = new Vector3(0, 0, 0);
 const DEFAULT_POSITION = new Vector3(0, 0, 28);
-const FREE_FLY_MIN_DISTANCE = 0.5;
-const FREE_FLY_MAX_DISTANCE = 180;
+const FREE_FLY_MIN_DISTANCE = 0.05;
+const FREE_FLY_MAX_DISTANCE = 420;
 
 function syncCameraFrustum(
   camera: OrbitControlsImpl["object"],
@@ -259,10 +259,11 @@ export const useFocusTarget = ({
         camera.position.lerp(desiredPosition, positionEase);
         controls.target.lerp(target, targetEase);
 
+        const arrivalTol = Math.max(0.15, desiredDistance * 0.04);
         if (
-          (camera.position.distanceTo(desiredPosition) < 0.15 &&
-            controls.target.distanceTo(target) < 0.15) ||
-          transitionTimeRef.current > 1.2
+          (camera.position.distanceTo(desiredPosition) < arrivalTol &&
+            controls.target.distanceTo(target) < arrivalTol) ||
+          transitionTimeRef.current > 3.0
         ) {
           isTransitioningRef.current = false;
           controls.target.copy(target);
@@ -275,7 +276,7 @@ export const useFocusTarget = ({
       const minDistance = isMoon
         ? 0.08
         : Math.min(0.15, Math.max(radius * 1.2, 0.08));
-      const maxDistance = Math.max(minDistance * 10, 70);
+      const maxDistance = Math.max(desiredDistance * 8, 260);
 
       if (minDistanceRef.current !== minDistance) {
         controls.minDistance = minDistance;
@@ -287,7 +288,7 @@ export const useFocusTarget = ({
       }
 
       const nextNear = 0.01;
-      const nextFar = 800;
+      const nextFar = 3500;
       syncCameraFrustum(camera, nearRef, farRef, nextNear, nextFar);
 
       controls.update();
@@ -327,7 +328,7 @@ export const useFocusTarget = ({
       controls.maxDistance = FREE_FLY_MAX_DISTANCE;
       minDistanceRef.current = null;
       maxDistanceRef.current = null;
-      syncCameraFrustum(camera, nearRef, farRef, 0.05, 2000);
+      syncCameraFrustum(camera, nearRef, farRef, 0.05, 3500);
 
       controls.update();
 
@@ -359,7 +360,7 @@ export const useFocusTarget = ({
       controls.maxDistance = FREE_FLY_MAX_DISTANCE;
       minDistanceRef.current = null;
       maxDistanceRef.current = null;
-      syncCameraFrustum(camera, nearRef, farRef, 0.1, 2000);
+      syncCameraFrustum(camera, nearRef, farRef, 0.1, 3500);
 
       controls.update();
 
@@ -376,7 +377,7 @@ export const useFocusTarget = ({
       maxDistanceRef.current = null;
       controls.minDistance = FREE_FLY_MIN_DISTANCE;
       controls.maxDistance = FREE_FLY_MAX_DISTANCE;
-      syncCameraFrustum(camera, nearRef, farRef, 0.05, 2000);
+      syncCameraFrustum(camera, nearRef, farRef, 0.05, 3500);
       if (focusStateRef.current) {
         focusStateRef.current = false;
         onFocusChange?.(false);

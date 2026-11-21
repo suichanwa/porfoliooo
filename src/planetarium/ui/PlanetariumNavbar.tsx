@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronUp,
+  EyeOff,
   FastForward,
   Globe,
   Home,
@@ -20,6 +21,8 @@ import { usePlanetSelection } from "../context/SelectionContext";
 import CelestialDrawer from "./navbar/CelestialDrawer";
 import TimeDrawer from "./navbar/TimeDrawer";
 import LayersDrawer from "./navbar/LayersDrawer";
+import SimDateReadout from "./navbar/SimDateReadout";
+import type { SimDateStore } from "../hooks/useSimDateStore";
 
 interface PlanetariumNavbarProps {
   speed: number;
@@ -27,21 +30,15 @@ interface PlanetariumNavbarProps {
   onSlower: () => void;
   onFaster: () => void;
   onTogglePause: () => void;
-  onNow: () => void;
-  simDateMs: number | null;
+  simDateStore: SimDateStore;
   onToggleControls?: () => void;
   isControlsOpen?: boolean;
+  onHideUi?: () => void;
   gravitySettings?: GravitySettings;
   onGravityChange?: (next: GravitySettings) => void;
 }
 
 type ActiveMenu = "planets" | "layers" | "time" | null;
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: "numeric",
-  month: "short",
-  day: "2-digit"
-});
 
 const formatSpeed = (speed: number, compact = false) => {
   const abs = Math.abs(speed);
@@ -64,10 +61,10 @@ export default function PlanetariumNavbar({
   onSlower,
   onFaster,
   onTogglePause,
-  onNow,
-  simDateMs,
+  simDateStore,
   onToggleControls,
   isControlsOpen = false,
+  onHideUi,
   gravitySettings,
   onGravityChange
 }: PlanetariumNavbarProps) {
@@ -82,14 +79,6 @@ export default function PlanetariumNavbar({
 
   const [activeMenu, setActiveMenu] = useState<ActiveMenu>(null);
   const navRef = useRef<HTMLDivElement>(null);
-
-  const formattedDate = useMemo(() => {
-    if (simDateMs === null) return "--";
-    return dateFormatter
-      .formatToParts(new Date(simDateMs))
-      .map((part) => part.value)
-      .join("");
-  }, [simDateMs]);
 
   const speedStr = formatSpeed(speed);
   const compactSpeedStr = formatSpeed(speed, true);
@@ -147,6 +136,11 @@ export default function PlanetariumNavbar({
     onToggleControls?.();
   };
 
+  const handleHideUiClick = () => {
+    setActiveMenu(null);
+    onHideUi?.();
+  };
+
   const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950";
 
@@ -184,12 +178,11 @@ export default function PlanetariumNavbar({
           speed={speed}
           speedStr={speedStr}
           isPaused={isPaused}
-          formattedDate={formattedDate}
+          simDateStore={simDateStore}
           focusRing={focusRing}
           onSlower={onSlower}
           onFaster={onFaster}
           onTogglePause={onTogglePause}
-          onNow={onNow}
           onSelectSpeed={(value) => updateSetting("orbitSpeed", value)}
           onClose={() => setActiveMenu(null)}
         />
@@ -347,6 +340,19 @@ export default function PlanetariumNavbar({
             <Sliders className="h-4 w-4 text-primary-accent" />
           </button>
         )}
+
+        {/* Hide Interface */}
+        {onHideUi && (
+          <button
+            type="button"
+            onClick={handleHideUiClick}
+            className={`flex h-9 w-9 min-[410px]:h-10 min-[410px]:w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-700/60 bg-white/[0.04] text-slate-300 hover:text-white active:scale-95 transition ${focusRing}`}
+            title="Hide Interface (H)"
+            aria-label="Hide interface"
+          >
+            <EyeOff className="h-4 w-4 text-slate-300" />
+          </button>
+        )}
       </nav>
 
       {/* ============================================================ */}
@@ -459,21 +465,13 @@ export default function PlanetariumNavbar({
             }`}
             title="Open speed presets"
           >
-            <span className="text-[11px] font-bold text-white tabular-nums tracking-tight whitespace-nowrap">
-              {formattedDate}
-            </span>
+            <SimDateReadout
+              store={simDateStore}
+              className="text-[11px] font-bold text-white tabular-nums tracking-tight whitespace-nowrap"
+            />
             <span className="text-[9px] uppercase tracking-[0.15em] text-slate-400 mt-0.5 whitespace-nowrap">
               {speedStr}
             </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onNow}
-            className={`rounded-full border border-slate-700/55 bg-[rgba(var(--primary-bg-rgb),0.24)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-200 transition hover:border-primary-accent/45 hover:bg-[rgba(var(--primary-bg-rgb),0.44)] hover:text-white active:scale-95 ${focusRing}`}
-            title="Jump to current real-world date"
-          >
-            Now
           </button>
         </div>
 
@@ -515,6 +513,20 @@ export default function PlanetariumNavbar({
           >
             <Sliders className="h-3.5 w-3.5 text-primary-accent" />
             <span className="hidden lg:inline">Settings</span>
+          </button>
+        )}
+
+        {/* Hide Interface */}
+        {onHideUi && (
+          <button
+            type="button"
+            onClick={handleHideUiClick}
+            className={`${navButtonBase} px-2.5 py-1.5`}
+            title="Hide Interface (H)"
+            aria-label="Hide interface"
+          >
+            <EyeOff className="h-3.5 w-3.5 text-slate-300" />
+            <span className="hidden xl:inline">Hide UI</span>
           </button>
         )}
       </nav>

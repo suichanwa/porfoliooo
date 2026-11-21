@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferGeometry, Line, LineBasicMaterial, MathUtils, Object3D, Vector3 } from "three";
+import {
+  BufferGeometry,
+  Float32BufferAttribute,
+  Line,
+  MathUtils,
+  Object3D,
+  Vector3
+} from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
-import { getOrbitPosition } from "./orbitMath";
+import { getOrbitPhase, getOrbitPosition } from "./orbitMath";
+import { createOrbitPathMaterial } from "../shaders/orbitPathShader";
 
 export const PLANET_ORBIT_COLORS: Record<string, string> = {
   mercury: "#b0b7c6", // sleek mercury silver-slate
@@ -25,6 +33,7 @@ export const PLANET_ORBIT_COLORS: Record<string, string> = {
 interface OrbitPathProps {
   planet?: BodyData;
   orbit: OrbitElements;
+  timeRef?: RefObject<number>;
   segments?: number;
   color?: string;
   opacity?: number;
@@ -39,6 +48,7 @@ interface OrbitPathProps {
 export default function OrbitPath({
   planet,
   orbit,
+  timeRef,
   segments = 180,
   color,
   opacity,
@@ -55,8 +65,9 @@ export default function OrbitPath({
   }
 
   const parentWorldPosRef = useRef(new Vector3());
-  const currentOpacityRef = useRef(0.5);
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
+  const currentOpacityRef = useRef(isMoon ? 0 : 0.72);
+  const currentSelectedRef = useRef(isSelected ? 1 : 0);
 
   // Determine distinctive color for each celestial body
   const pathColor = useMemo(() => {
@@ -70,23 +81,18 @@ export default function OrbitPath({
     return "#6d7fa3";
   }, [color, planet?.id, planet?.render?.colorFallback]);
 
-  // Higher opacity when selected or distinctively visible
-  const effectiveOpacity = useMemo(() => {
-    if (opacity !== undefined) return opacity;
-    if (isSelected) return 0.85;
-    if (isMoon) return 0.35;
-    return 0.5;
-  }, [opacity, isSelected, isMoon]);
-
   const geometry = useMemo(() => {
     const points: Vector3[] = [];
+    const phases = new Float32Array(segments + 1);
     const period = Math.abs(orbit.orbitalPeriodDays);
+
     for (let i = 0; i <= segments; i += 1) {
-      const time = (i / segments) * period;
+      const phase = i / segments;
+      phases[i] = phase;
       points.push(
         getOrbitPosition(
           orbit,
-          time,
+          phase * period,
           scaleMode,
           scaleParams,
           new Vector3(),
@@ -95,18 +101,23 @@ export default function OrbitPath({
         )
       );
     }
-    return new BufferGeometry().setFromPoints(points);
+
+    const geo = new BufferGeometry().setFromPoints(points);
+    geo.setAttribute("aPhase", new Float32BufferAttribute(phases, 1));
+    return geo;
   }, [orbit, segments, scaleMode, scaleParams, isMoon, planet]);
 
+  const hasTimeRef = Boolean(timeRef);
   const material = useMemo(
     () =>
-      new LineBasicMaterial({
-        color: pathColor,
-        transparent: true,
-        opacity: effectiveOpacity,
-        depthWrite: false
-      }),
-    [pathColor, effectiveOpacity]
+      createOrbitPathMaterial(
+        pathColor,
+        opacity ?? (isMoon ? 0 : 0.72),
+        hasTimeRef
+      ),
+    // Opacity & selection are updated smoothly via shader uniforms in useFrame
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pathColor, hasTimeRef]
   );
 
   const lineObject = useMemo(() => {
@@ -128,33 +139,66 @@ export default function OrbitPath({
   }, [material]);
 
   useFrame((_, delta) => {
-    if (isMoon && planet?.parentId && planetRefs?.current?.[planet.parentId]) {
-      const parentObj = planetRefs.current[planet.parentId];
-      if (parentObj) {
-        parentObj.getWorldPosition(parentWorldPosRef.current);
-        lineObject.position.copy(parentWorldPosRef.current);
-      }
-      // Local moon orbits: keep visible ONLY for the currently active parent planet
-      const isCurrentSystem = planet.parentId === activeSystemId;
-      const vis = isCurrentSystem ? (moonSystemVisRef?.current?.[planet.parentId] ?? 0) : 0;
-      const targetOpacity = isCurrentSystem ? (isSelected ? 0.55 : 0.24) * vis : 0;
-      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 8.0, delta);
+    if (isMoon) {
+      const parentId = planet?.parentId;
+      const isCurrentSystem = Boolean(parentId && parentId === activeSystemId);
+      const vis =
+        isCurrentSystem && parentId
+          ? (moonSystemVisRef?.current?.[parentId] ?? 0)
+          : 0;
+      const targetOpacity = isCurrentSystem
+        ? (opacity ?? (isSelected ? 0.8 : 0.48)) * vis
+        : 0;
 
-      if (currentOpacityRef.current < 0.01) {
+      currentOpacityRef.current = MathUtils.damp(
+        currentOpacityRef.current,
+        targetOpacity,
+        8.0,
+        delta
+      );
+
+      if (currentOpacityRef.current < 0.008) {
         lineObject.visible = false;
-      } else {
-        lineObject.visible = true;
-        material.opacity = currentOpacityRef.current;
+        return;
       }
-    } else if (!isMoon) {
-      // Heliocentric (solar) orbit line: always stay visible!
-      // Subtle polish: if this planet's system is focused, soften to 0.35 so moon rings stand out, else normal opacity
-      const isFocusedSystem = Boolean(activeSystemId && activeSystemId === planet?.id);
-      const targetOpacity = isFocusedSystem ? (isSelected ? 0.65 : 0.35) : effectiveOpacity;
-      currentOpacityRef.current = MathUtils.damp(currentOpacityRef.current, targetOpacity, 6.0, delta);
+
+      if (parentId && planetRefs?.current?.[parentId]) {
+        const parentObj = planetRefs.current[parentId];
+        if (parentObj) {
+          parentObj.getWorldPosition(parentWorldPosRef.current);
+          lineObject.position.copy(parentWorldPosRef.current);
+        }
+      }
 
       lineObject.visible = true;
-      material.opacity = currentOpacityRef.current;
+    } else {
+      // Heliocentric (solar) orbit line: always visible, softly yields when focusing a planet system
+      const isFocusedSystem = Boolean(activeSystemId && activeSystemId === planet?.id);
+      const baseTarget = opacity ?? (isSelected ? 0.95 : 0.72);
+      const targetOpacity = isFocusedSystem
+        ? (isSelected ? 0.85 : 0.45)
+        : baseTarget;
+
+      currentOpacityRef.current = MathUtils.damp(
+        currentOpacityRef.current,
+        targetOpacity,
+        6.0,
+        delta
+      );
+      lineObject.visible = true;
+    }
+
+    currentSelectedRef.current = MathUtils.damp(
+      currentSelectedRef.current,
+      isSelected ? 1.0 : 0.0,
+      7.0,
+      delta
+    );
+
+    material.uniforms.uOpacity.value = currentOpacityRef.current;
+    material.uniforms.uSelected.value = currentSelectedRef.current;
+    if (timeRef) {
+      material.uniforms.uHeadPhase.value = getOrbitPhase(orbit, timeRef.current);
     }
   });
 

@@ -37,6 +37,8 @@ export interface OrbitElements {
   meanLongitudeAtEpochDeg?: number;
   /** Longitude of perihelion ϖ = Ω + ω (deg). Orients the orbit in the ecliptic. */
   longitudeOfPerihelionDeg?: number;
+  /** Longitude of ascending node Ω (deg). Orients the 3D line of nodes where the orbit crosses north of the ecliptic. */
+  longitudeOfAscendingNodeDeg?: number;
 }
 
 export interface RotationElements {

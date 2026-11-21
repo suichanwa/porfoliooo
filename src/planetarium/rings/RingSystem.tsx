@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { RingPreset } from "../../../planetarium/data/types";
+import type { RingPreset } from "../data/types";
 import RingBand from "./RingBand";
 
 interface RingSystemProps {

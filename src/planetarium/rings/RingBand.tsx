@@ -12,7 +12,7 @@ import {
   UnsignedByteType
 } from "three";
 import type { Texture } from "three";
-import { useTextureAsset } from "../../../planetarium/hooks/usePlanetTexture";
+import { useTextureAsset } from "../hooks/usePlanetTexture";
 
 interface RingBandProps {
   innerRadius: number;

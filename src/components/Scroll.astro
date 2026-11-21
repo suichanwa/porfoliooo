@@ -23,12 +23,14 @@
   };
 
   const showElement = (element: HTMLElement) => {
+    element.dataset.scrollRevealed = "true";
     element.classList.add("motion-safe:animate-fadeIn");
     element.style.opacity = "1";
     element.style.transform = VISIBLE_TRANSFORM;
   };
 
   const hideElement = (element: HTMLElement) => {
+    delete element.dataset.scrollRevealed;
     element.style.opacity = "0";
     element.style.transform = getInitialTransform(element);
   };
@@ -48,7 +50,9 @@
 
     scrollElements.forEach(element => {
       element.style.transition = getTransition(element);
-      hideElement(element);
+      if (element.dataset.scrollRevealed !== "true") {
+        hideElement(element);
+      }
     });
 
     activeObserver = new IntersectionObserver(
@@ -87,4 +91,10 @@
   }
 
   document.addEventListener("astro:page-load", initScrollObserver);
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initScrollObserver, { once: true });
+  } else {
+    initScrollObserver();
+  }
 </script>

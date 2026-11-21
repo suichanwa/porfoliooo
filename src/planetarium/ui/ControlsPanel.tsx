@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import useMediaQuery from "../hooks/useMediaQuery";
 import type { DistanceScaleMode } from "../utils/distanceScale";
+import { GRAVITY_PRESETS, type GravitySettings } from "../gravity/gravityField";
 import { useSettings } from "../context/SettingsContext";
 import { usePlanetSelection } from "../context/SelectionContext";
 import PlanetPicker from "./PlanetPicker";
@@ -30,6 +31,8 @@ interface ControlsPanelProps {
   className?: string;
   isOpen?: boolean;
   onToggle?: () => void;
+  gravitySettings?: GravitySettings;
+  onGravityChange?: (next: GravitySettings) => void;
 }
 
 const DEFAULT_POSITION = { x: 16, y: 80 };
@@ -88,7 +91,9 @@ function CustomToggle({
 export default function ControlsPanel({
   className = "",
   isOpen,
-  onToggle
+  onToggle,
+  gravitySettings,
+  onGravityChange
 }: ControlsPanelProps = {}) {
   const { settings, updateSetting, toggleSetting } = useSettings();
   const { isInfoVisible } = usePlanetSelection();
@@ -457,12 +462,84 @@ export default function ControlsPanel({
             />
 
             <CustomToggle
-              label="Spacetime Grid"
+              label="Spacetime Gravity"
               icon={<Grid className="h-3.5 w-3.5 text-secondary-accent" />}
               checked={settings.showGrid}
               onChange={handleToggleGrid}
               accent="secondary"
             />
+
+            {settings.showGrid && gravitySettings && onGravityChange && (
+              <div className="mt-1 mx-1 pt-2.5 pb-1 px-2 rounded-xl border border-secondary-accent/25 bg-slate-950/50 flex flex-col gap-2.5">
+                <div className="grid grid-cols-3 gap-1">
+                  {Object.entries(GRAVITY_PRESETS).map(([label, preset]) => {
+                    const isPresetActive =
+                      Math.abs(gravitySettings.gridStrength - preset.gridStrength) < 0.05 &&
+                      Math.abs(gravitySettings.softening - preset.softening) < 0.05;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => onGravityChange(preset)}
+                        className={`rounded-lg py-1 text-[9.5px] font-bold uppercase tracking-wider transition active:scale-95 ${
+                          isPresetActive
+                            ? "bg-secondary-accent/25 border border-secondary-accent/70 text-white shadow-[0_0_8px_rgba(199,146,234,0.35)]"
+                            : "bg-white/[0.04] hover:bg-white/[0.09] text-slate-300 hover:text-white border border-slate-700/50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
+                    <span className="text-slate-400">Grid Curvature</span>
+                    <span className="text-secondary-accent tabular-nums font-bold">
+                      {gravitySettings.gridStrength.toFixed(2)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1.5}
+                    step={0.05}
+                    value={gravitySettings.gridStrength}
+                    onChange={(event) =>
+                      onGravityChange({
+                        ...gravitySettings,
+                        gridStrength: Number(event.target.value)
+                      })
+                    }
+                    className="w-full h-1.5 bg-slate-800/90 rounded-lg appearance-none cursor-pointer accent-secondary-accent focus:outline-none"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
+                    <span className="text-slate-400">Softening Radius</span>
+                    <span className="text-secondary-accent tabular-nums font-bold">
+                      {gravitySettings.softening.toFixed(1)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1.5}
+                    max={10}
+                    step={0.1}
+                    value={gravitySettings.softening}
+                    onChange={(event) =>
+                      onGravityChange({
+                        ...gravitySettings,
+                        softening: Number(event.target.value)
+                      })
+                    }
+                    className="w-full h-1.5 bg-slate-800/90 rounded-lg appearance-none cursor-pointer accent-secondary-accent focus:outline-none"
+                  />
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Section 4: Diagnostics */}

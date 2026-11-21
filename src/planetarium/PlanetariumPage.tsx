@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Eye } from "lucide-react";
 import PlanetariumCanvas from "./PlanetariumCanvas";
 import PlanetariumScene from "./PlanetariumScene";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useIsClient from "../hooks/useIsClient";
 import PlanetInfoPanel from "./ui/PlanetInfoPanel";
 import ControlsPanel from "./ui/ControlsPanel";
-import GravityPanel from "./ui/GravityPanel";
 import PlanetariumNavbar from "./ui/PlanetariumNavbar";
 import PerfOverlay from "./ui/PerfOverlay";
 import {
@@ -19,6 +19,7 @@ import {
 import { trackPlanetariumVisited } from "../utils/firebaseAnalytics";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { SelectionProvider, usePlanetSelection } from "./context/SelectionContext";
+import { createSimDateStore } from "./hooks/useSimDateStore";
 
 // Simulation speed presets (days per real second) for the time controls.
 const SPEED_LADDER = [0.25, 1, 2, 5, 10, 30, 90, 365, 1825];
@@ -41,11 +42,27 @@ function PlanetariumView() {
   } = usePlanetSelection();
 
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [uiHidden, setUiHidden] = useState(false);
   const [gravitySettings, setGravitySettings] = useState<GravitySettings>(
     DEFAULT_GRAVITY_SETTINGS
   );
-  const [simDateMs, setSimDateMs] = useState<number | null>(null);
-  const [timeResetSignal, setTimeResetSignal] = useState(0);
+  const simDateStore = useMemo(() => createSimDateStore(Date.now()), []);
+  const handleSimDateChange = useCallback(
+    (epochMs: number) => {
+      simDateStore.set(epochMs);
+    },
+    [simDateStore]
+  );
+  const handleToggleControls = useCallback(() => {
+    setControlsOpen((prev) => !prev);
+  }, []);
+  const handleHideUi = useCallback(() => {
+    setControlsOpen(false);
+    setUiHidden(true);
+  }, []);
+  const handleShowUi = useCallback(() => {
+    setUiHidden(false);
+  }, []);
   const prevSpeedRef = useRef(1);
   const [debugGravity, setDebugGravity] = useState(false);
   const hasTrackedVisit = useRef(false);
@@ -116,8 +133,32 @@ function PlanetariumView() {
     }
   }, [settings.orbitSpeed, updateSetting]);
 
-  const handleNow = useCallback(() => {
-    setTimeResetSignal((signal) => signal + 1);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === "h" || event.key === "H") {
+        setUiHidden((prev) => {
+          if (!prev) setControlsOpen(false);
+          return !prev;
+        });
+      } else if (event.key === "Escape") {
+        setUiHidden(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -168,7 +209,7 @@ function PlanetariumView() {
       >
         <PlanetariumScene
           showOrbits={settings.showOrbits}
-          showLabels={settings.showLabels}
+          showLabels={settings.showLabels && !uiHidden}
           showGrid={settings.showGrid}
           selectedId={selectedId}
           activeSystemId={activeSystemId}
@@ -186,61 +227,71 @@ function PlanetariumView() {
           debugGravity={debugGravity}
           showPerf={settings.showPerf}
           orbitSpeed={settings.orbitSpeed}
-          timeResetSignal={timeResetSignal}
-          onSimDateChange={setSimDateMs}
+          onSimDateChange={handleSimDateChange}
           useMilkyWayBackground={settings.useMilkyWayBackground}
         />
       </PlanetariumCanvas>
 
-      <PlanetInfoPanel />
+      {!uiHidden ? (
+        <>
+          <PlanetInfoPanel />
 
-      <ControlsPanel
-        isOpen={controlsOpen}
-        onToggle={() => setControlsOpen((prev) => !prev)}
-      />
+          <ControlsPanel
+            isOpen={controlsOpen}
+            onToggle={handleToggleControls}
+            gravitySettings={gravitySettings}
+            onGravityChange={setGravitySettings}
+          />
 
-      <PerfOverlay enabled={settings.showPerf} />
+          <PerfOverlay enabled={settings.showPerf} />
 
-      <PlanetariumNavbar
-        speed={settings.orbitSpeed}
-        isPaused={settings.orbitSpeed === 0}
-        onSlower={handleSlower}
-        onFaster={handleFaster}
-        onTogglePause={handleTogglePause}
-        onNow={handleNow}
-        simDateMs={simDateMs}
-        onToggleControls={() => setControlsOpen((prev) => !prev)}
-        isControlsOpen={controlsOpen}
-        gravitySettings={gravitySettings}
-        onGravityChange={setGravitySettings}
-      />
+          <PlanetariumNavbar
+            speed={settings.orbitSpeed}
+            isPaused={settings.orbitSpeed === 0}
+            onSlower={handleSlower}
+            onFaster={handleFaster}
+            onTogglePause={handleTogglePause}
+            simDateStore={simDateStore}
+            onToggleControls={handleToggleControls}
+            isControlsOpen={controlsOpen}
+            onHideUi={handleHideUi}
+            gravitySettings={gravitySettings}
+            onGravityChange={setGravitySettings}
+          />
 
-      <div className="pointer-events-none fixed bottom-4 right-4 z-20 hidden xl:flex w-auto justify-end">
-        <GravityPanel
-          settings={gravitySettings}
-          onChange={setGravitySettings}
-        />
-      </div>
+          <div className="pointer-events-none fixed bottom-4 left-4 z-20 hidden xl:flex flex-col gap-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40 max-w-[14rem]">
+            <div className="truncate">
+              {settings.distanceScaleMode} scale - 1 AU ~{" "}
+              {computeRenderOrbitRadius(
+                1,
+                settings.distanceScaleMode,
+                distanceScaleParams
+              ).toFixed(2)}{" "}
+              units
+            </div>
+            <div className="hidden xl:block truncate">
+              Quality: DPR {Array.isArray(canvasDpr) ? canvasDpr[1].toFixed(2) : Number(canvasDpr).toFixed(2)} - Post Off
+            </div>
+          </div>
 
-      <div className="pointer-events-none fixed bottom-4 left-4 z-20 hidden xl:flex flex-col gap-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40 max-w-[14rem]">
-        <div className="truncate">
-          {settings.distanceScaleMode} scale - 1 AU ~{" "}
-          {computeRenderOrbitRadius(
-            1,
-            settings.distanceScaleMode,
-            distanceScaleParams
-          ).toFixed(2)}{" "}
-          units
-        </div>
-        <div className="hidden xl:block truncate">
-          Quality: DPR {Array.isArray(canvasDpr) ? canvasDpr[1].toFixed(2) : Number(canvasDpr).toFixed(2)} - Post Off
-        </div>
-      </div>
-
-      {debugGravity && (
-        <div className="pointer-events-none fixed bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
-          Gravity debug
-        </div>
+          {debugGravity && (
+            <div className="pointer-events-none fixed bottom-16 left-4 z-20 text-[10px] uppercase tracking-[0.2em] text-white/50">
+              Gravity debug
+            </div>
+          )}
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={handleShowUi}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="fixed bottom-4 right-4 z-[45] flex items-center gap-1.5 rounded-full border border-slate-700/50 bg-slate-950/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300 opacity-35 backdrop-blur-md shadow-lg transition-all duration-200 hover:border-primary-accent/60 hover:bg-slate-900/85 hover:text-white hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-accent/70 active:scale-95"
+          title="Show Interface (H)"
+          aria-label="Show interface"
+        >
+          <Eye className="h-3.5 w-3.5 text-primary-accent" />
+          <span className="hidden sm:inline">Show UI</span>
+        </button>
       )}
     </div>
   );

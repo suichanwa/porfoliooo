@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { memo, useEffect, useState, type ReactNode } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -20,7 +20,7 @@ interface PlanetariumCanvasProps {
   antialias?: boolean;
 }
 
-export default function PlanetariumCanvas({
+function PlanetariumCanvas({
   children,
   onPointerMissed,
   dpr = [1, 1.5],
@@ -53,7 +53,7 @@ export default function PlanetariumCanvas({
       <Canvas
         frameloop={frameloop}
         dpr={dpr}
-        camera={{ position: [0, 0, 20], fov: 45, near: 0.1, far: 2000 }}
+        camera={{ position: [0, 0, 20], fov: 45, near: 0.1, far: 3500 }}
         gl={{
           antialias,
           alpha: false,
@@ -69,3 +69,5 @@ export default function PlanetariumCanvas({
     </div>
   );
 }
+
+export default memo(PlanetariumCanvas);

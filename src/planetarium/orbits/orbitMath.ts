@@ -9,8 +9,6 @@ import {
 } from "../utils/distanceScale";
 import { kmToAu } from "../utils/units";
 
-const ORBIT_TILT_AXIS = new Vector3(1, 0, 0);
-const PERIHELION_AXIS = new Vector3(0, 1, 0);
 const EQUATORIAL_TILT_AXIS = new Vector3(0, 0, 1);
 
 const solveKepler = (meanAnomaly: number, eccentricity: number) => {
@@ -115,6 +113,12 @@ export const getPlutoCharonBinaryState = (
   };
 };
 
+export const getOrbitPhase = (orbit: OrbitElements, timeDays: number): number => {
+  const period = Math.abs(orbit.orbitalPeriodDays);
+  if (period <= 0) return 0;
+  return (((timeDays % period) + period) % period) / period;
+};
+
 export const getOrbitPosition = (
   orbit: OrbitElements,
   timeDays: number,
@@ -184,6 +188,8 @@ export const getOrbitPosition = (
   // Prefer real J2000 elements: mean anomaly M = L - ϖ, advanced by mean motion.
   // Fall back to the legacy manual phase when those elements are absent.
   const periLon = MathUtils.degToRad(orbit.longitudeOfPerihelionDeg ?? 0);
+  const ascNode = MathUtils.degToRad(orbit.longitudeOfAscendingNodeDeg ?? 0);
+  const argPeri = periLon - ascNode;
   const meanAnomaly =
     orbit.meanLongitudeAtEpochDeg !== undefined
       ? MathUtils.degToRad(orbit.meanLongitudeAtEpochDeg) - periLon + meanMotion
@@ -193,17 +199,34 @@ export const getOrbitPosition = (
   const cosE = Math.cos(eccentricAnomaly);
   const sinE = Math.sin(eccentricAnomaly);
 
-  // Position in the local orbital plane with perihelion along +x.
-  const x = semiMajor * (cosE - orbit.eccentricity);
-  const z =
+  // Position in the local orbital plane with perihelion along +x_orb.
+  const xOrb = semiMajor * (cosE - orbit.eccentricity);
+  const yOrb =
     semiMajor * Math.sqrt(Math.max(0, 1 - orbit.eccentricity ** 2)) * sinE;
 
-  out.set(x, 0, z);
+  // Full 3D Keplerian Euler rotation (ω = ϖ - Ω, inclination i, ascending node Ω):
+  // 1. Rotate within the orbital plane by argument of perihelion ω
+  const cosW = Math.cos(argPeri);
+  const sinW = Math.sin(argPeri);
+  const x1 = xOrb * cosW - yOrb * sinW;
+  const y1 = xOrb * sinW + yOrb * cosW;
 
-  // Rotate so perihelion points in the correct direction, then tilt by orbital inclination
-  if (periLon !== 0) out.applyAxisAngle(PERIHELION_AXIS, periLon);
+  // 2. Tilt out of the ecliptic plane by inclination i around the line of nodes
   const inclination = MathUtils.degToRad(orbit.inclinationDeg);
-  out.applyAxisAngle(ORBIT_TILT_AXIS, inclination);
+  const cosI = Math.cos(inclination);
+  const sinI = Math.sin(inclination);
+  const y2 = y1 * cosI;
+  const zEcl = y1 * sinI;
+
+  // 3. Rotate around the ecliptic pole by longitude of ascending node Ω
+  const cosO = Math.cos(ascNode);
+  const sinO = Math.sin(ascNode);
+  const xEcl = x1 * cosO - y2 * sinO;
+  const yEcl = x1 * sinO + y2 * cosO;
+
+  // Map heliocentric ecliptic (X, Y, Z_north) -> Three.js right-handed Y-up (X, Z_north, -Y)
+  // so prograde orbits run counter-clockwise when viewed from Ecliptic North (+Y).
+  out.set(xEcl, zEcl, -yEcl);
 
   // Equatorial Plane Alignment:
   // For moons, rotate the local orbit by the parent planet's axial tilt around the Z-axis

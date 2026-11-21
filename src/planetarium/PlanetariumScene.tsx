@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { MathUtils, Mesh, NoColorSpace, Object3D, SRGBColorSpace, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -53,7 +53,6 @@ interface PlanetariumSceneProps {
   debugGravity?: boolean;
   showPerf?: boolean;
   orbitSpeed?: number;
-  timeResetSignal?: number;
   onSimDateChange?: (epochMs: number) => void;
   useMilkyWayBackground?: boolean;
 }
@@ -61,7 +60,7 @@ interface PlanetariumSceneProps {
 const J2000_EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const nowEpochDays = () => (Date.now() - J2000_EPOCH_MS) / 86400000;
 
-export default function PlanetariumScene({
+function PlanetariumScene({
   showOrbits,
   showLabels,
   showGrid,
@@ -81,7 +80,6 @@ export default function PlanetariumScene({
   debugGravity = false,
   showPerf = true,
   orbitSpeed = 10,
-  timeResetSignal = 0,
   onSimDateChange,
   useMilkyWayBackground = false
 }: PlanetariumSceneProps) {
@@ -185,16 +183,13 @@ export default function PlanetariumScene({
     perfSampleRef.current = { elapsed: 0, frames: 0, logged: false };
   }, [showPerf]);
 
-  // "Now" button: snap simulation time back to the real current date.
+  // Snap simulation time to the real-world current date on mount.
   useEffect(() => {
-    if (timeResetSignal === 0) return;
     timeRef.current = nowEpochDays();
-    if (onSimDateChange) {
-      onSimDateChange(J2000_EPOCH_MS + timeRef.current * 86400000);
-    }
-  }, [timeResetSignal, onSimDateChange, timeRef]);
+    onSimDateChange?.(J2000_EPOCH_MS + timeRef.current * 86400000);
+  }, [onSimDateChange, timeRef]);
 
-  // Report the simulated date to the UI ~4x/sec (avoids per-frame re-renders).
+  // Report the simulated date to the UI ~1x/sec (avoids per-frame re-renders).
   useFrame((_, delta) => {
     if (!onSimDateChange) return;
     simDateAccumRef.current += delta;
@@ -294,6 +289,7 @@ export default function PlanetariumScene({
                 key={`${planet.id}-orbit`}
                 planet={planet}
                 orbit={planet.orbit}
+                timeRef={timeRef}
                 segments={orbitSegments}
                 scaleMode={distanceScaleMode}
                 scaleParams={distanceScaleParams}
@@ -342,9 +338,12 @@ export default function PlanetariumScene({
       />
       <CameraRig
         controlsRef={controlsRef}
+        planetRefs={planetRefs}
         isInspecting={Boolean(selectedId)}
         onZoomOut={handleZoomOut}
       />
     </>
   );
 }
+
+export default memo(PlanetariumScene);

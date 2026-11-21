@@ -1,7 +1,6 @@
 import { Grid, Layers, Orbit, Sparkles, Tag, X } from "lucide-react";
-import type { GravitySettings } from "../../gravity/gravityField";
+import { GRAVITY_PRESETS, type GravitySettings } from "../../gravity/gravityField";
 import type { PlanetariumSettings } from "../../context/SettingsContext";
-import { GRAVITY_PRESETS } from "../GravityPanel";
 
 interface LayersDrawerProps {
   settings: PlanetariumSettings;
@@ -114,7 +113,7 @@ export default function LayersDrawer({
           </span>
         </button>
 
-        {onGravityChange && (
+        {settings.showGrid && onGravityChange && (
           <div className="mt-1.5 pt-2 border-t border-slate-700/40 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
               <span>Spacetime Gravity</span>

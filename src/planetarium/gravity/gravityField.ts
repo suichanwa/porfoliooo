@@ -60,6 +60,27 @@ export const DEFAULT_GRAVITY_SETTINGS: GravitySettings = {
   maxInfluence: 2.2
 };
 
+export const GRAVITY_PRESETS: Record<string, GravitySettings> = {
+  Subtle: {
+    gridStrength: 0.35,
+    lensingStrength: 0.15,
+    softening: 6,
+    maxInfluence: 1.6
+  },
+  Cinematic: {
+    gridStrength: 0.75,
+    lensingStrength: 0.32,
+    softening: 4,
+    maxInfluence: 2.6
+  },
+  Debug: {
+    gridStrength: 1.2,
+    lensingStrength: 0.45,
+    softening: 2.8,
+    maxInfluence: 4
+  }
+};
+
 export const gravityInfluence = (
   pointWorld: Vector3,
   bodies: GravityBody[],

@@ -27,7 +27,7 @@ import {
   useTextureAsset
 } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
-import RingSystem from "../../components/Planetarium/rings/RingSystem";
+import RingSystem from "../rings/RingSystem";
 import { getPlutoCharonOrbitalPhase } from "../orbits/orbitMath";
 import {
   applySolarShineShader,

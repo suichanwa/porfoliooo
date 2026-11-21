@@ -1,4 +1,6 @@
 import { Clock, FastForward, Pause, Play, Rewind, X } from "lucide-react";
+import type { SimDateStore } from "../../hooks/useSimDateStore";
+import SimDateReadout from "./SimDateReadout";
 
 const QUICK_SPEED_PRESETS = [
   { label: "Pause", value: 0 },
@@ -12,12 +14,11 @@ interface TimeDrawerProps {
   speed: number;
   speedStr: string;
   isPaused: boolean;
-  formattedDate: string;
+  simDateStore: SimDateStore;
   focusRing: string;
   onSlower: () => void;
   onFaster: () => void;
   onTogglePause: () => void;
-  onNow: () => void;
   onSelectSpeed: (value: number) => void;
   onClose: () => void;
 }
@@ -26,12 +27,11 @@ export default function TimeDrawer({
   speed,
   speedStr,
   isPaused,
-  formattedDate,
+  simDateStore,
   focusRing,
   onSlower,
   onFaster,
   onTogglePause,
-  onNow,
   onSelectSpeed,
   onClose
 }: TimeDrawerProps) {
@@ -47,9 +47,10 @@ export default function TimeDrawer({
           Time Control
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold text-white tabular-nums">
-            {formattedDate}
-          </span>
+          <SimDateReadout
+            store={simDateStore}
+            className="text-[11px] font-semibold text-white tabular-nums"
+          />
           <button
             type="button"
             onClick={onClose}
@@ -103,15 +104,6 @@ export default function TimeDrawer({
           title="Speed up"
         >
           <FastForward className="h-3.5 w-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onNow}
-          className={`flex h-9 px-3 flex-shrink-0 items-center justify-center rounded-xl border border-secondary-accent/45 bg-secondary-accent/15 text-[10px] font-bold uppercase tracking-wider text-secondary-accent hover:bg-secondary-accent/25 hover:text-white active:scale-95 transition ${focusRing}`}
-          title="Jump to current real-world date"
-        >
-          Now
         </button>
       </div>
 

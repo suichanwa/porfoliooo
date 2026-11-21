@@ -67,7 +67,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 7.005,
       orbitalPeriodDays: 87.969,
       meanLongitudeAtEpochDeg: 252.2503235,
-      longitudeOfPerihelionDeg: 77.45779628
+      longitudeOfPerihelionDeg: 77.45779628,
+      longitudeOfAscendingNodeDeg: 48.33076593
     }
   },
   {
@@ -111,7 +112,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 3.394,
       orbitalPeriodDays: 224.701,
       meanLongitudeAtEpochDeg: 181.9790995,
-      longitudeOfPerihelionDeg: 131.60246718
+      longitudeOfPerihelionDeg: 131.60246718,
+      longitudeOfAscendingNodeDeg: 76.67984255
     }
   },
   {
@@ -155,7 +157,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 0,
       orbitalPeriodDays: 365.256,
       meanLongitudeAtEpochDeg: 100.46457166,
-      longitudeOfPerihelionDeg: 102.93768193
+      longitudeOfPerihelionDeg: 102.93768193,
+      longitudeOfAscendingNodeDeg: 0
     }
   },
   {
@@ -200,7 +203,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 1.85,
       orbitalPeriodDays: 686.98,
       meanLongitudeAtEpochDeg: -4.55343205,
-      longitudeOfPerihelionDeg: -23.94362959
+      longitudeOfPerihelionDeg: -23.94362959,
+      longitudeOfAscendingNodeDeg: 49.55953891
     }
   },
   {
@@ -252,7 +256,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 1.304,
       orbitalPeriodDays: 4332.59,
       meanLongitudeAtEpochDeg: 34.39644051,
-      longitudeOfPerihelionDeg: 14.72847983
+      longitudeOfPerihelionDeg: 14.72847983,
+      longitudeOfAscendingNodeDeg: 100.47390909
     }
   },
   {
@@ -307,7 +312,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 2.485,
       orbitalPeriodDays: 10759.22,
       meanLongitudeAtEpochDeg: 49.95424423,
-      longitudeOfPerihelionDeg: 92.59887831
+      longitudeOfPerihelionDeg: 92.59887831,
+      longitudeOfAscendingNodeDeg: 113.66242448
     }
   },
   {
@@ -359,7 +365,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 0.773,
       orbitalPeriodDays: 30685.4,
       meanLongitudeAtEpochDeg: 313.23810451,
-      longitudeOfPerihelionDeg: 170.9542763
+      longitudeOfPerihelionDeg: 170.9542763,
+      longitudeOfAscendingNodeDeg: 74.01692503
     }
   },
   {
@@ -450,7 +457,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 1.77,
       orbitalPeriodDays: 60190,
       meanLongitudeAtEpochDeg: -55.12002969,
-      longitudeOfPerihelionDeg: 44.96476227
+      longitudeOfPerihelionDeg: 44.96476227,
+      longitudeOfAscendingNodeDeg: 131.78422574
     }
   },
   {
@@ -484,7 +492,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 10.59,
       orbitalPeriodDays: 1680.9,
       meanLongitudeAtEpochDeg: 249.916,
-      longitudeOfPerihelionDeg: 153.927
+      longitudeOfPerihelionDeg: 153.927,
+      longitudeOfAscendingNodeDeg: 80.3055316
     }
   },
   {
@@ -518,7 +527,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 17.16,
       orbitalPeriodDays: 90560,
       meanLongitudeAtEpochDeg: 238.92903833,
-      longitudeOfPerihelionDeg: 224.06891629
+      longitudeOfPerihelionDeg: 224.06891629,
+      longitudeOfAscendingNodeDeg: 110.30347
     }
   },
   {
@@ -553,7 +563,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 17.16,
       orbitalPeriodDays: 90560,
       meanLongitudeAtEpochDeg: 238.92903833,
-      longitudeOfPerihelionDeg: 224.06891629
+      longitudeOfPerihelionDeg: 224.06891629,
+      longitudeOfAscendingNodeDeg: 110.30347
     }
   },
   {
@@ -594,7 +605,8 @@ export const PLANETS: BodyData[] = [
       inclinationDeg: 35.5,
       orbitalPeriodDays: 820000.0,
       meanLongitudeAtEpochDeg: 255.4,
-      longitudeOfPerihelionDeg: 255.4
+      longitudeOfPerihelionDeg: 255.4,
+      longitudeOfAscendingNodeDeg: 165.4
     }
   }
 ];
