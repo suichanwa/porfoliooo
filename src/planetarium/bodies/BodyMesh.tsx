@@ -56,6 +56,10 @@ const DEFAULT_MATERIAL: MaterialPreset = { roughness: 0.85, metalness: 0 };
 const DEFAULT_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.12 };
 const DWARF_GLOW: GlowPreset = { color: "#f3d4a6", intensity: 0.08 };
 const STAR_GLOW: GlowPreset = { color: "#f5c96b", intensity: 1.2 };
+const TWO_PI = Math.PI * 2;
+// Soft visual spin cap (rad/s, ~1 rotation per 2.85s max) so fast-forwarding at
+// 30–1825 d/s stays smooth and readable without strobing.
+const MAX_VISUAL_SPIN_RAD_PER_SEC = 2.2;
 
 // Shared unit-radius SphereGeometry pools (scaled per body by radius) so we allocate
 // only 2 GPU vertex buffers across all planets, moons, clouds, and atmosphere shells.
@@ -92,6 +96,8 @@ export default function BodyMesh({
   const meshRef = useRef<Mesh>(null);
   const cloudsMeshRef = useRef<Mesh>(null);
   const shadowFactorRef = useRef(1.0);
+  const prevSimTimeRef = useRef<number | null>(null);
+  const cloudTimeRef = useRef(0);
   const earthPosRef = useMemo(() => new Vector3(), []);
   const moonPosRef = useMemo(() => new Vector3(), []);
   const dirRef = useMemo(() => new Vector3(), []);
@@ -230,25 +236,55 @@ export default function BodyMesh({
   useEffect(() => () => titanHazeMaterial?.dispose(), [titanHazeMaterial]);
   useEffect(() => () => rimMaterial?.dispose(), [rimMaterial]);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!meshRef.current) return;
 
-    const rotationRate =
-      (2 * Math.PI) / (data.rotation.rotationPeriodHours * 3600);
+    const rotationHours = data.rotation.rotationPeriodHours;
+    let deltaAngle = 0;
 
     if ((data.id === "pluto" || data.id === "charon") && simTimeRef) {
       const phase = getPlutoCharonOrbitalPhase(simTimeRef.current);
       meshRef.current.rotation.y =
         data.id === "pluto" ? -phase : -phase - Math.PI;
-    } else {
-      meshRef.current.rotation.y += delta * rotationRate * timeScale;
+      prevSimTimeRef.current = simTimeRef.current;
+    } else if (simTimeRef && rotationHours !== 0) {
+      const simDays = simTimeRef.current;
+      const rotationDays = rotationHours / 24;
+
+      if (prevSimTimeRef.current === null) {
+        // Seed initial spin phase deterministically from simulation time
+        meshRef.current.rotation.y = ((simDays / rotationDays) * TWO_PI) % TWO_PI;
+        prevSimTimeRef.current = simDays;
+      } else {
+        const dtDays = simDays - prevSimTimeRef.current;
+        prevSimTimeRef.current = simDays;
+
+        // Detect a discrete custom date jump (> 50 simulated days in a single frame)
+        // and snap cleanly to the new deterministic phase instead of a spin burst.
+        if (Math.abs(dtDays) > 50) {
+          meshRef.current.rotation.y = ((simDays / rotationDays) * TWO_PI) % TWO_PI;
+        } else if (dtDays !== 0 && delta > 0) {
+          const safeDelta = Math.min(delta, 0.05);
+          const rawOmega = ((dtDays / rotationDays) * TWO_PI) / safeDelta;
+          const visualOmega =
+            MAX_VISUAL_SPIN_RAD_PER_SEC *
+            Math.tanh(rawOmega / MAX_VISUAL_SPIN_RAD_PER_SEC);
+          deltaAngle = visualOmega * safeDelta;
+          meshRef.current.rotation.y += deltaAngle;
+        }
+      }
+    } else if (rotationHours !== 0) {
+      const rotationRate = TWO_PI / (rotationHours * 3600);
+      deltaAngle = delta * rotationRate * timeScale;
+      meshRef.current.rotation.y += deltaAngle;
     }
 
-    if (cloudsMeshRef.current) {
-      cloudsMeshRef.current.rotation.y += delta * rotationRate * timeScale * 1.15;
+    if (cloudsMeshRef.current && deltaAngle !== 0) {
+      cloudsMeshRef.current.rotation.y += deltaAngle * 1.15;
     }
-    if (cloudsMaterial?.uniforms) {
-      cloudsMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+    if (cloudsMaterial?.uniforms && deltaAngle !== 0) {
+      cloudTimeRef.current += deltaAngle * 0.45;
+      cloudsMaterial.uniforms.uTime.value = cloudTimeRef.current;
     }
 
     // Dynamic Earth Shadow (Lunar Eclipse) when Moon moves behind Earth relative to Sun
