@@ -9,8 +9,17 @@ import {
   Vector3
 } from "three";
 import type { BodyData, BodyId, OrbitElements } from "../data/types";
-import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
-import { getOrbitPhase, getOrbitPosition } from "./orbitMath";
+import {
+  computeRenderOrbitRadius,
+  type DistanceScaleMode,
+  type DistanceScaleParams
+} from "../utils/distanceScale";
+import {
+  getEffectiveOrbitalPeriodDays,
+  getEscapeDirection,
+  getOrbitPhase,
+  getOrbitPosition
+} from "./orbitMath";
 import { createOrbitPathMaterial } from "../shaders/orbitPathShader";
 
 export const PLANET_ORBIT_COLORS: Record<string, string> = {
@@ -27,7 +36,8 @@ export const PLANET_ORBIT_COLORS: Record<string, string> = {
   pluto: "#c77dff",   // subtle purple / mauve
   charon: "#a78bfa",  // soft lavender/violet
   enceladus: "#e0f2fe", // icy sky tint
-  voyager: "#ffd166"  // golden probe
+  voyager1: "#ffd166", // golden interstellar probe
+  voyager: "#ffd166"
 };
 
 interface OrbitPathProps {
@@ -66,6 +76,7 @@ export default function OrbitPath({
 
   const parentWorldPosRef = useRef(new Vector3());
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
+  const isEscapeRay = Boolean(orbit.escapeTrajectory && !isMoon);
   const currentOpacityRef = useRef(isMoon ? 0 : 0.72);
   const currentSelectedRef = useRef(isSelected ? 1 : 0);
 
@@ -84,22 +95,40 @@ export default function OrbitPath({
   const geometry = useMemo(() => {
     const points: Vector3[] = [];
     const phases = new Float32Array(segments + 1);
-    const period = Math.abs(orbit.orbitalPeriodDays);
 
-    for (let i = 0; i <= segments; i += 1) {
-      const phase = i / segments;
-      phases[i] = phase;
-      points.push(
-        getOrbitPosition(
-          orbit,
-          phase * period,
-          scaleMode,
-          scaleParams,
-          new Vector3(),
-          isMoon,
-          planet
-        )
-      );
+    if (orbit.escapeTrajectory && !isMoon) {
+      // Open interstellar escape ray from launch region (1 AU) out into deep space
+      const esc = orbit.escapeTrajectory;
+      const minAu = esc.minDistanceAu ?? 1.0;
+      const maxAu = esc.maxPlotDistanceAu ?? 420.0;
+      const rMin = computeRenderOrbitRadius(minAu, scaleMode, scaleParams);
+      const rMax = computeRenderOrbitRadius(maxAu, scaleMode, scaleParams);
+      const dir = getEscapeDirection(esc, new Vector3());
+
+      for (let i = 0; i <= segments; i += 1) {
+        const phase = i / segments;
+        phases[i] = phase;
+        const r = MathUtils.lerp(rMin, rMax, phase);
+        points.push(dir.clone().multiplyScalar(r));
+      }
+    } else {
+      const period = getEffectiveOrbitalPeriodDays(orbit);
+
+      for (let i = 0; i <= segments; i += 1) {
+        const phase = i / segments;
+        phases[i] = phase;
+        points.push(
+          getOrbitPosition(
+            orbit,
+            phase * period,
+            scaleMode,
+            scaleParams,
+            new Vector3(),
+            isMoon,
+            planet
+          )
+        );
+      }
     }
 
     const geo = new BufferGeometry().setFromPoints(points);
@@ -113,11 +142,12 @@ export default function OrbitPath({
       createOrbitPathMaterial(
         pathColor,
         opacity ?? (isMoon ? 0 : 0.72),
-        hasTimeRef
+        hasTimeRef,
+        isEscapeRay
       ),
     // Opacity & selection are updated smoothly via shader uniforms in useFrame
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pathColor, hasTimeRef]
+    [pathColor, hasTimeRef, isEscapeRay]
   );
 
   const lineObject = useMemo(() => {
@@ -198,7 +228,12 @@ export default function OrbitPath({
     material.uniforms.uOpacity.value = currentOpacityRef.current;
     material.uniforms.uSelected.value = currentSelectedRef.current;
     if (timeRef) {
-      material.uniforms.uHeadPhase.value = getOrbitPhase(orbit, timeRef.current);
+      material.uniforms.uHeadPhase.value = getOrbitPhase(
+        orbit,
+        timeRef.current,
+        scaleMode,
+        scaleParams
+      );
     }
   });
 

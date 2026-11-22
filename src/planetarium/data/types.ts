@@ -26,6 +26,44 @@ export type BodyId =
 
 export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object" | "probe";
 
+export interface SecularRates {
+  /** Semi-major axis drift (AU / Julian century) */
+  aDotAuPerCentury?: number;
+  /** Eccentricity drift (/ Julian century) */
+  eDotPerCentury?: number;
+  /** Inclination drift (deg / Julian century) */
+  iDotDegPerCentury?: number;
+  /** Mean longitude rate (deg / Julian century) */
+  lDotDegPerCentury?: number;
+  /** Longitude of perihelion drift (deg / Julian century) */
+  periLonDotDegPerCentury?: number;
+  /** Longitude of ascending node drift (deg / Julian century) */
+  ascNodeDotDegPerCentury?: number;
+}
+
+export interface MeanAnomalyPerturbation {
+  /** NASA/JPL Table 2b outer-planet terms: ΔM = b·T² + c·cos(f·T) + s·sin(f·T) (deg) */
+  b: number;
+  c: number;
+  s: number;
+  f: number;
+}
+
+export interface EscapeTrajectory {
+  /** Heliocentric distance at J2000.0 epoch (AU) */
+  distanceAtJ2000Au: number;
+  /** Outward radial escape speed (AU / Julian year) */
+  radialSpeedAuPerYear: number;
+  /** Asymptotic ecliptic longitude λ (deg) */
+  eclipticLonDeg: number;
+  /** Asymptotic ecliptic latitude β (deg) */
+  eclipticLatDeg: number;
+  /** Minimum clamp distance when rewinding past launch (AU) */
+  minDistanceAu?: number;
+  /** Maximum plotted escape ray distance (AU) */
+  maxPlotDistanceAu?: number;
+}
+
 export interface OrbitElements {
   semiMajorAxisKm: number;
   eccentricity: number;
@@ -39,6 +77,12 @@ export interface OrbitElements {
   longitudeOfPerihelionDeg?: number;
   /** Longitude of ascending node Ω (deg). Orients the 3D line of nodes where the orbit crosses north of the ecliptic. */
   longitudeOfAscendingNodeDeg?: number;
+  /** NASA/JPL Table 1 secular rates per Julian century (T = daysSinceJ2000 / 36525). */
+  secularRates?: SecularRates;
+  /** NASA/JPL Table 2b outer-planet long-period perturbation terms. */
+  perturbation?: MeanAnomalyPerturbation;
+  /** Radial hyperbolic escape trajectory (e.g. Voyager 1) instead of a closed ellipse. */
+  escapeTrajectory?: EscapeTrajectory;
 }
 
 export interface RotationElements {
