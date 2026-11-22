@@ -227,6 +227,7 @@ function PlanetariumView() {
           debugGravity={debugGravity}
           showPerf={settings.showPerf}
           orbitSpeed={settings.orbitSpeed}
+          simDateStore={simDateStore}
           onSimDateChange={handleSimDateChange}
           useMilkyWayBackground={settings.useMilkyWayBackground}
         />

@@ -23,6 +23,7 @@ import {
   PLANET_BY_ID
 } from "./data/planetRegistry";
 import { useSimulationTime } from "./hooks/useSimulationTime";
+import type { SimDateStore } from "./hooks/useSimDateStore";
 import { useFocusTarget } from "./hooks/useFocusTarget";
 import type { DistanceScaleMode, DistanceScaleParams } from "./utils/distanceScale";
 import SpacetimeGrid from "./gravity/SpacetimeGrid";
@@ -53,6 +54,7 @@ interface PlanetariumSceneProps {
   debugGravity?: boolean;
   showPerf?: boolean;
   orbitSpeed?: number;
+  simDateStore?: SimDateStore;
   onSimDateChange?: (epochMs: number) => void;
   useMilkyWayBackground?: boolean;
 }
@@ -80,6 +82,7 @@ function PlanetariumScene({
   debugGravity = false,
   showPerf = true,
   orbitSpeed = 10,
+  simDateStore,
   onSimDateChange,
   useMilkyWayBackground = false
 }: PlanetariumSceneProps) {
@@ -188,6 +191,15 @@ function PlanetariumScene({
     timeRef.current = nowEpochDays();
     onSimDateChange?.(J2000_EPOCH_MS + timeRef.current * 86400000);
   }, [onSimDateChange, timeRef]);
+
+  // Jump directly to any user-entered date from TimeDrawer without re-rendering the scene.
+  useEffect(() => {
+    if (!simDateStore) return;
+    return simDateStore.onJump((epochMs) => {
+      timeRef.current = (epochMs - J2000_EPOCH_MS) / 86400000;
+      simDateAccumRef.current = 0;
+    });
+  }, [simDateStore, timeRef]);
 
   // Report the simulated date to the UI ~1x/sec (avoids per-frame re-renders).
   useFrame((_, delta) => {
