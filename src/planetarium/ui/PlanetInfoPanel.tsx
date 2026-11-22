@@ -268,6 +268,8 @@ export default function PlanetInfoPanel() {
     : "-";
 
   const isMoon = Boolean(planet.parentId && planet.parentId !== "sun");
+  const isProbe = planet.kind === "probe";
+  const isEscapeTrajectory = Boolean(planet.orbit?.escapeTrajectory);
   const parentPlanet = isMoon && planet.parentId ? PLANET_BY_ID[planet.parentId] ?? null : null;
   const relatedLink =
     planet.id === "pluto" && PLANET_BY_ID.charon
@@ -278,15 +280,34 @@ export default function PlanetInfoPanel() {
             relationLabel: planet.id === "charon" ? "Orbiting Binary" : "Orbiting"
           }
         : null;
-  const categoryLabel =
-    planet.kind === "dwarf"
+  const categoryLabel = isProbe
+    ? "Spacecraft details"
+    : planet.kind === "dwarf"
       ? "Dwarf planet details"
       : isMoon
         ? "Moon details"
         : "Planet details";
-  const radiusValue = `${formatNumber(planet.render.radiusKm)} km`;
-  const periodDays = planet.orbit ? Math.round(planet.orbit.orbitalPeriodDays) : null;
-  const tiltValue = `${planet.rotation.axialTiltDeg.toFixed(1)}\u00B0`;
+  const radiusLabel = isProbe ? "Antenna" : "Radius";
+  const radiusValue = isProbe
+    ? "3.7 m dish"
+    : `${formatNumber(planet.render.radiusKm)} km`;
+  const periodDays =
+    planet.orbit && !isEscapeTrajectory
+      ? Math.round(planet.orbit.orbitalPeriodDays)
+      : null;
+  const periodLabel = isEscapeTrajectory ? "Trajectory" : "Period";
+  const periodValue = isEscapeTrajectory
+    ? "Escape · 16.9 km/s"
+    : periodDays !== null
+      ? `${periodDays} days`
+      : "-";
+  const compactPeriodValue = isEscapeTrajectory
+    ? "16.9 km/s"
+    : periodDays !== null
+      ? `${periodDays}d`
+      : "-";
+  const tiltLabel = isProbe ? "Escape Lat" : "Tilt";
+  const tiltValue = `${isProbe ? "+" : ""}${planet.rotation.axialTiltDeg.toFixed(1)}\u00B0`;
   const massValue = formatMass(planet.massKg);
 
   return (
@@ -331,7 +352,7 @@ export default function PlanetInfoPanel() {
                       {planet.name}
                     </span>
                     <span className="rounded-full bg-primary-accent/20 border border-primary-accent/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary-accent">
-                      {planet.kind === "dwarf" ? "Dwarf Planet" : isMoon ? "Moon" : "Planet"}
+                      {isProbe ? "Probe" : planet.kind === "dwarf" ? "Dwarf Planet" : isMoon ? "Moon" : "Planet"}
                     </span>
                   </div>
                 </div>
@@ -391,10 +412,10 @@ export default function PlanetInfoPanel() {
                   compact
                   centered
                 />
-                <StatTile label="Radius" value={radiusValue} compact centered />
+                <StatTile label={radiusLabel} value={radiusValue} compact centered />
                 <StatTile
-                  label="Period"
-                  value={periodDays !== null ? `${periodDays}d` : "-"}
+                  label={periodLabel}
+                  value={compactPeriodValue}
                   compact
                   centered
                 />
@@ -417,7 +438,7 @@ export default function PlanetInfoPanel() {
                   )}
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <StatTile label="Axial Tilt" value={tiltValue} />
+                    <StatTile label={isProbe ? "Escape Lat" : "Axial Tilt"} value={tiltValue} />
                     <StatTile label="Mass" value={massValue} />
                   </div>
 
@@ -501,12 +522,9 @@ export default function PlanetInfoPanel() {
 
           <div className="mt-3 grid grid-cols-2 gap-2.5 text-[11px]">
             <StatTile label={isMoon ? "Orbit Radius" : "Distance"} value={distanceText} />
-            <StatTile label="Radius" value={radiusValue} />
-            <StatTile
-              label="Period"
-              value={periodDays !== null ? `${periodDays} days` : "-"}
-            />
-            <StatTile label="Tilt" value={tiltValue} />
+            <StatTile label={radiusLabel} value={radiusValue} />
+            <StatTile label={periodLabel} value={periodValue} />
+            <StatTile label={tiltLabel} value={tiltValue} />
             <StatTile label="Mass" value={massValue} className="col-span-2" />
           </div>
 

@@ -62,6 +62,8 @@ export interface EscapeTrajectory {
   minDistanceAu?: number;
   /** Maximum plotted escape ray distance (AU) */
   maxPlotDistanceAu?: number;
+  /** Optional historical multi-flyby trajectory preset (e.g. Voyager 1 Earth->Jupiter->Saturn->Interstellar) */
+  historicalPreset?: "voyager1";
 }
 
 export interface OrbitElements {

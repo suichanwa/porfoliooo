@@ -8,6 +8,7 @@ import {
   type DistanceScaleParams
 } from "../utils/distanceScale";
 import { kmToAu } from "../utils/units";
+import { utcDaysToTtDays } from "../utils/timeScale";
 
 const EQUATORIAL_TILT_AXIS = new Vector3(0, 0, 1);
 const DAYS_PER_JULIAN_CENTURY = 36525;
@@ -15,6 +16,147 @@ const DAYS_PER_JULIAN_YEAR = 365.25;
 const TWO_PI = Math.PI * 2;
 const DEFAULT_ESCAPE_MIN_AU = 1.0;
 const DEFAULT_ESCAPE_MAX_PLOT_AU = 420.0;
+
+// Voyager 1 exact historical flyby milestones (days relative to J2000.0 = 2000-01-01 12:00 UTC)
+// Encounter coordinates match our JPL Table 2a/2b Earth, Jupiter, and Saturn positions verbatim.
+const VOYAGER1_T_LAUNCH = -8152.96;  // 1977-09-05 12:56 UTC (Earth: r=1.008 AU, lon=343.16°, lat=0.00°)
+const VOYAGER1_T_JUPITER = -7607.0;  // 1979-03-05 12:05 UTC (Jupiter: r=5.292 AU, lon=127.54°, lat=+0.60°)
+const VOYAGER1_T_SATURN = -6988.51;  // 1980-11-12 23:46 UTC (Saturn/Titan: r=9.508 AU, lon=182.34°, lat=+2.32°)
+const VOYAGER1_T_MAX_PLOT = 32872.5; // ~2090 AD (~400 AU) — smooth far interstellar projection
+
+const sphericalAuToCartesian = (rAu: number, lonDeg: number, latDeg: number): Vector3 => {
+  const lon = MathUtils.degToRad(lonDeg);
+  const lat = MathUtils.degToRad(latDeg);
+  const cosLat = Math.cos(lat);
+  return new Vector3(
+    rAu * cosLat * Math.cos(lon),
+    rAu * Math.sin(lat),
+    -rAu * cosLat * Math.sin(lon)
+  );
+};
+
+// Precomputed 3D Cartesian AU anchors & smooth velocities for Voyager 1's historical flybys
+const V1_P_JUPITER = sphericalAuToCartesian(5.292, 127.54, 0.6);
+const V1_P_SATURN = sphericalAuToCartesian(9.508, 182.34, 2.32);
+const V1_DIR_INF = sphericalAuToCartesian(1.0, 255.4, 35.5).normalize();
+const V1_V_INF = 3.573; // AU / Julian year asymptotic interstellar speed
+
+// Compute Leg 1 exit tangent at Jupiter (AU / Julian year) so Leg 2 joins C1-smoothly
+const computeLeg1CartesianAu = (u: number, out: Vector3): Vector3 => {
+  const rAu = 1.008 + (5.292 - 1.008) * Math.pow(u, 1.38);
+  const lonDeg = 343.16 + 144.38 * Math.pow(u, 0.72);
+  const latDeg = 0.6 * u;
+  const lon = MathUtils.degToRad(lonDeg);
+  const lat = MathUtils.degToRad(latDeg);
+  const cosLat = Math.cos(lat);
+  return out.set(
+    rAu * cosLat * Math.cos(lon),
+    rAu * Math.sin(lat),
+    -rAu * cosLat * Math.sin(lon)
+  );
+};
+
+// Tangents for Leg 2 cubic Hermite (Jupiter -> Saturn) in AU per normalized unit u in [0, 1]
+const V1_LEG2_DURATION_YR = (VOYAGER1_T_SATURN - VOYAGER1_T_JUPITER) / DAYS_PER_JULIAN_YEAR;
+const V1_TANGENT_AT_JUPITER = (() => {
+  const p0 = computeLeg1CartesianAu(0.995, new Vector3());
+  const p1 = computeLeg1CartesianAu(1.0, new Vector3());
+  // Gently bend the outgoing Jupiter slingshot toward Saturn while preserving smooth motion
+  const leg1Dir = p1.sub(p0).normalize();
+  const chordDir = V1_P_SATURN.clone().sub(V1_P_JUPITER).normalize();
+  const blended = leg1Dir.lerp(chordDir, 0.45).normalize();
+  return blended.multiplyScalar(V1_P_SATURN.distanceTo(V1_P_JUPITER) * 1.08);
+})();
+
+// Incoming tangent at Saturn: gently counter-clockwise in the ecliptic, ready to pitch north at Titan
+const V1_SATURN_IN_DIR = (() => {
+  const chordDir = V1_P_SATURN.clone().sub(V1_P_JUPITER).normalize();
+  // Slight prograde curve at Saturn arrival (horizontal in ecliptic)
+  const horiz = new Vector3(chordDir.x, 0.08, chordDir.z).normalize();
+  return horiz;
+})();
+const V1_TANGENT_AT_SATURN = V1_SATURN_IN_DIR.clone().multiplyScalar(
+  V1_P_SATURN.distanceTo(V1_P_JUPITER) * 1.02
+);
+// Incoming physical velocity vector at Saturn (AU / Julian year) for exact C1 post-Saturn bend
+const V1_VEL_IN_SATURN = V1_TANGENT_AT_SATURN.clone().divideScalar(V1_LEG2_DURATION_YR);
+const V1_VEL_OUT_INF = V1_DIR_INF.clone().multiplyScalar(V1_V_INF);
+const V1_SATURN_BEND_TAU_YR = 0.55; // Smooth ~6.5-month hyperbolic bend around Saturn/Titan
+
+// Piecewise phase distribution along the plotted mission path (0..1):
+// Allocates generous vertex density to the curved inner gravity-assist arcs.
+const VOYAGER1_PHASE_JUPITER = 0.30;
+const VOYAGER1_PHASE_SATURN = 0.50;
+
+export const getVoyager1HistoricalPhase = (timeDays: number): number => {
+  if (timeDays <= VOYAGER1_T_LAUNCH) return 0;
+  if (timeDays <= VOYAGER1_T_JUPITER) {
+    const u = (timeDays - VOYAGER1_T_LAUNCH) / (VOYAGER1_T_JUPITER - VOYAGER1_T_LAUNCH);
+    return u * VOYAGER1_PHASE_JUPITER;
+  }
+  if (timeDays <= VOYAGER1_T_SATURN) {
+    const u = (timeDays - VOYAGER1_T_JUPITER) / (VOYAGER1_T_SATURN - VOYAGER1_T_JUPITER);
+    return VOYAGER1_PHASE_JUPITER + u * (VOYAGER1_PHASE_SATURN - VOYAGER1_PHASE_JUPITER);
+  }
+  const u = (timeDays - VOYAGER1_T_SATURN) / (VOYAGER1_T_MAX_PLOT - VOYAGER1_T_SATURN);
+  // Higher vertex density right after Saturn so the +35.5° upward bend is silky-smooth
+  const shaped = Math.pow(MathUtils.clamp(u, 0, 1), 0.55);
+  return VOYAGER1_PHASE_SATURN + shaped * (1 - VOYAGER1_PHASE_SATURN);
+};
+
+export const getVoyager1TimeFromPhase = (phase: number): number => {
+  const p = MathUtils.clamp(phase, 0, 1);
+  if (p <= VOYAGER1_PHASE_JUPITER) {
+    const u = p / VOYAGER1_PHASE_JUPITER;
+    return VOYAGER1_T_LAUNCH + u * (VOYAGER1_T_JUPITER - VOYAGER1_T_LAUNCH);
+  }
+  if (p <= VOYAGER1_PHASE_SATURN) {
+    const u = (p - VOYAGER1_PHASE_JUPITER) / (VOYAGER1_PHASE_SATURN - VOYAGER1_PHASE_JUPITER);
+    return VOYAGER1_T_JUPITER + u * (VOYAGER1_T_SATURN - VOYAGER1_T_JUPITER);
+  }
+  const shaped = (p - VOYAGER1_PHASE_SATURN) / (1 - VOYAGER1_PHASE_SATURN);
+  const u = Math.pow(shaped, 1 / 0.55);
+  return VOYAGER1_T_SATURN + u * (VOYAGER1_T_MAX_PLOT - VOYAGER1_T_SATURN);
+};
+
+const getVoyager1HistoricalAu = (timeDays: number, out: Vector3): Vector3 => {
+  if (timeDays <= VOYAGER1_T_LAUNCH) {
+    return computeLeg1CartesianAu(0, out);
+  }
+
+  if (timeDays <= VOYAGER1_T_JUPITER) {
+    // Leg 1: Earth (1977-09-05) -> Jupiter (1979-03-05)
+    const u = (timeDays - VOYAGER1_T_LAUNCH) / (VOYAGER1_T_JUPITER - VOYAGER1_T_LAUNCH);
+    return computeLeg1CartesianAu(u, out);
+  }
+
+  if (timeDays <= VOYAGER1_T_SATURN) {
+    // Leg 2: Jupiter (1979-03-05) -> Saturn & Titan (1980-11-12) via C1 Cubic Hermite in 3D AU
+    const u = (timeDays - VOYAGER1_T_JUPITER) / (VOYAGER1_T_SATURN - VOYAGER1_T_JUPITER);
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const h00 = 2 * u3 - 3 * u2 + 1;
+    const h10 = u3 - 2 * u2 + u;
+    const h01 = -2 * u3 + 3 * u2;
+    const h11 = u3 - u2;
+    return out.set(
+      h00 * V1_P_JUPITER.x + h10 * V1_TANGENT_AT_JUPITER.x + h01 * V1_P_SATURN.x + h11 * V1_TANGENT_AT_SATURN.x,
+      h00 * V1_P_JUPITER.y + h10 * V1_TANGENT_AT_JUPITER.y + h01 * V1_P_SATURN.y + h11 * V1_TANGENT_AT_SATURN.y,
+      h00 * V1_P_JUPITER.z + h10 * V1_TANGENT_AT_JUPITER.z + h01 * V1_P_SATURN.z + h11 * V1_TANGENT_AT_SATURN.z
+    );
+  }
+
+  // Leg 3: Saturn/Titan -> Interstellar Space (exact C1 Cartesian hyperbolic departure)
+  // Leaves Saturn tangent to Leg 2 and bends smoothly into Voyager 1's +35.5° asymptote
+  // without any polar hairpin kink, reaching ~76.3 AU (2000), ~121.5 AU (2012), ~172.4 AU (2026).
+  const dtYears = (timeDays - VOYAGER1_T_SATURN) / DAYS_PER_JULIAN_YEAR;
+  const bend = V1_SATURN_BEND_TAU_YR * (1 - Math.exp(-dtYears / V1_SATURN_BEND_TAU_YR));
+  return out.set(
+    V1_P_SATURN.x + V1_VEL_OUT_INF.x * dtYears + (V1_VEL_IN_SATURN.x - V1_VEL_OUT_INF.x) * bend,
+    V1_P_SATURN.y + V1_VEL_OUT_INF.y * dtYears + (V1_VEL_IN_SATURN.y - V1_VEL_OUT_INF.y) * bend,
+    V1_P_SATURN.z + V1_VEL_OUT_INF.z * dtYears + (V1_VEL_IN_SATURN.z - V1_VEL_OUT_INF.z) * bend
+  );
+};
 
 /**
  * 4-step Newton-Raphson Kepler solver: converges to < 1e-13 rad even for
@@ -162,19 +304,26 @@ export const getOrbitPhase = (
   scaleMode?: DistanceScaleMode,
   scaleParams?: DistanceScaleParams
 ): number => {
-  if (orbit.escapeTrajectory && scaleMode && scaleParams) {
-    const esc = orbit.escapeTrajectory;
-    const minAu = esc.minDistanceAu ?? DEFAULT_ESCAPE_MIN_AU;
-    const maxAu = esc.maxPlotDistanceAu ?? DEFAULT_ESCAPE_MAX_PLOT_AU;
-    const currentAu = getEscapeDistanceAu(esc, timeDays);
-    const rMin = computeRenderOrbitRadius(minAu, scaleMode, scaleParams);
-    const rMax = computeRenderOrbitRadius(maxAu, scaleMode, scaleParams);
-    const rCur = computeRenderOrbitRadius(currentAu, scaleMode, scaleParams);
-    return MathUtils.clamp((rCur - rMin) / Math.max(1e-6, rMax - rMin), 0, 1);
+  if (orbit.escapeTrajectory) {
+    if (orbit.escapeTrajectory.historicalPreset === "voyager1") {
+      return getVoyager1HistoricalPhase(timeDays);
+    }
+    if (scaleMode && scaleParams) {
+      const esc = orbit.escapeTrajectory;
+      const minAu = esc.minDistanceAu ?? DEFAULT_ESCAPE_MIN_AU;
+      const maxAu = esc.maxPlotDistanceAu ?? DEFAULT_ESCAPE_MAX_PLOT_AU;
+      const currentAu = getEscapeDistanceAu(esc, timeDays);
+      const rMin = computeRenderOrbitRadius(minAu, scaleMode, scaleParams);
+      const rMax = computeRenderOrbitRadius(maxAu, scaleMode, scaleParams);
+      const rCur = computeRenderOrbitRadius(currentAu, scaleMode, scaleParams);
+      return MathUtils.clamp((rCur - rMin) / Math.max(1e-6, rMax - rMin), 0, 1);
+    }
   }
 
   const period = getEffectiveOrbitalPeriodDays(orbit);
   if (period <= 0) return 0;
+
+  const ttDays = utcDaysToTtDays(timeDays);
 
   // Include JPL Table 2b outer-planet mean-anomaly perturbation in the head phase
   // so the comet-tail head stays locked to the exact planet position.
@@ -183,14 +332,14 @@ export const getOrbitPhase = (
     const { b, c, s, f } = orbit.perturbation;
     const Tsec =
       f === 0
-        ? MathUtils.clamp(timeDays / DAYS_PER_JULIAN_CENTURY, -3.0, 3.0)
-        : MathUtils.clamp(timeDays / DAYS_PER_JULIAN_CENTURY, -50.0, 10.0);
+        ? MathUtils.clamp(ttDays / DAYS_PER_JULIAN_CENTURY, -3.0, 3.0)
+        : MathUtils.clamp(ttDays / DAYS_PER_JULIAN_CENTURY, -50.0, 10.0);
     const fTRad = MathUtils.degToRad(f * Tsec);
     const deltaMDeg = b * Tsec * Tsec + c * Math.cos(fTRad) + s * Math.sin(fTRad);
     pertDays = (deltaMDeg / 360) * period;
   }
 
-  const effectiveTime = timeDays + pertDays;
+  const effectiveTime = ttDays + pertDays;
   return (((effectiveTime % period) + period) % period) / period;
 };
 
@@ -203,14 +352,26 @@ export const getOrbitPosition = (
   isMoon: boolean = false,
   body?: BodyData
 ) => {
-  // Hyperbolic / radial interstellar escape trajectory (e.g. Voyager 1)
+  // Hyperbolic / historical interstellar escape trajectory (e.g. Voyager 1)
   if (orbit.escapeTrajectory && !isMoon) {
+    if (orbit.escapeTrajectory.historicalPreset === "voyager1") {
+      getVoyager1HistoricalAu(timeDays, out);
+      const rAu = out.length();
+      if (rAu > 1e-6) {
+        const renderRadius = computeRenderOrbitRadius(rAu, scaleMode, scaleParams);
+        out.multiplyScalar(renderRadius / rAu);
+      }
+      return out;
+    }
     const distAu = getEscapeDistanceAu(orbit.escapeTrajectory, timeDays);
     const renderRadius = computeRenderOrbitRadius(distAu, scaleMode, scaleParams);
     return getEscapeDirection(orbit.escapeTrajectory, out).multiplyScalar(renderRadius);
   }
 
-  const T = timeDays / DAYS_PER_JULIAN_CENTURY;
+  // Convert UTC days since J2000.0 -> Terrestrial Time (TT / JDTDB) days since J2000.0
+  // so JPL Table 2a/2b elements stay accurate across 3000 BC – 3000 AD.
+  const ttDays = utcDaysToTtDays(timeDays);
+  const T = ttDays / DAYS_PER_JULIAN_CENTURY;
   // Clamp secular element drift to JPL Table 2a/2b validity window (3000 BC – 3000 AD,
   // or ±3 centuries for Pluto/Charon's narrower 1800–2050 fit) so extreme fast-forward
   // never pushes eccentricities or inclinations out of physical bounds.
@@ -293,7 +454,7 @@ export const getOrbitPosition = (
     const meanLonDeg =
       rates?.lDotDegPerCentury !== undefined
         ? orbit.meanLongitudeAtEpochDeg + rates.lDotDegPerCentury * T
-        : orbit.meanLongitudeAtEpochDeg + (timeDays / orbit.orbitalPeriodDays) * 360;
+        : orbit.meanLongitudeAtEpochDeg + (ttDays / orbit.orbitalPeriodDays) * 360;
 
     let mDeg = meanLonDeg - periLonDeg;
     if (pert) {
@@ -306,7 +467,7 @@ export const getOrbitPosition = (
     meanAnomaly = MathUtils.degToRad(mDeg);
   } else {
     // Negative orbitalPeriodDays naturally drives retrograde motion (e.g. Triton)
-    const meanMotion = (timeDays / orbit.orbitalPeriodDays) * TWO_PI;
+    const meanMotion = (ttDays / orbit.orbitalPeriodDays) * TWO_PI;
     meanAnomaly = meanMotion + (orbit.phaseAtEpoch ?? 0);
   }
 

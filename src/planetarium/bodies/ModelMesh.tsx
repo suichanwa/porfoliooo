@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type Ref, type RefObject } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
+  AdditiveBlending,
   Box3,
+  BufferAttribute,
+  BufferGeometry,
   Color,
   Group,
   MathUtils,
@@ -9,6 +12,8 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   OctahedronGeometry,
+  Points,
+  ShaderMaterial,
   SRGBColorSpace,
   Texture,
   Vector3
@@ -37,6 +42,61 @@ function getBeaconGeometry(): OctahedronGeometry {
   }
   return sharedBeaconGeometry;
 }
+
+const PROBE_BEACON_VERTEX_SHADER = /* glsl */ `
+  uniform float uPixelRatio;
+  uniform float uAlpha;
+
+  void main() {
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+    if (uAlpha <= 0.004 || mvPosition.z >= -0.01) {
+      gl_PointSize = 0.0;
+      return;
+    }
+    float dist = max(1.0, -mvPosition.z);
+    float projected = uPixelRatio * clamp(30.0 * (24.0 / dist), 22.0, 36.0);
+    gl_PointSize = projected;
+  }
+`;
+
+const PROBE_BEACON_FRAGMENT_SHADER = /* glsl */ `
+  precision highp float;
+
+  uniform float uTime;
+  uniform float uAlpha;
+  uniform vec3 uColor;
+
+  void main() {
+    if (uAlpha <= 0.004) discard;
+    vec2 p = (gl_PointCoord - 0.5) * 2.0;
+    float r = length(p);
+    if (r > 1.0) discard;
+
+    // Bright pinpoint golden spacecraft core
+    float core = exp(-r * r * 72.0);
+    float halo = exp(-r * 4.8) * 0.52 * smoothstep(1.0, 0.55, r);
+
+    // Crisp 4-point telemetry crosshair spikes
+    float hSpike = exp(-abs(p.y) * 28.0) * exp(-abs(p.x) * 2.8);
+    float vSpike = exp(-abs(p.x) * 28.0) * exp(-abs(p.y) * 2.8);
+    float crossSpikes = (hSpike + vSpike) * 0.42 * smoothstep(1.0, 0.4, r);
+
+    // Gentle expanding deep-space radio ping ring
+    float pulseCycle = fract(uTime * 0.36);
+    float ringRadius = 0.18 + pulseCycle * 0.72;
+    float ring = exp(-pow((r - ringRadius) * 26.0, 2.0)) * (1.0 - pulseCycle) * 0.65;
+
+    vec3 col =
+      uColor * (halo * 1.2 + crossSpikes * 1.25 + ring * 1.35) +
+      vec3(1.0, 0.98, 0.90) * (core * 1.5 + crossSpikes * 0.35);
+
+    float alpha = clamp((core * 1.25 + halo + crossSpikes + ring) * uAlpha, 0.0, 1.0);
+    if (alpha <= 0.003) discard;
+
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
 
 function disposeObjectTree(root: Group) {
   root.traverse((child) => {
@@ -69,10 +129,11 @@ export default function ModelMesh({
   onPointerOut,
   onClick
 }: ModelMeshProps) {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const localGroupRef = useRef<Group | null>(null);
   const modelGroupRef = useRef<Group>(null);
   const beaconRef = useRef<Mesh>(null);
+  const glintPointsRef = useRef<Points>(null);
   const worldPosRef = useRef(new Vector3());
   const isNearRef = useRef(false);
 
@@ -224,23 +285,53 @@ export default function ModelMesh({
   const beaconMaterial = useMemo(
     () =>
       new MeshBasicMaterial({
-        color: new Color(data.render.colorFallback ?? "#ffd166")
+        color: new Color(data.render.colorFallback ?? "#ffd166"),
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
       }),
     [data.render.colorFallback]
+  );
+
+  const glintGeometry = useMemo(() => {
+    const geom = new BufferGeometry();
+    geom.setAttribute("position", new BufferAttribute(new Float32Array([0, 0, 0]), 3));
+    return geom;
+  }, []);
+
+  const glintMaterial = useMemo(
+    () =>
+      new ShaderMaterial({
+        vertexShader: PROBE_BEACON_VERTEX_SHADER,
+        fragmentShader: PROBE_BEACON_FRAGMENT_SHADER,
+        uniforms: {
+          uTime: { value: 0 },
+          uAlpha: { value: 1 },
+          uPixelRatio: { value: Math.min(gl.getPixelRatio(), 2) },
+          uColor: { value: new Color("#ffd166") }
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending
+      }),
+    [gl]
   );
 
   useEffect(() => {
     return () => {
       beaconMaterial.dispose();
+      glintGeometry.dispose();
+      glintMaterial.dispose();
     };
-  }, [beaconMaterial]);
+  }, [beaconMaterial, glintGeometry, glintMaterial]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const root = localGroupRef.current;
     if (!root) return;
 
     root.getWorldPosition(worldPosRef.current);
     const distSq = camera.position.distanceToSquared(worldPosRef.current);
+    const dist = Math.sqrt(distSq);
 
     if (!shouldLoad && distSq < LOAD_DISTANCE_SQ) {
       setShouldLoad(true);
@@ -261,8 +352,27 @@ export default function ModelMesh({
       }
     }
 
+    // Smoothly show the golden deep-space telemetry beacon when zoomed out,
+    // fading out cleanly as the detailed 3D spacecraft model comes into close view.
+    const beaconFade =
+      nextNear && Boolean(loadedScene)
+        ? MathUtils.smoothstep(dist, 5.5, 16.0)
+        : 1.0;
+
+    glintMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+    glintMaterial.uniforms.uAlpha.value = beaconFade;
+    glintMaterial.uniforms.uPixelRatio.value = Math.min(gl.getPixelRatio(), 2);
+
+    if (glintPointsRef.current) {
+      glintPointsRef.current.visible = beaconFade > 0.01;
+    }
+
     if (beaconRef.current) {
-      beaconRef.current.visible = !nextNear || !loadedScene;
+      // Scale invisible click hitbox gently with camera distance so clicking the distant
+      // golden beacon from overview is effortless without interfering up close.
+      beaconRef.current.visible = beaconFade > 0.05;
+      const hitRadius = Math.max(radius * 0.6, Math.min(2.6, dist * 0.022));
+      beaconRef.current.scale.setScalar(hitRadius);
     }
   });
 
@@ -300,14 +410,31 @@ export default function ModelMesh({
         </>
       )}
 
-      {/* Lightweight 8-triangle golden beacon when Voyager is far away or loading */}
+      {/* Crisp golden deep-space telemetry beacon visible when zoomed out */}
+      <points
+        ref={glintPointsRef}
+        geometry={glintGeometry}
+        material={glintMaterial}
+        frustumCulled={false}
+        renderOrder={5}
+        raycast={() => null}
+      />
+
+      {/* Distance-scaled invisible click hitbox for effortless selection of the distant beacon */}
       <mesh
         ref={beaconRef}
         geometry={getBeaconGeometry()}
         material={beaconMaterial}
-        scale={radius * 0.28}
-        onPointerOver={onPointerOver}
-        onPointerOut={onPointerOut}
+        scale={radius * 0.6}
+        onPointerOver={(event) => {
+          event.stopPropagation();
+          document.body.style.cursor = "pointer";
+          onPointerOver?.(event);
+        }}
+        onPointerOut={(event) => {
+          document.body.style.cursor = "auto";
+          onPointerOut?.(event);
+        }}
         onClick={(event) => {
           event.stopPropagation();
           onClick?.(event);

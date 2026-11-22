@@ -18,7 +18,8 @@ import {
   getEffectiveOrbitalPeriodDays,
   getEscapeDirection,
   getOrbitPhase,
-  getOrbitPosition
+  getOrbitPosition,
+  getVoyager1TimeFromPhase
 } from "./orbitMath";
 import { createOrbitPathMaterial } from "../shaders/orbitPathShader";
 
@@ -69,8 +70,9 @@ export default function OrbitPath({
   activeSystemId,
   moonSystemVisRef
 }: OrbitPathProps) {
-  // Pluto-Charon binary system concentric rings are rendered by PlutoBarycenterVisuals
-  if (planet?.id === "charon") {
+  // Pluto-Charon binary rings are rendered by PlutoBarycenterVisuals;
+  // Voyager 1's long interstellar path is hidden to keep the solar system view uncluttered.
+  if (planet?.id === "charon" || planet?.id === "voyager1") {
     return null;
   }
 
@@ -97,19 +99,45 @@ export default function OrbitPath({
     const phases = new Float32Array(segments + 1);
 
     if (orbit.escapeTrajectory && !isMoon) {
-      // Open interstellar escape ray from launch region (1 AU) out into deep space
-      const esc = orbit.escapeTrajectory;
-      const minAu = esc.minDistanceAu ?? 1.0;
-      const maxAu = esc.maxPlotDistanceAu ?? 420.0;
-      const rMin = computeRenderOrbitRadius(minAu, scaleMode, scaleParams);
-      const rMax = computeRenderOrbitRadius(maxAu, scaleMode, scaleParams);
-      const dir = getEscapeDirection(esc, new Vector3());
+      if (orbit.escapeTrajectory.historicalPreset === "voyager1") {
+        // Real curved historical trajectory: Earth (1977) -> Jupiter (1979) -> Saturn (1980) -> Interstellar
+        // Use higher vertex resolution so the multi-flyby gravity-assist arcs are silky smooth.
+        const missionSegments = Math.max(segments, 360);
+        const missionPhases = new Float32Array(missionSegments + 1);
+        for (let i = 0; i <= missionSegments; i += 1) {
+          const phase = i / missionSegments;
+          missionPhases[i] = phase;
+          const sampleTimeDays = getVoyager1TimeFromPhase(phase);
+          points.push(
+            getOrbitPosition(
+              orbit,
+              sampleTimeDays,
+              scaleMode,
+              scaleParams,
+              new Vector3(),
+              false,
+              planet
+            )
+          );
+        }
+        const geo = new BufferGeometry().setFromPoints(points);
+        geo.setAttribute("aPhase", new Float32BufferAttribute(missionPhases, 1));
+        return geo;
+      } else {
+        // Open radial escape ray from launch region (1 AU) out into deep space
+        const esc = orbit.escapeTrajectory;
+        const minAu = esc.minDistanceAu ?? 1.0;
+        const maxAu = esc.maxPlotDistanceAu ?? 420.0;
+        const rMin = computeRenderOrbitRadius(minAu, scaleMode, scaleParams);
+        const rMax = computeRenderOrbitRadius(maxAu, scaleMode, scaleParams);
+        const dir = getEscapeDirection(esc, new Vector3());
 
-      for (let i = 0; i <= segments; i += 1) {
-        const phase = i / segments;
-        phases[i] = phase;
-        const r = MathUtils.lerp(rMin, rMax, phase);
-        points.push(dir.clone().multiplyScalar(r));
+        for (let i = 0; i <= segments; i += 1) {
+          const phase = i / segments;
+          phases[i] = phase;
+          const r = MathUtils.lerp(rMin, rMax, phase);
+          points.push(dir.clone().multiplyScalar(r));
+        }
       }
     } else {
       const period = getEffectiveOrbitalPeriodDays(orbit);

@@ -31,23 +31,24 @@ const ORBIT_PATH_FRAGMENT_SHADER = /* glsl */ `
     float tailPower = mix(2.35, 1.75, uSelected);
 
     if (uIsOpenRay > 0.5) {
-      // Open escape trajectory (e.g. Voyager 1): bright wake trailing back toward the Sun,
-      // delicate whisper ahead into interstellar space with no circular wraparound seam.
+      // Historical spacecraft mission trajectory (e.g. Voyager 1):
+      // Crisp, steady flown track from launch through planetary flybys up to the probe,
+      // and a subtle dashed future projection ahead into interstellar space.
       float intensity = baseFloor;
       float headGlow = 0.0;
       if (vPhase <= uHeadPhase) {
-        float trailing = (uHeadPhase - vPhase) / max(uHeadPhase, 0.001);
-        float tail = pow(1.0 - trailing, tailPower);
-        headGlow = exp(-trailing * 12.0);
-        intensity = baseFloor + (1.0 - baseFloor) * tail;
+        float distBehind = uHeadPhase - vPhase;
+        headGlow = exp(-distBehind * 38.0);
+        // Steady readable historical arc with a gentle lift near the spacecraft
+        intensity = mix(0.62, 0.88, uSelected) + 0.12 * exp(-distBehind * 6.0);
       } else {
-        // Gentle dotted projection beyond current probe distance
-        float dash = smoothstep(0.35, 0.65, fract(vPhase * 42.0));
-        intensity = baseFloor * (0.45 + 0.55 * dash);
+        // Subtle dashed future trajectory vector ahead of the spacecraft
+        float dash = smoothstep(0.38, 0.62, fract(vPhase * 56.0));
+        intensity = mix(0.18, 0.30, uSelected) * dash;
       }
 
-      vec3 finalColor = mix(uColor, uHeadColor, headGlow * (0.55 + 0.25 * uSelected));
-      float alpha = clamp(uOpacity * (intensity + headGlow * 0.35), 0.0, 1.0);
+      vec3 finalColor = mix(uColor, uHeadColor, headGlow * 0.65);
+      float alpha = clamp(uOpacity * (intensity + headGlow * 0.22), 0.0, 1.0);
       gl_FragColor = vec4(finalColor, alpha);
       return;
     }

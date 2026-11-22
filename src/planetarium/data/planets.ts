@@ -729,7 +729,8 @@ export const PLANETS: BodyData[] = [
         eclipticLonDeg: 255.4,
         eclipticLatDeg: 35.5,
         minDistanceAu: 1.0,
-        maxPlotDistanceAu: 420.0
+        maxPlotDistanceAu: 420.0,
+        historicalPreset: "voyager1"
       }
     }
   }
