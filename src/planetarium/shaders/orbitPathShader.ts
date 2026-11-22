@@ -18,6 +18,7 @@ const ORBIT_PATH_FRAGMENT_SHADER = /* glsl */ `
   uniform float uSelected;
   uniform float uHasHead;
   uniform float uIsOpenRay;
+  uniform float uIsOpenCometArc;
 
   varying float vPhase;
 
@@ -29,6 +30,24 @@ const ORBIT_PATH_FRAGMENT_SHADER = /* glsl */ `
 
     float baseFloor = mix(0.16, 0.28, uSelected);
     float tailPower = mix(2.35, 1.75, uSelected);
+
+    if (uIsOpenCometArc > 0.5) {
+      // Long-period comet open deep-space trajectory (e.g. Hale-Bopp):
+      // Emerges faintly from deep space, curves around the Sun at perihelion, and fades
+      // back out into deep space without ever closing back onto itself.
+      float endFade = smoothstep(0.0, 0.16, vPhase) * smoothstep(1.0, 0.84, vPhase);
+      float behindMask = smoothstep(uHeadPhase + 0.015, uHeadPhase - 0.005, vPhase);
+      float distBehind = max(0.0, uHeadPhase - vPhase);
+      float wake = exp(-distBehind * 6.5) * behindMask;
+      float headGlow = exp(-abs(vPhase - uHeadPhase) * 28.0);
+
+      float baseGuide = mix(0.24, 0.42, uSelected);
+      float intensity = (baseGuide + wake * 0.58) * endFade;
+      vec3 finalColor = mix(uColor, uHeadColor, clamp(headGlow * 0.8 + wake * 0.25, 0.0, 1.0));
+      float alpha = clamp(uOpacity * (intensity + headGlow * 0.45 * endFade), 0.0, 1.0);
+      gl_FragColor = vec4(finalColor, alpha);
+      return;
+    }
 
     if (uIsOpenRay > 0.5) {
       // Historical spacecraft mission trajectory (e.g. Voyager 1):
@@ -78,7 +97,8 @@ export function createOrbitPathMaterial(
   colorHex: string,
   initialOpacity: number,
   hasHead = true,
-  isOpenRay = false
+  isOpenRay = false,
+  isOpenCometArc = false
 ): ShaderMaterial {
   const baseColor = new Color(colorHex);
   const headColor = baseColor.clone().lerp(new Color("#ffffff"), 0.45);
@@ -93,7 +113,8 @@ export function createOrbitPathMaterial(
       uOpacity: { value: initialOpacity },
       uSelected: { value: 0 },
       uHasHead: { value: hasHead ? 1.0 : 0.0 },
-      uIsOpenRay: { value: isOpenRay ? 1.0 : 0.0 }
+      uIsOpenRay: { value: isOpenRay ? 1.0 : 0.0 },
+      uIsOpenCometArc: { value: isOpenCometArc ? 1.0 : 0.0 }
     },
     transparent: true,
     depthWrite: false

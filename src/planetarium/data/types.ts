@@ -22,9 +22,11 @@ export type BodyId =
   | "ceres"
   | "pluto"
   | "charon"
-  | "voyager1";
+  | "voyager1"
+  | "halley"
+  | "halebopp";
 
-export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object" | "probe";
+export type BodyKind = "star" | "planet" | "dwarf" | "moon" | "object" | "probe" | "comet";
 
 export interface SecularRates {
   /** Semi-major axis drift (AU / Julian century) */
@@ -85,11 +87,19 @@ export interface OrbitElements {
   perturbation?: MeanAnomalyPerturbation;
   /** Radial hyperbolic escape trajectory (e.g. Voyager 1) instead of a closed ellipse. */
   escapeTrajectory?: EscapeTrajectory;
+  /** Reference plane for moons: "ecliptic" (Earth's Moon) vs "equatorial" (default, parent equator). */
+  orbitFrame?: "ecliptic" | "equatorial";
 }
 
 export interface RotationElements {
   rotationPeriodHours: number;
   axialTiltDeg: number;
+  /** IAU J2000 equatorial Right Ascension α₀ of the spin pole (deg). */
+  poleRaDeg?: number;
+  /** IAU J2000 equatorial Declination δ₀ of the spin pole (deg). */
+  poleDecDeg?: number;
+  /** True when rotation around the specified pole is retrograde (e.g. Venus). */
+  retrogradeSpin?: boolean;
   tidallyLocked?: boolean;
 }
 

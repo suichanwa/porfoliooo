@@ -36,6 +36,7 @@ function PlanetariumView() {
     isInfoVisible,
     resetSignal,
     zoomOutSignal,
+    focusSignal,
     selectPlanet,
     clearSelection,
     setIsFocused
@@ -216,6 +217,7 @@ function PlanetariumView() {
           isInfoVisible={isInfoVisible}
           resetSignal={resetSignal}
           zoomOutSignal={zoomOutSignal}
+          focusSignal={focusSignal}
           onSelect={handleSceneSelect}
           isLowEnd={deviceInfo.isLowEnd}
           isIntegratedGpu={deviceInfo.isIntegratedGpu}

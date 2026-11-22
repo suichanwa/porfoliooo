@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Group, Object3D, Vector3 } from "three";
 import type { BodyData, BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
@@ -137,9 +137,14 @@ export const useOrbitingPlanet = ({
     hoveredRef.current = false;
   }, []);
 
-  const handleClick = useCallback(() => {
-    onSelect?.(data.id);
-  }, [data.id, onSelect]);
+  const handleClick = useCallback(
+    (event?: ThreeEvent<MouseEvent>) => {
+      // Ignore camera orbit/pan drags so releasing the pointer over a focused body never resets the view
+      if (event && event.delta > 6) return;
+      onSelect?.(data.id);
+    },
+    [data.id, onSelect]
+  );
 
   return {
     groupRef,

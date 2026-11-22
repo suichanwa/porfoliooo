@@ -8,7 +8,7 @@ export type PlutoBarycenterVisualsProps = UsePlutoBarycenterVisualsOptions;
 export default function PlutoBarycenterVisuals(props: PlutoBarycenterVisualsProps) {
   const {
     groupRef,
-    tiltRad,
+    poleQuaternion,
     innerRingLine,
     outerRingLine,
     tetherLine,
@@ -16,7 +16,7 @@ export default function PlutoBarycenterVisuals(props: PlutoBarycenterVisualsProp
   } = usePlutoBarycenterVisuals(props);
 
   return (
-    <group ref={groupRef} rotation={[0, 0, tiltRad]}>
+    <group ref={groupRef} quaternion={poleQuaternion}>
       <primitive object={innerRingLine} />
       <primitive object={outerRingLine} />
       <primitive object={tetherLine} />

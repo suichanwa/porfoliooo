@@ -192,6 +192,7 @@ export default function Sun({ meshRef, onClick }: SunProps) {
         material={coreMaterial}
         onClick={(event) => {
           event.stopPropagation();
+          if (event.delta > 6) return;
           onClick?.();
         }}
       />

@@ -20,7 +20,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(1.9885e30),
     rotation: {
       axialTiltDeg: 7.25,
-      rotationPeriodHours: 609.12
+      rotationPeriodHours: 609.12,
+      poleRaDeg: 286.13,
+      poleDecDeg: 63.87
     },
     render: {
       radiusKm: 696340,
@@ -45,7 +47,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(3.3011e23),
     rotation: {
       axialTiltDeg: 0.034,
-      rotationPeriodHours: 1407.6
+      rotationPeriodHours: 1407.6,
+      poleRaDeg: 281.01,
+      poleDecDeg: 61.45
     },
     render: {
       radiusKm: 2439.7,
@@ -88,7 +92,10 @@ export const PLANETS: BodyData[] = [
     mu: toMu(4.8675e24),
     rotation: {
       axialTiltDeg: 177.36,
-      rotationPeriodHours: 5832.5
+      rotationPeriodHours: 5832.5,
+      poleRaDeg: 272.76,
+      poleDecDeg: 67.16,
+      retrogradeSpin: true
     },
     render: {
       radiusKm: 6051.8,
@@ -141,7 +148,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(5.9724e24),
     rotation: {
       axialTiltDeg: 23.44,
-      rotationPeriodHours: 23.93
+      rotationPeriodHours: 23.93,
+      poleRaDeg: 0.0,
+      poleDecDeg: 90.0
     },
     render: {
       radiusKm: 6371,
@@ -194,7 +203,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(6.4171e23),
     rotation: {
       axialTiltDeg: 25.19,
-      rotationPeriodHours: 24.62
+      rotationPeriodHours: 24.62,
+      poleRaDeg: 317.681,
+      poleDecDeg: 52.887
     },
     render: {
       radiusKm: 3389.5,
@@ -248,7 +259,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(1.8982e27),
     rotation: {
       axialTiltDeg: 3.13,
-      rotationPeriodHours: 9.93
+      rotationPeriodHours: 9.93,
+      poleRaDeg: 268.057,
+      poleDecDeg: 64.495
     },
     render: {
       radiusKm: 69911,
@@ -315,7 +328,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(5.6834e26),
     rotation: {
       axialTiltDeg: 26.73,
-      rotationPeriodHours: 10.7
+      rotationPeriodHours: 10.7,
+      poleRaDeg: 40.589,
+      poleDecDeg: 83.537
     },
     render: {
       radiusKm: 58232,
@@ -385,7 +400,11 @@ export const PLANETS: BodyData[] = [
     mu: toMu(8.681e25),
     rotation: {
       axialTiltDeg: 97.77,
-      rotationPeriodHours: 17.24
+      rotationPeriodHours: 17.24,
+      // Right-hand positive spin pole (antipode of IAU north pole 257.311°, -15.175°)
+      // so Uranus's 97.77° sideways obliquity, rings, and regular moons share exact 3D alignment
+      poleRaDeg: 77.311,
+      poleDecDeg: 15.175
     },
     render: {
       radiusKm: 25362,
@@ -452,7 +471,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(1.02413e26),
     rotation: {
       axialTiltDeg: 28.32,
-      rotationPeriodHours: 16.11
+      rotationPeriodHours: 16.11,
+      poleRaDeg: 299.3,
+      poleDecDeg: 42.95
     },
     render: {
       radiusKm: 24622,
@@ -558,7 +579,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(9.393e20),
     rotation: {
       axialTiltDeg: 4,
-      rotationPeriodHours: 9.07
+      rotationPeriodHours: 9.07,
+      poleRaDeg: 291.42,
+      poleDecDeg: 66.76
     },
     render: {
       radiusKm: 473,
@@ -593,7 +616,9 @@ export const PLANETS: BodyData[] = [
     mu: toMu(1.303e22),
     rotation: {
       axialTiltDeg: 119.6,
-      rotationPeriodHours: 153.3
+      rotationPeriodHours: 153.3,
+      poleRaDeg: 132.993,
+      poleDecDeg: -6.163
     },
     render: {
       radiusKm: 1188.3,
@@ -643,6 +668,8 @@ export const PLANETS: BodyData[] = [
     rotation: {
       axialTiltDeg: 119.6,
       rotationPeriodHours: 153.29,
+      poleRaDeg: 132.993,
+      poleDecDeg: -6.163,
       tidallyLocked: true
     },
     render: {
@@ -732,6 +759,74 @@ export const PLANETS: BodyData[] = [
         maxPlotDistanceAu: 420.0,
         historicalPreset: "voyager1"
       }
+    }
+  },
+  {
+    id: "halley",
+    name: "Halley's Comet",
+    kind: "comet",
+    parentId: "sun",
+    massKg: 2.2e14,
+    mu: toMu(2.2e14),
+    rotation: {
+      axialTiltDeg: 0,
+      rotationPeriodHours: 52.8
+    },
+    render: {
+      radiusKm: 5.5,
+      colorFallback: "#7dd3fc",
+      materialPreset: { roughness: 0.92, metalness: 0.04 },
+      glowPreset: { color: "#7dd3fc", intensity: 0.35 },
+      bendingDimensions: {
+        topHeight: 0.02,
+        bottomDepth: 0.04,
+        contactRadius: 0.05,
+        funnelReach: 0.2
+      }
+    },
+    orbit: {
+      // 1P/Halley (JPL SBDB J2000 elements; tuned period hits both 1986-02-09 & 2061-07-28 perihelia)
+      semiMajorAxisKm: auToKm(17.834144),
+      eccentricity: 0.9671429,
+      inclinationDeg: 162.26269,
+      orbitalPeriodDays: 27561.5,
+      meanLongitudeAtEpochDeg: 236.0283,
+      longitudeOfPerihelionDeg: 169.75257,
+      longitudeOfAscendingNodeDeg: 58.42008
+    }
+  },
+  {
+    id: "halebopp",
+    name: "Hale-Bopp",
+    kind: "comet",
+    parentId: "sun",
+    massKg: 1.3e16,
+    mu: toMu(1.3e16),
+    rotation: {
+      axialTiltDeg: 0,
+      rotationPeriodHours: 11.46
+    },
+    render: {
+      radiusKm: 30,
+      colorFallback: "#bae6fd",
+      materialPreset: { roughness: 0.9, metalness: 0.04 },
+      glowPreset: { color: "#bae6fd", intensity: 0.4 },
+      bendingDimensions: {
+        topHeight: 0.02,
+        bottomDepth: 0.04,
+        contactRadius: 0.05,
+        funnelReach: 0.2
+      }
+    },
+    orbit: {
+      // C/1995 O1 (Hale-Bopp) post-1997 JPL SBDB barycentric J2000 elements (q = 0.9141 AU, T_p = 1997-04-01.14 UTC)
+      semiMajorAxisKm: auToKm(186.0),
+      eccentricity: 0.9950853,
+      inclinationDeg: 89.4294,
+      orbitalPeriodDays: 926460.0,
+      meanLongitudeAtEpochDeg: 53.44996,
+      longitudeOfPerihelionDeg: 53.0593,
+      longitudeOfAscendingNodeDeg: 282.4707
     }
   }
 ];

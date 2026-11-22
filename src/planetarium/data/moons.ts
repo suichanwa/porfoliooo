@@ -39,9 +39,17 @@ export const MOONS: BodyData[] = [
       semiMajorAxisKm: 384400,
       eccentricity: 0.0549,
       inclinationDeg: 5.145,
-      orbitalPeriodDays: 27.32166,
-      meanLongitudeAtEpochDeg: 218.316,
-      longitudeOfPerihelionDeg: 83.353
+      orbitalPeriodDays: 27.321661,
+      orbitFrame: "ecliptic",
+      // Meeus / JPL J2000 lunar mean elements + apsidal (8.85 yr) & nodal (18.6 yr) precession
+      meanLongitudeAtEpochDeg: 218.3164477,
+      longitudeOfPerihelionDeg: 83.3532465,
+      longitudeOfAscendingNodeDeg: 125.0445479,
+      secularRates: {
+        lDotDegPerCentury: 481267.88123421,
+        periLonDotDegPerCentury: 4069.0137287,
+        ascNodeDotDegPerCentury: -1934.1362891
+      }
     }
   },
   {
@@ -372,7 +380,8 @@ export const MOONS: BodyData[] = [
       semiMajorAxisKm: 354759,
       eccentricity: 0.000016,
       inclinationDeg: 156.885,
-      orbitalPeriodDays: -5.877,
+      // Positive period with inclination > 90° (156.885°) produces true 3D retrograde motion
+      orbitalPeriodDays: 5.877,
       meanLongitudeAtEpochDeg: 253.0,
       longitudeOfPerihelionDeg: 160.0
     }

@@ -38,6 +38,7 @@ interface FocusTargetOptions {
   selectedId: BodyId | null;
   resetSignal: number;
   zoomOutSignal?: number;
+  focusSignal?: number;
   controlsRef: RefObject<OrbitControlsImpl | null>;
   planetRefs: RefObject<Record<BodyId, Object3D | null>>;
   planetData: Record<BodyId, BodyData>;
@@ -52,6 +53,7 @@ export const useFocusTarget = ({
   selectedId,
   resetSignal,
   zoomOutSignal = 0,
+  focusSignal = 0,
   controlsRef,
   planetRefs,
   planetData,
@@ -130,8 +132,11 @@ export const useFocusTarget = ({
       isZoomingOutRef.current = false;
       isTransitioningRef.current = true;
       transitionTimeRef.current = 0;
+      // Reset trackedIdRef so clicking an already-selected body also recomputes the ideal
+      // sunlit/side-on approach framing and smoothly refocuses from anywhere.
+      trackedIdRef.current = null;
     }
-  }, [selectedId]);
+  }, [selectedId, focusSignal]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
@@ -178,11 +183,14 @@ export const useFocusTarget = ({
         } else {
           // Angle in XZ plane pointing from the planet toward the Sun
           const phiSun = Math.atan2(-target.z, -target.x);
-          // Rotate horizontally around Y-axis by ~39° (0.68 rad) with a slight upward tilt (+0.25 on Y)
-          const theta = phiSun + 0.68;
+          const isCometTarget = planetData[selectedId]?.kind === "comet";
+          // For comets, view side-on (~78° from the Sun-comet axis) to showcase the full
+          // sweeping blue ion tail + curved golden dust tail profile like Earth photos!
+          const angleOffset = isCometTarget ? 1.36 : 0.68;
+          const theta = phiSun + angleOffset;
           const vx = Math.cos(theta);
           const vz = Math.sin(theta);
-          const vy = 0.25;
+          const vy = isCometTarget ? 0.22 : 0.25;
           approachDirectionRef.current.set(vx, vy, vz).normalize();
         }
       }
@@ -204,6 +212,9 @@ export const useFocusTarget = ({
       } else if (selectedId === "charon") {
         // Focused close-up inspection of Charon
         desiredDistance = Math.max(radius * 6.5, 0.95);
+      } else if (selectedBody.kind === "comet") {
+        // Frame the entire comet (compact white head + fading milky dust fan + misty blue ion veil)
+        desiredDistance = selectedId === "halebopp" ? 3.8 : 3.2;
       } else if (isMoon) {
         desiredDistance = Math.max(radius * 6.5, 0.35);
       } else if (selectedId === "sun") {

@@ -13,12 +13,13 @@ import {
 import type { BodyId } from "../data/types";
 import type { DistanceScaleMode, DistanceScaleParams } from "../utils/distanceScale";
 import {
-  PLUTO_AXIAL_TILT_DEG,
   R_CHARON_BARYCENTER,
   R_PLUTO_BARYCENTER,
+  getBodyPoleQuaternion,
   getPlutoBarycenterPosition,
   getPlutoCharonOrbitalPhase
 } from "../orbits/orbitMath";
+import { PLANET_BY_ID } from "../data/planetRegistry";
 
 export interface UsePlutoBarycenterVisualsOptions {
   timeRef: RefObject<number>;
@@ -102,8 +103,8 @@ export const usePlutoBarycenterVisuals = ({
   }, []);
   const crosshairMaterial = useMemo(() => createLineMaterial("#f1f5f9"), []);
 
-  const tiltRad = useMemo(
-    () => MathUtils.degToRad(PLUTO_AXIAL_TILT_DEG),
+  const poleQuaternion = useMemo(
+    () => getBodyPoleQuaternion(PLANET_BY_ID.pluto),
     []
   );
 
@@ -234,7 +235,7 @@ export const usePlutoBarycenterVisuals = ({
 
   return {
     groupRef,
-    tiltRad,
+    poleQuaternion,
     innerRingLine,
     outerRingLine,
     tetherLine,

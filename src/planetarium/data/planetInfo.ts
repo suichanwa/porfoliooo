@@ -197,5 +197,21 @@ export const PLANET_INFO: Record<BodyId, PlanetInfo | null> = {
       "Entered interstellar space on August 25, 2012.",
       "Carries the Golden Record with sounds and images of Earth."
     ]
+  },
+  halley: {
+    summary: "The most famous periodic comet, returning to the inner solar system roughly every 75–76 years on a retrograde orbit.",
+    facts: [
+      "Orbits backward (162.3° inclination) from inside Venus's orbit (0.59 AU) out past Neptune (35.1 AU).",
+      "Charcoal-black peanut-shaped icy nucleus (~15 × 8 km) imaged close-up by ESA's Giotto in 1986.",
+      "Passed aphelion in Dec 2023 and is now falling back toward its July 28, 2061 perihelion — try jumping to 2061!"
+    ]
+  },
+  halebopp: {
+    summary: "The Great Comet of 1997 — one of the brightest and largest comets ever observed, visible to the naked eye for a record 18 months.",
+    facts: [
+      "Enormous ~60 km icy nucleus diving on an almost perpendicular (89.4°) polar orbit.",
+      "Perihelion at 0.91 AU on April 1, 1997 unleashed towering blue ion and golden dust tails — try jumping to 1997!",
+      "Cruises ~51 AU out in the outer solar system today and will not return until roughly the year 4530."
+    ]
   }
 };

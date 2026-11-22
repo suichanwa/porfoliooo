@@ -261,15 +261,22 @@ export default function PlanetInfoPanel() {
 
   if (!planet) return null;
 
-  const distanceText = planet.orbit
-    ? planet.parentId && planet.parentId !== "sun"
-      ? `${formatNumber(planet.orbit.semiMajorAxisKm)} km`
-      : `${kmToAu(planet.orbit.semiMajorAxisKm).toFixed(2)} AU`
-    : "-";
-
   const isMoon = Boolean(planet.parentId && planet.parentId !== "sun");
   const isProbe = planet.kind === "probe";
+  const isComet = planet.kind === "comet";
   const isEscapeTrajectory = Boolean(planet.orbit?.escapeTrajectory);
+  const distanceText = planet.orbit
+    ? isMoon
+      ? `${formatNumber(planet.orbit.semiMajorAxisKm)} km`
+      : isComet
+        ? (() => {
+            const aAu = kmToAu(planet.orbit.semiMajorAxisKm);
+            const qAu = aAu * (1 - planet.orbit.eccentricity);
+            const QAu = aAu * (1 + planet.orbit.eccentricity);
+            return `${qAu.toFixed(2)}–${QAu >= 100 ? Math.round(QAu) : QAu.toFixed(1)} AU`;
+          })()
+        : `${kmToAu(planet.orbit.semiMajorAxisKm).toFixed(2)} AU`
+    : "-";
   const parentPlanet = isMoon && planet.parentId ? PLANET_BY_ID[planet.parentId] ?? null : null;
   const relatedLink =
     planet.id === "pluto" && PLANET_BY_ID.charon
@@ -282,32 +289,46 @@ export default function PlanetInfoPanel() {
         : null;
   const categoryLabel = isProbe
     ? "Spacecraft details"
-    : planet.kind === "dwarf"
-      ? "Dwarf planet details"
-      : isMoon
-        ? "Moon details"
-        : "Planet details";
-  const radiusLabel = isProbe ? "Antenna" : "Radius";
+    : isComet
+      ? "Comet details"
+      : planet.kind === "dwarf"
+        ? "Dwarf planet details"
+        : isMoon
+          ? "Moon details"
+          : "Planet details";
+  const radiusLabel = isProbe ? "Antenna" : isComet ? "Nucleus" : "Radius";
   const radiusValue = isProbe
     ? "3.7 m dish"
-    : `${formatNumber(planet.render.radiusKm)} km`;
+    : isComet
+      ? `~${Math.round(planet.render.radiusKm * 2)} km wide`
+      : `${formatNumber(planet.render.radiusKm)} km`;
   const periodDays =
     planet.orbit && !isEscapeTrajectory
       ? Math.round(planet.orbit.orbitalPeriodDays)
       : null;
+  const periodYears =
+    periodDays !== null && Math.abs(periodDays) >= 3650
+      ? planet.orbit!.orbitalPeriodDays / 365.25
+      : null;
   const periodLabel = isEscapeTrajectory ? "Trajectory" : "Period";
   const periodValue = isEscapeTrajectory
     ? "Escape · 16.9 km/s"
-    : periodDays !== null
-      ? `${periodDays} days`
-      : "-";
+    : isComet && periodYears !== null
+      ? `${periodYears >= 100 ? formatNumber(periodYears) : periodYears.toFixed(1)} yrs`
+      : periodDays !== null
+        ? `${formatNumber(periodDays)} days`
+        : "-";
   const compactPeriodValue = isEscapeTrajectory
     ? "16.9 km/s"
-    : periodDays !== null
-      ? `${periodDays}d`
-      : "-";
-  const tiltLabel = isProbe ? "Escape Lat" : "Tilt";
-  const tiltValue = `${isProbe ? "+" : ""}${planet.rotation.axialTiltDeg.toFixed(1)}\u00B0`;
+    : isComet && periodYears !== null
+      ? `${periodYears >= 100 ? formatNumber(periodYears) : periodYears.toFixed(1)}y`
+      : periodDays !== null
+        ? `${periodDays}d`
+        : "-";
+  const tiltLabel = isProbe ? "Escape Lat" : isComet ? "Inclination" : "Tilt";
+  const tiltValue = isComet && planet.orbit
+    ? `${planet.orbit.inclinationDeg.toFixed(1)}\u00B0`
+    : `${isProbe ? "+" : ""}${planet.rotation.axialTiltDeg.toFixed(1)}\u00B0`;
   const massValue = formatMass(planet.massKg);
 
   return (
@@ -352,7 +373,7 @@ export default function PlanetInfoPanel() {
                       {planet.name}
                     </span>
                     <span className="rounded-full bg-primary-accent/20 border border-primary-accent/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary-accent">
-                      {isProbe ? "Probe" : planet.kind === "dwarf" ? "Dwarf Planet" : isMoon ? "Moon" : "Planet"}
+                      {isProbe ? "Probe" : isComet ? "Comet" : planet.kind === "dwarf" ? "Dwarf Planet" : isMoon ? "Moon" : "Planet"}
                     </span>
                   </div>
                 </div>
@@ -438,7 +459,7 @@ export default function PlanetInfoPanel() {
                   )}
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <StatTile label={isProbe ? "Escape Lat" : "Axial Tilt"} value={tiltValue} />
+                    <StatTile label={isProbe ? "Escape Lat" : isComet ? "Inclination" : "Axial Tilt"} value={tiltValue} />
                     <StatTile label="Mass" value={massValue} />
                   </div>
 

@@ -75,7 +75,9 @@ export const PLANET_TEXTURES: Record<BodyId, string | null> = {
   ceres: toUrl(ceresTexture),
   pluto: toUrl(plutoTexture),
   charon: toUrl(charonTexture),
-  voyager1: null
+  voyager1: null,
+  halley: null,
+  halebopp: null
 };
 
 export const PLANET_NORMAL_TEXTURES: Partial<Record<BodyId, string | null>> = {

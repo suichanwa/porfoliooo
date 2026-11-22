@@ -43,6 +43,7 @@ interface PlanetariumSceneProps {
   isInfoVisible?: boolean;
   resetSignal: number;
   zoomOutSignal?: number;
+  focusSignal?: number;
   onSelect: (id: BodyId | null) => void;
   isLowEnd?: boolean;
   isIntegratedGpu?: boolean;
@@ -71,6 +72,7 @@ function PlanetariumScene({
   isInfoVisible = false,
   resetSignal,
   zoomOutSignal = 0,
+  focusSignal = 0,
   onSelect,
   isLowEnd = false,
   isIntegratedGpu = false,
@@ -253,6 +255,7 @@ function PlanetariumScene({
     selectedId,
     resetSignal,
     zoomOutSignal,
+    focusSignal,
     controlsRef,
     planetRefs,
     planetData: PLANET_BY_ID,

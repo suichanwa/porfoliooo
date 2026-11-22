@@ -1,5 +1,6 @@
 import Planet from "../bodies/Planet";
 import ModelMesh from "../bodies/ModelMesh";
+import CometMesh from "../bodies/CometMesh";
 import Labels from "../ui/Labels";
 import {
   useOrbitingPlanet,
@@ -50,7 +51,20 @@ export default function OrbitingPlanet({
 
   return (
     <>
-      {data.render.modelUrl ? (
+      {data.kind === "comet" ? (
+        <CometMesh
+          data={data}
+          position={initialPosition}
+          timeRef={timeRef}
+          scaleMode={scaleMode}
+          scaleParams={scaleParams}
+          isSelected={isSelected}
+          groupRef={groupRef}
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+          onClick={handleClick}
+        />
+      ) : data.render.modelUrl ? (
         <ModelMesh
           data={data}
           position={initialPosition}

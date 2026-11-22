@@ -28,7 +28,10 @@ import {
 } from "../hooks/usePlanetTexture";
 import { scalePlanetRadius } from "../utils/scale";
 import RingSystem from "../rings/RingSystem";
-import { getPlutoCharonOrbitalPhase } from "../orbits/orbitMath";
+import {
+  getBodyPoleQuaternion,
+  getPlutoCharonOrbitalPhase
+} from "../orbits/orbitMath";
 import {
   applySolarShineShader,
   createSolarShineUniforms
@@ -98,7 +101,7 @@ export default function BodyMesh({
   const shadowFactorRef = useRef(1.0);
   const prevSimTimeRef = useRef<number | null>(null);
   const cloudTimeRef = useRef(0);
-  const earthPosRef = useMemo(() => new Vector3(), []);
+  const parentPosRef = useMemo(() => new Vector3(), []);
   const moonPosRef = useMemo(() => new Vector3(), []);
   const dirRef = useMemo(() => new Vector3(), []);
   const moonOffsetRef = useMemo(() => new Vector3(), []);
@@ -113,7 +116,12 @@ export default function BodyMesh({
     () => scalePlanetRadius(data.render.radiusKm, isMoon, parentRadiusKm),
     [data.render.radiusKm, isMoon, parentRadiusKm]
   );
-  const tilt = MathUtils.degToRad(data.rotation.axialTiltDeg);
+  const poleQuaternion = useMemo(() => getBodyPoleQuaternion(data), [data]);
+  const invPoleQuaternion = useMemo(
+    () => poleQuaternion.clone().invert(),
+    [poleQuaternion]
+  );
+  const spinSign = data.rotation.retrogradeSpin ? -1 : 1;
 
   const baseMap = useTextureAsset(data.render.textureUrl, {
     fallbackColor: data.render.colorFallback,
@@ -247,13 +255,35 @@ export default function BodyMesh({
       meshRef.current.rotation.y =
         data.id === "pluto" ? -phase : -phase - Math.PI;
       prevSimTimeRef.current = simTimeRef.current;
+    } else if (
+      data.rotation.tidallyLocked &&
+      isMoon &&
+      data.parentId &&
+      planetRefs?.current?.[data.parentId]
+    ) {
+      // True synchronous tidal locking: keep the moon's sub-parent prime meridian (local +X,
+      // texture u = 0.5, e.g. Earth's Moon near side) continuously facing its parent planet.
+      const parentObj = planetRefs.current[data.parentId];
+      if (parentObj && meshRef.current.parent?.visible !== false) {
+        parentObj.getWorldPosition(parentPosRef);
+        meshRef.current.getWorldPosition(moonPosRef);
+        dirRef.copy(parentPosRef).sub(moonPosRef);
+        if (dirRef.lengthSq() > 1e-10) {
+          dirRef.applyQuaternion(invPoleQuaternion);
+          meshRef.current.rotation.y = Math.atan2(-dirRef.z, dirRef.x);
+        }
+      }
+      if (simTimeRef) {
+        prevSimTimeRef.current = simTimeRef.current;
+      }
     } else if (simTimeRef && rotationHours !== 0) {
       const simDays = simTimeRef.current;
       const rotationDays = rotationHours / 24;
 
       if (prevSimTimeRef.current === null) {
         // Seed initial spin phase deterministically from simulation time
-        meshRef.current.rotation.y = ((simDays / rotationDays) * TWO_PI) % TWO_PI;
+        meshRef.current.rotation.y =
+          spinSign * (((simDays / rotationDays) * TWO_PI) % TWO_PI);
         prevSimTimeRef.current = simDays;
       } else {
         const dtDays = simDays - prevSimTimeRef.current;
@@ -262,10 +292,11 @@ export default function BodyMesh({
         // Detect a discrete custom date jump (> 50 simulated days in a single frame)
         // and snap cleanly to the new deterministic phase instead of a spin burst.
         if (Math.abs(dtDays) > 50) {
-          meshRef.current.rotation.y = ((simDays / rotationDays) * TWO_PI) % TWO_PI;
+          meshRef.current.rotation.y =
+            spinSign * (((simDays / rotationDays) * TWO_PI) % TWO_PI);
         } else if (dtDays !== 0 && delta > 0) {
           const safeDelta = Math.min(delta, 0.05);
-          const rawOmega = ((dtDays / rotationDays) * TWO_PI) / safeDelta;
+          const rawOmega = (spinSign * (dtDays / rotationDays) * TWO_PI) / safeDelta;
           const visualOmega =
             MAX_VISUAL_SPIN_RAD_PER_SEC *
             Math.tanh(rawOmega / MAX_VISUAL_SPIN_RAD_PER_SEC);
@@ -275,7 +306,7 @@ export default function BodyMesh({
       }
     } else if (rotationHours !== 0) {
       const rotationRate = TWO_PI / (rotationHours * 3600);
-      deltaAngle = delta * rotationRate * timeScale;
+      deltaAngle = spinSign * delta * rotationRate * timeScale;
       meshRef.current.rotation.y += deltaAngle;
     }
 
@@ -290,11 +321,11 @@ export default function BodyMesh({
     // Dynamic Earth Shadow (Lunar Eclipse) when Moon moves behind Earth relative to Sun
     if (data.id === "moon" && planetRefs?.current?.earth) {
       const earthObj = planetRefs.current.earth;
-      earthObj.getWorldPosition(earthPosRef);
+      earthObj.getWorldPosition(parentPosRef);
       meshRef.current.getWorldPosition(moonPosRef);
 
-      dirRef.copy(earthPosRef).normalize();
-      moonOffsetRef.copy(moonPosRef).sub(earthPosRef);
+      dirRef.copy(parentPosRef).normalize();
+      moonOffsetRef.copy(moonPosRef).sub(parentPosRef);
 
       const distAlongShadow = moonOffsetRef.dot(dirRef);
       let targetShadow = 1.0;
@@ -320,7 +351,7 @@ export default function BodyMesh({
   });
 
   return (
-    <group ref={groupRef} position={position} rotation={[0, 0, tilt]}>
+    <group ref={groupRef} position={position} quaternion={poleQuaternion}>
       <mesh
         ref={meshRef}
         geometry={bodyGeometry}

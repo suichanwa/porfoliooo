@@ -1,4 +1,4 @@
-import { MathUtils, Vector3 } from "three";
+import { MathUtils, Quaternion, Vector3 } from "three";
 import type { BodyData, EscapeTrajectory, OrbitElements } from "../data/types";
 import { PLANET_BY_ID } from "../data/planetRegistry";
 import { scalePlanetRadius } from "../utils/scale";
@@ -11,11 +11,79 @@ import { kmToAu } from "../utils/units";
 import { utcDaysToTtDays } from "../utils/timeScale";
 
 const EQUATORIAL_TILT_AXIS = new Vector3(0, 0, 1);
+const UP_AXIS = new Vector3(0, 1, 0);
+const J2000_OBLIQUITY_RAD = MathUtils.degToRad(23.4392911);
+const COS_OBLIQUITY = Math.cos(J2000_OBLIQUITY_RAD);
+const SIN_OBLIQUITY = Math.sin(J2000_OBLIQUITY_RAD);
 const DAYS_PER_JULIAN_CENTURY = 36525;
 const DAYS_PER_JULIAN_YEAR = 365.25;
 const TWO_PI = Math.PI * 2;
 const DEFAULT_ESCAPE_MIN_AU = 1.0;
 const DEFAULT_ESCAPE_MAX_PLOT_AU = 420.0;
+
+const poleQuaternionCache = new Map<string, Quaternion>();
+
+/**
+ * Computes a body's true 3D spin-pole unit vector in Three.js Y-up ecliptic coordinates
+ * from its IAU J2000 equatorial pole (poleRaDeg, poleDecDeg).
+ */
+export const getBodyPoleVector = (
+  body: BodyData,
+  out: Vector3 = new Vector3()
+): Vector3 => {
+  const { poleRaDeg, poleDecDeg, axialTiltDeg } = body.rotation;
+  if (poleRaDeg !== undefined && poleDecDeg !== undefined) {
+    const ra = MathUtils.degToRad(poleRaDeg);
+    const dec = MathUtils.degToRad(poleDecDeg);
+    const cosDec = Math.cos(dec);
+    const xEq = cosDec * Math.cos(ra);
+    const yEq = cosDec * Math.sin(ra);
+    const zEq = Math.sin(dec);
+
+    // J2000 Equatorial -> J2000 Ecliptic (obliquity ε₀ = 23.4392911°)
+    const xEcl = xEq;
+    const yEcl = yEq * COS_OBLIQUITY + zEq * SIN_OBLIQUITY;
+    const zEcl = -yEq * SIN_OBLIQUITY + zEq * COS_OBLIQUITY;
+
+    // Ecliptic (X, Y, Z_north) -> Three.js Y-up (X, Z_north, -Y)
+    return out.set(xEcl, zEcl, -yEcl).normalize();
+  }
+
+  // Fallback: single-axis Z tilt
+  const tilt = MathUtils.degToRad(axialTiltDeg);
+  return out.set(-Math.sin(tilt), Math.cos(tilt), 0).normalize();
+};
+
+/**
+ * Returns a cached static Quaternion rotating Three.js local +Y to the body's true 3D J2000 pole.
+ * Equatorial moons inherit their parent planet's exact 3D pole orientation so moons & rings
+ * stay strictly coplanar. Zero per-frame allocation cost.
+ */
+export const getBodyPoleQuaternion = (body: BodyData): Quaternion => {
+  const cached = poleQuaternionCache.get(body.id);
+  if (cached) return cached;
+
+  let q: Quaternion;
+  if (body.rotation.poleRaDeg !== undefined && body.rotation.poleDecDeg !== undefined) {
+    const poleVec = getBodyPoleVector(body, new Vector3());
+    q = new Quaternion().setFromUnitVectors(UP_AXIS, poleVec);
+  } else if (
+    body.kind === "moon" &&
+    body.orbit?.orbitFrame !== "ecliptic" &&
+    body.parentId &&
+    PLANET_BY_ID[body.parentId]
+  ) {
+    q = getBodyPoleQuaternion(PLANET_BY_ID[body.parentId]).clone();
+  } else {
+    q = new Quaternion().setFromAxisAngle(
+      EQUATORIAL_TILT_AXIS,
+      MathUtils.degToRad(body.rotation.axialTiltDeg)
+    );
+  }
+
+  poleQuaternionCache.set(body.id, q);
+  return q;
+};
 
 // Voyager 1 exact historical flyby milestones (days relative to J2000.0 = 2000-01-01 12:00 UTC)
 // Encounter coordinates match our JPL Table 2a/2b Earth, Jupiter, and Saturn positions verbatim.
@@ -159,15 +227,30 @@ const getVoyager1HistoricalAu = (timeDays: number, out: Vector3): Vector3 => {
 };
 
 /**
- * 4-step Newton-Raphson Kepler solver: converges to < 1e-13 rad even for
- * high-eccentricity bodies like Mercury (0.206) and Pluto (0.249).
+ * Halley's cubic-convergence Kepler solver: converges to < 1e-12 rad across the entire
+ * eccentricity range from circular planets up to extreme comets (e = 0.967–0.995+).
  */
-const solveKepler = (meanAnomaly: number, eccentricity: number): number => {
+export const solveKepler = (meanAnomaly: number, eccentricity: number): number => {
   // Wrap mean anomaly into [-PI, PI] for numerical stability across millennia
-  let m = ((meanAnomaly + Math.PI) % TWO_PI + TWO_PI) % TWO_PI - Math.PI;
-  let E = m + eccentricity * Math.sin(m);
-  for (let i = 0; i < 4; i += 1) {
-    const delta = (E - eccentricity * Math.sin(E) - m) / (1 - eccentricity * Math.cos(E));
+  const m = ((meanAnomaly + Math.PI) % TWO_PI + TWO_PI) % TWO_PI - Math.PI;
+  if (Math.abs(m) < 1e-12) return 0;
+
+  let E: number;
+  if (eccentricity > 0.8) {
+    // Near perihelion for e -> 1, M ≈ (1-e)E + E³/6; cubic seed stays safely inside basin
+    E = Math.sign(m) * Math.min(Math.PI, Math.cbrt(6 * Math.abs(m)));
+  } else {
+    E = m + eccentricity * Math.sin(m);
+  }
+
+  const maxIter = eccentricity > 0.8 ? 10 : 4;
+  for (let i = 0; i < maxIter; i += 1) {
+    const sinE = Math.sin(E);
+    const cosE = Math.cos(E);
+    const f = E - eccentricity * sinE - m;
+    const f1 = 1 - eccentricity * cosE;
+    const f2 = eccentricity * sinE;
+    const delta = f / (f1 - (f * f2) / (2 * f1));
     E -= delta;
     if (Math.abs(delta) < 1e-12) break;
   }
@@ -243,9 +326,11 @@ export const getPlutoCharonBinaryState = (
   const uz = Math.sin(phase);
   const uLocal = new Vector3(ux, 0, uz);
 
-  // Apply Pluto's 119.6° equatorial tilt around Z axis
-  const tiltRad = MathUtils.degToRad(PLUTO_AXIAL_TILT_DEG);
-  const uDirection = uLocal.clone().applyAxisAngle(EQUATORIAL_TILT_AXIS, tiltRad);
+  // Apply Pluto's true 3D J2000 equatorial pole orientation
+  const plutoData = PLANET_BY_ID.pluto;
+  const uDirection = plutoData
+    ? uLocal.clone().applyQuaternion(getBodyPoleQuaternion(plutoData))
+    : uLocal.clone().applyAxisAngle(EQUATORIAL_TILT_AXIS, MathUtils.degToRad(PLUTO_AXIAL_TILT_DEG));
 
   // Pluto is on opposite side (-u), scaled by visibility vis (glides to barycenter in overview)
   const plutoOffset = uDirection.clone().multiplyScalar(-R_PLUTO_BARYCENTER * vis);
@@ -343,6 +428,50 @@ export const getOrbitPhase = (
   return (((effectiveTime % period) + period) % period) / period;
 };
 
+/**
+ * Returns the true physical heliocentric distance in AU for an elliptical heliocentric orbit
+ * (or escape trajectory) at the given UTC days since J2000.0.
+ */
+export const getHeliocentricDistanceAu = (
+  orbit: OrbitElements,
+  timeDays: number
+): number => {
+  if (orbit.escapeTrajectory) {
+    if (orbit.escapeTrajectory.historicalPreset === "voyager1") {
+      return getVoyager1HistoricalAu(timeDays, new Vector3()).length();
+    }
+    return getEscapeDistanceAu(orbit.escapeTrajectory, timeDays);
+  }
+
+  const ttDays = utcDaysToTtDays(timeDays);
+  const T = ttDays / DAYS_PER_JULIAN_CENTURY;
+  const Tsec = MathUtils.clamp(T, -50.0, 10.0);
+  const rates = orbit.secularRates;
+
+  const aAu = Math.max(0.05, kmToAu(orbit.semiMajorAxisKm) + (rates?.aDotAuPerCentury ?? 0) * Tsec);
+  const eccentricity = MathUtils.clamp(
+    orbit.eccentricity + (rates?.eDotPerCentury ?? 0) * Tsec,
+    0,
+    0.999
+  );
+  const periLonDeg =
+    (orbit.longitudeOfPerihelionDeg ?? 0) + (rates?.periLonDotDegPerCentury ?? 0) * Tsec;
+
+  let meanAnomaly: number;
+  if (orbit.meanLongitudeAtEpochDeg !== undefined) {
+    const meanLonDeg =
+      rates?.lDotDegPerCentury !== undefined
+        ? orbit.meanLongitudeAtEpochDeg + rates.lDotDegPerCentury * T
+        : orbit.meanLongitudeAtEpochDeg + (ttDays / orbit.orbitalPeriodDays) * 360;
+    meanAnomaly = MathUtils.degToRad(meanLonDeg - periLonDeg);
+  } else {
+    meanAnomaly = (ttDays / orbit.orbitalPeriodDays) * TWO_PI + (orbit.phaseAtEpoch ?? 0);
+  }
+
+  const E = solveKepler(meanAnomaly, eccentricity);
+  return aAu * (1 - eccentricity * Math.cos(E));
+};
+
 export const getOrbitPosition = (
   orbit: OrbitElements,
   timeDays: number,
@@ -350,7 +479,8 @@ export const getOrbitPosition = (
   scaleParams: DistanceScaleParams,
   out: Vector3 = new Vector3(),
   isMoon: boolean = false,
-  body?: BodyData
+  body?: BodyData,
+  eccentricAnomalyOverride?: number
 ) => {
   // Hyperbolic / historical interstellar escape trajectory (e.g. Voyager 1)
   if (orbit.escapeTrajectory && !isMoon) {
@@ -383,6 +513,7 @@ export const getOrbitPosition = (
   const pert = orbit.perturbation;
 
   let semiMajor: number;
+  let aAuPhysical = 1;
   let parentPlanet: BodyData | null = null;
 
   if (isMoon) {
@@ -428,14 +559,17 @@ export const getOrbitPosition = (
     const factor = totalMoons > 1 ? Math.pow(k / (totalMoons - 1), 0.88) : 0;
     semiMajor = rMin + factor * deltaShell;
   } else {
-    const aAu = kmToAu(orbit.semiMajorAxisKm) + (rates?.aDotAuPerCentury ?? 0) * Tsec;
-    semiMajor = computeRenderOrbitRadius(Math.max(0.05, aAu), scaleMode, scaleParams);
+    aAuPhysical = Math.max(
+      0.05,
+      kmToAu(orbit.semiMajorAxisKm) + (rates?.aDotAuPerCentury ?? 0) * Tsec
+    );
+    semiMajor = computeRenderOrbitRadius(aAuPhysical, scaleMode, scaleParams);
   }
 
   const eccentricity = MathUtils.clamp(
     orbit.eccentricity + (rates?.eDotPerCentury ?? 0) * Tsec,
     0,
-    0.98
+    0.999
   );
   const inclinationDeg = orbit.inclinationDeg + (rates?.iDotDegPerCentury ?? 0) * Tsec;
   const periLonDeg =
@@ -447,38 +581,48 @@ export const getOrbitPosition = (
   const ascNode = MathUtils.degToRad(ascNodeDeg);
   const argPeri = periLon - ascNode;
 
-  // Prefer real JPL J2000 elements: mean anomaly M = L(T) - ϖ(T) + ΔM_pert(T).
-  // Fall back to legacy manual phase for moons without J2000 longitudes.
-  let meanAnomaly: number;
-  if (orbit.meanLongitudeAtEpochDeg !== undefined) {
-    const meanLonDeg =
-      rates?.lDotDegPerCentury !== undefined
-        ? orbit.meanLongitudeAtEpochDeg + rates.lDotDegPerCentury * T
-        : orbit.meanLongitudeAtEpochDeg + (ttDays / orbit.orbitalPeriodDays) * 360;
-
-    let mDeg = meanLonDeg - periLonDeg;
-    if (pert) {
-      const fTRad = MathUtils.degToRad(pert.f * Tsec);
-      mDeg +=
-        pert.b * Tsec * Tsec +
-        pert.c * Math.cos(fTRad) +
-        pert.s * Math.sin(fTRad);
-    }
-    meanAnomaly = MathUtils.degToRad(mDeg);
+  let eccentricAnomaly: number;
+  if (eccentricAnomalyOverride !== undefined) {
+    eccentricAnomaly = eccentricAnomalyOverride;
   } else {
-    // Negative orbitalPeriodDays naturally drives retrograde motion (e.g. Triton)
-    const meanMotion = (ttDays / orbit.orbitalPeriodDays) * TWO_PI;
-    meanAnomaly = meanMotion + (orbit.phaseAtEpoch ?? 0);
+    // Prefer real JPL J2000 elements: mean anomaly M = L(T) - ϖ(T) + ΔM_pert(T).
+    // Fall back to legacy manual phase for moons without J2000 longitudes.
+    let meanAnomaly: number;
+    if (orbit.meanLongitudeAtEpochDeg !== undefined) {
+      const meanLonDeg =
+        rates?.lDotDegPerCentury !== undefined
+          ? orbit.meanLongitudeAtEpochDeg + rates.lDotDegPerCentury * T
+          : orbit.meanLongitudeAtEpochDeg + (ttDays / orbit.orbitalPeriodDays) * 360;
+
+      let mDeg = meanLonDeg - periLonDeg;
+      if (pert) {
+        const fTRad = MathUtils.degToRad(pert.f * Tsec);
+        mDeg +=
+          pert.b * Tsec * Tsec +
+          pert.c * Math.cos(fTRad) +
+          pert.s * Math.sin(fTRad);
+      }
+      meanAnomaly = MathUtils.degToRad(mDeg);
+    } else {
+      const meanMotion = (ttDays / orbit.orbitalPeriodDays) * TWO_PI;
+      meanAnomaly = meanMotion + (orbit.phaseAtEpoch ?? 0);
+    }
+    eccentricAnomaly = solveKepler(meanAnomaly, eccentricity);
   }
 
-  const eccentricAnomaly = solveKepler(meanAnomaly, eccentricity);
   const cosE = Math.cos(eccentricAnomaly);
   const sinE = Math.sin(eccentricAnomaly);
 
+  // For high-eccentricity heliocentric orbits (e.g. comets with e > 0.3), compute the
+  // exact physical AU ellipse first and then map instantaneous rAu through the nonlinear
+  // render distance scale so perihelia (0.59 AU / 0.91 AU) sit accurately outside the Sun.
+  const usePhysicalRadialMapping = !isMoon && eccentricity > 0.3;
+  const orbitalRadiusScale = usePhysicalRadialMapping ? aAuPhysical : semiMajor;
+
   // Position in the local orbital plane with perihelion along +x_orb.
-  const xOrb = semiMajor * (cosE - eccentricity);
+  const xOrb = orbitalRadiusScale * (cosE - eccentricity);
   const yOrb =
-    semiMajor * Math.sqrt(Math.max(0, 1 - eccentricity * eccentricity)) * sinE;
+    orbitalRadiusScale * Math.sqrt(Math.max(0, 1 - eccentricity * eccentricity)) * sinE;
 
   // Full 3D Keplerian Euler rotation (ω = ϖ - Ω, inclination i, ascending node Ω):
   // 1. Rotate within the orbital plane by argument of perihelion ω
@@ -504,14 +648,20 @@ export const getOrbitPosition = (
   // so prograde orbits run counter-clockwise when viewed from Ecliptic North (+Y).
   out.set(xEcl, zEcl, -yEcl);
 
-  // Equatorial Plane Alignment:
-  // For moons, rotate the local orbit by the parent planet's axial tilt around the Z-axis
-  // (the exact tilt applied to the parent planet's mesh and ring geometry in BodyMesh.tsx)
-  if (isMoon && parentPlanet) {
-    const parentTilt = MathUtils.degToRad(parentPlanet.rotation.axialTiltDeg);
-    if (parentTilt !== 0) {
-      out.applyAxisAngle(EQUATORIAL_TILT_AXIS, parentTilt);
+  if (usePhysicalRadialMapping) {
+    const rAu = out.length();
+    if (rAu > 1e-6) {
+      const renderRadius = computeRenderOrbitRadius(rAu, scaleMode, scaleParams);
+      out.multiplyScalar(renderRadius / rAu);
     }
+  }
+
+  // Equatorial Plane Alignment:
+  // Regular moons orbit in their parent planet's true 3D J2000 equatorial plane (matching
+  // the parent's rings and spin axis in BodyMesh.tsx). Earth's Moon uses orbitFrame="ecliptic"
+  // and orbits in its true 5.145° ecliptic plane instead.
+  if (isMoon && parentPlanet && orbit.orbitFrame !== "ecliptic") {
+    out.applyQuaternion(getBodyPoleQuaternion(parentPlanet));
   }
 
   return out;

@@ -19,9 +19,34 @@ import {
   getEscapeDirection,
   getOrbitPhase,
   getOrbitPosition,
-  getVoyager1TimeFromPhase
+  getVoyager1TimeFromPhase,
+  solveKepler
 } from "./orbitMath";
 import { createOrbitPathMaterial } from "../shaders/orbitPathShader";
+
+import { utcDaysToTtDays } from "../utils/timeScale";
+
+// Eccentric anomaly half-span for long-period open comet trajectories (e.g. Hale-Bopp):
+// stays strictly < PI/2 so the inbound/outbound legs widen out to ~158 AU and fade into deep
+// space without ever curving back inward onto themselves.
+const OPEN_COMET_ARC_MAX_E = 1.42;
+
+const getOpenCometArcHeadPhase = (orbit: OrbitElements, timeDays: number): number => {
+  const ttDays = utcDaysToTtDays(timeDays);
+  const e = MathUtils.clamp(orbit.eccentricity, 0, 0.999);
+  const periLonDeg = orbit.longitudeOfPerihelionDeg ?? 0;
+  const meanLonDeg =
+    orbit.meanLongitudeAtEpochDeg !== undefined
+      ? orbit.meanLongitudeAtEpochDeg + (ttDays / orbit.orbitalPeriodDays) * 360
+      : 0;
+  const mRad = MathUtils.degToRad(meanLonDeg - periLonDeg);
+  const E = solveKepler(mRad, e);
+  return MathUtils.clamp(
+    (E + OPEN_COMET_ARC_MAX_E) / (2 * OPEN_COMET_ARC_MAX_E),
+    0,
+    1
+  );
+};
 
 export const PLANET_ORBIT_COLORS: Record<string, string> = {
   mercury: "#b0b7c6", // sleek mercury silver-slate
@@ -38,7 +63,9 @@ export const PLANET_ORBIT_COLORS: Record<string, string> = {
   charon: "#a78bfa",  // soft lavender/violet
   enceladus: "#e0f2fe", // icy sky tint
   voyager1: "#ffd166", // golden interstellar probe
-  voyager: "#ffd166"
+  voyager: "#ffd166",
+  halley: "#38bdf8",   // vibrant ice-cyan comet arc
+  halebopp: "#a5f3fc"  // frosty pale-cyan great comet arc
 };
 
 interface OrbitPathProps {
@@ -77,9 +104,17 @@ export default function OrbitPath({
   }
 
   const parentWorldPosRef = useRef(new Vector3());
+  const scratchPointRef = useRef(new Vector3());
+  const lastPrecessionSampleDaysRef = useRef<number | null>(null);
   const isMoon = Boolean(planet?.parentId && planet.parentId !== "sun");
+  const isComet = planet?.kind === "comet";
+  const isOpenCometArc = Boolean(isComet && orbit.eccentricity > 0.985);
   const isEscapeRay = Boolean(orbit.escapeTrajectory && !isMoon);
-  const currentOpacityRef = useRef(isMoon ? 0 : 0.72);
+  const hasFastPrecession =
+    isMoon && Math.abs(orbit.secularRates?.ascNodeDotDegPerCentury ?? 0) > 10;
+  const currentOpacityRef = useRef(
+    isMoon ? 0 : isOpenCometArc ? 0.16 : isComet ? 0.2 : 0.72
+  );
   const currentSelectedRef = useRef(isSelected ? 1 : 0);
 
   // Determine distinctive color for each celestial body
@@ -139,6 +174,71 @@ export default function OrbitPath({
           points.push(dir.clone().multiplyScalar(r));
         }
       }
+    } else if (isOpenCometArc) {
+      // Long-period comet (e.g. Hale-Bopp, P = 2,537 yrs): plot an open deep-space hyperbolic-like
+      // inbound -> perihelion -> outbound arc spanning [-E_max, +E_max] that emerges faintly from
+      // deep space and fades back out without looping onto itself.
+      const arcSegments = Math.max(segments, 260);
+      const arcPhases = new Float32Array(arcSegments + 1);
+      for (let i = 0; i <= arcSegments; i += 1) {
+        const u = i / arcSegments;
+        arcPhases[i] = u;
+        const E = MathUtils.lerp(-OPEN_COMET_ARC_MAX_E, OPEN_COMET_ARC_MAX_E, u);
+        points.push(
+          getOrbitPosition(
+            orbit,
+            0,
+            scaleMode,
+            scaleParams,
+            new Vector3(),
+            false,
+            planet,
+            E
+          )
+        );
+      }
+      const geo = new BufferGeometry().setFromPoints(points);
+      geo.setAttribute("aPhase", new Float32BufferAttribute(arcPhases, 1));
+      return geo;
+    } else if (!isMoon && orbit.eccentricity > 0.3) {
+      // High-eccentricity comet orbit: sample uniformly in Eccentric Anomaly E so vertices
+      // cluster naturally around the tight perihelion turn while aPhase matches exact Keplerian
+      // mean-anomaly time phase (so the glowing tail head locks dead-on to the comet!).
+      const cometSegments = Math.max(segments, 320);
+      const cometPhases = new Float32Array(cometSegments + 1);
+      const e = MathUtils.clamp(orbit.eccentricity, 0, 0.999);
+      const m0Rad =
+        orbit.meanLongitudeAtEpochDeg !== undefined
+          ? MathUtils.degToRad(
+              orbit.meanLongitudeAtEpochDeg - (orbit.longitudeOfPerihelionDeg ?? 0)
+            )
+          : (orbit.phaseAtEpoch ?? 0);
+      const m0Wrapped =
+        (((m0Rad + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+      const e0 = solveKepler(m0Wrapped, e);
+      const m0Exact = e0 - e * Math.sin(e0);
+
+      for (let i = 0; i <= cometSegments; i += 1) {
+        const E = e0 + (i / cometSegments) * Math.PI * 2;
+        const M = E - e * Math.sin(E);
+        cometPhases[i] = MathUtils.clamp((M - m0Exact) / (Math.PI * 2), 0, 1);
+        points.push(
+          getOrbitPosition(
+            orbit,
+            0,
+            scaleMode,
+            scaleParams,
+            new Vector3(),
+            false,
+            planet,
+            E
+          )
+        );
+      }
+
+      const geo = new BufferGeometry().setFromPoints(points);
+      geo.setAttribute("aPhase", new Float32BufferAttribute(cometPhases, 1));
+      return geo;
     } else {
       const period = getEffectiveOrbitalPeriodDays(orbit);
 
@@ -169,13 +269,14 @@ export default function OrbitPath({
     () =>
       createOrbitPathMaterial(
         pathColor,
-        opacity ?? (isMoon ? 0 : 0.72),
+        opacity ?? (isMoon ? 0 : isOpenCometArc ? 0.16 : isComet ? 0.2 : 0.72),
         hasTimeRef,
-        isEscapeRay
+        isEscapeRay,
+        isOpenCometArc
       ),
     // Opacity & selection are updated smoothly via shader uniforms in useFrame
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pathColor, hasTimeRef, isEscapeRay]
+    [pathColor, hasTimeRef, isEscapeRay, isOpenCometArc]
   );
 
   const lineObject = useMemo(() => {
@@ -185,6 +286,7 @@ export default function OrbitPath({
   }, [geometry, material]);
 
   useEffect(() => {
+    lastPrecessionSampleDaysRef.current = null;
     return () => {
       geometry.dispose();
     };
@@ -228,13 +330,48 @@ export default function OrbitPath({
         }
       }
 
+      // Keep fast-precessing lunar orbit lines (Earth's Moon: 18.6-yr nodal precession)
+      // strictly aligned with the current simulation date in place (zero allocations).
+      if (hasFastPrecession && timeRef) {
+        const nowDays = timeRef.current;
+        if (
+          lastPrecessionSampleDaysRef.current === null ||
+          Math.abs(nowDays - lastPrecessionSampleDaysRef.current) > 10
+        ) {
+          lastPrecessionSampleDaysRef.current = nowDays;
+          const period = getEffectiveOrbitalPeriodDays(orbit);
+          const baseCycle = Math.floor(nowDays / period) * period;
+          const posAttr = geometry.attributes.position as Float32BufferAttribute;
+          const arr = posAttr.array as Float32Array;
+          const pt = scratchPointRef.current;
+          for (let i = 0; i <= segments; i += 1) {
+            const phase = i / segments;
+            getOrbitPosition(
+              orbit,
+              baseCycle + phase * period,
+              scaleMode,
+              scaleParams,
+              pt,
+              true,
+              planet
+            );
+            arr[i * 3] = pt.x;
+            arr[i * 3 + 1] = pt.y;
+            arr[i * 3 + 2] = pt.z;
+          }
+          posAttr.needsUpdate = true;
+        }
+      }
+
       lineObject.visible = true;
     } else {
       // Heliocentric (solar) orbit line: always visible, softly yields when focusing a planet system
       const isFocusedSystem = Boolean(activeSystemId && activeSystemId === planet?.id);
-      const baseTarget = opacity ?? (isSelected ? 0.95 : 0.72);
+      const defaultUnselected = isOpenCometArc ? 0.16 : isComet ? 0.2 : 0.72;
+      const defaultSelected = isOpenCometArc ? 0.44 : isComet ? 0.56 : 0.95;
+      const baseTarget = opacity ?? (isSelected ? defaultSelected : defaultUnselected);
       const targetOpacity = isFocusedSystem
-        ? (isSelected ? 0.85 : 0.45)
+        ? (isSelected ? (isComet ? defaultSelected : 0.85) : 0.45)
         : baseTarget;
 
       currentOpacityRef.current = MathUtils.damp(
@@ -256,12 +393,9 @@ export default function OrbitPath({
     material.uniforms.uOpacity.value = currentOpacityRef.current;
     material.uniforms.uSelected.value = currentSelectedRef.current;
     if (timeRef) {
-      material.uniforms.uHeadPhase.value = getOrbitPhase(
-        orbit,
-        timeRef.current,
-        scaleMode,
-        scaleParams
-      );
+      material.uniforms.uHeadPhase.value = isOpenCometArc
+        ? getOpenCometArcHeadPhase(orbit, timeRef.current)
+        : getOrbitPhase(orbit, timeRef.current, scaleMode, scaleParams);
     }
   });
 

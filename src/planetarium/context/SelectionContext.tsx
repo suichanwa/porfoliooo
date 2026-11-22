@@ -24,6 +24,7 @@ interface SelectionContextValue {
   isInfoVisible: boolean;
   resetSignal: number;
   zoomOutSignal: number;
+  focusSignal: number;
   pickerOpen: boolean;
   pickerQuery: string;
   filteredPlanets: BodyData[];
@@ -46,6 +47,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const [infoHidden, setInfoHidden] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [zoomOutSignal, setZoomOutSignal] = useState(0);
+  const [focusSignal, setFocusSignal] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
 
@@ -92,6 +94,11 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     (id: BodyId | null, source: "canvas" | "picker" | "search" = "canvas") => {
       setSelectedId(id);
       setIsFocused(false);
+      if (id) {
+        // Increment focusSignal even when clicking the already-selected body so the camera
+        // smoothly refocuses back onto it after panning, orbiting, or zooming away.
+        setFocusSignal((prev) => prev + 1);
+      }
       if (source === "picker") {
         setPickerOpen(false);
       }
@@ -136,6 +143,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       isInfoVisible,
       resetSignal,
       zoomOutSignal,
+      focusSignal,
       pickerOpen,
       pickerQuery,
       filteredPlanets,
@@ -159,6 +167,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       isInfoVisible,
       resetSignal,
       zoomOutSignal,
+      focusSignal,
       pickerOpen,
       pickerQuery,
       filteredPlanets,
