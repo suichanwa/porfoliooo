@@ -3,6 +3,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { PlanetariumPage } from "../planetarium";
 ---
 
-<BaseLayout title="Planetarium | My Portfolio" useVoidBackground={true}>
+<BaseLayout
+  title="3D Keplerian Planetarium"
+  description="Interactive 3D solar system simulator in the browser with J2000 orbital mechanics and custom GLSL shaders."
+  ogImage="/og-planetarium.jpg"
+  useVoidBackground={true}
+>
   <PlanetariumPage client:only="react" />
 </BaseLayout>

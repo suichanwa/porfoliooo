@@ -73,24 +73,62 @@ const getPageContext = () => {
   };
 };
 
+function handleDevIgnoreParam() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const devIgnore = params.get("dev_ignore");
+    if (devIgnore === "1") {
+      localStorage.setItem("ignore_analytics", "1");
+    } else if (devIgnore === "0") {
+      localStorage.removeItem("ignore_analytics");
+    }
+  } catch {
+    // Ignore storage/URL exceptions in restricted environments
+  }
+}
+
 export async function initializeFirebaseAnalytics() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  handleDevIgnoreParam();
+
+  let isIgnored = false;
+  try {
+    isIgnored = localStorage.getItem("ignore_analytics") === "1";
+  } catch {
+    isIgnored = false;
+  }
+
+  if (
+    !import.meta.env.PROD ||
+    window.location.hostname !== "porfoliooo.web.app" ||
+    isIgnored
+  ) {
+    return null;
+  }
+
   if (!analyticsPromise) {
     analyticsPromise = (async () => {
-      if (typeof window === "undefined") {
+      try {
+        const [{ app }, analyticsModule] = await Promise.all([
+          import("./firebaseApp"),
+          import("firebase/analytics"),
+        ]);
+        const supported = await analyticsModule.isSupported().catch(() => false);
+
+        if (!supported) {
+          return null;
+        }
+
+        return analyticsModule.getAnalytics(app);
+      } catch {
         return null;
       }
-
-      const [{ app }, analyticsModule] = await Promise.all([
-        import("./firebaseApp"),
-        import("firebase/analytics"),
-      ]);
-      const supported = await analyticsModule.isSupported().catch(() => false);
-
-      if (!supported) {
-        return null;
-      }
-
-      return analyticsModule.getAnalytics(app);
     })();
   }
 
@@ -107,10 +145,13 @@ export async function trackAnalyticsEvent(
     return false;
   }
 
-  const { logEvent } = await import("firebase/analytics");
-  logEvent(analytics, eventName, cleanEventParams(eventParams));
-
-  return true;
+  try {
+    const { logEvent } = await import("firebase/analytics");
+    logEvent(analytics, eventName, cleanEventParams(eventParams));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function trackSitePageViewed() {

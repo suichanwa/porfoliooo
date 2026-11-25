@@ -9,6 +9,7 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  ogImage?: string;
   useVoidBackground?: boolean;
   enableNeptuneTransition?: boolean;
   neptuneSectionId?: string;
@@ -16,15 +17,18 @@ interface Props {
 
 const {
   title,
-  description = "Personal portfolio, interactive planetarium, celestial visualizer, and projects by suiseika.",
-  image = "/images/pfp.jpg",
+  description = "Software Engineer specializing in full-stack systems, TypeScript, React, Python, Java, and interactive 3D graphics.",
+  image,
+  ogImage,
   useVoidBackground = false,
   enableNeptuneTransition = false,
   neptuneSectionId = 'neptune-widget'
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://suichanwa.github.io");
-const ogImageURL = new URL(image, canonicalURL);
+const siteBase = Astro.site ? Astro.site.href : "https://porfoliooo.web.app/";
+const canonicalURL = new URL(Astro.url.pathname, siteBase);
+const resolvedOgImage = ogImage || image || "/images/pfp.jpg";
+const ogImageURL = new URL(resolvedOgImage, canonicalURL);
 ---
 
 <!doctype html>
@@ -49,14 +53,13 @@ const ogImageURL = new URL(image, canonicalURL);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageURL} />
-    <meta property="og:site_name" content="suiseika's portfolio" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={ogImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
 
     <ClientRouter />
   </head>

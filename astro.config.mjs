@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 
 export default defineConfig({
-  site: 'https://suichanwa.github.io',
+  site: 'https://porfoliooo.web.app',
   base: '/',
   prefetch: {
     prefetchAll: false,
